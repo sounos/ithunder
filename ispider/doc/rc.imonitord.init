@@ -1,0 +1,51 @@
+#!/bin/sh
+#
+# IMONITORD:
+#
+# chkconfig:	2345 70 40
+# description:  IMONITORD
+#
+#
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+#[ -r /etc/sysconfig/imonitord ] && . /etc/sysconfig/imonitord
+IMONITORDARGS=" -d -c /usr/local/etc/imonitord.ini > /dev/null 2>&1 "
+
+start() 
+{
+    echo -n $"Starting imonitord: "
+    daemon /usr/local/sbin/imonitord $IMONITORDARGS
+
+    echo
+}
+
+stop() 
+{
+    echo -n $"Shutting down imonitord: "
+    killproc imonitord
+
+    echo
+}
+
+[ -f /usr/local/sbin/imonitord ] || exit 0
+
+# See how we were called.
+case "$1" in
+    start)
+    start
+    ;;
+    stop)
+    stop
+    ;;
+    restart|reload)
+    stop
+    start
+    ;;
+    *)
+    echo $"Usage: $0 {start|stop|restart|reload}"
+    exit 1
+esac
+
+exit 0

@@ -1,0 +1,49 @@
+#!/bin/sh
+#
+# ITHINKD:
+#
+# chkconfig:	2345 70 40
+# description:  ITHINKD
+#
+#
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+#[ -r /etc/sysconfig/ithinkd ] && . /etc/sysconfig/ithinkd
+ITHINKDARGS=" -d -c /usr/local/etc/ithinkd.ini > /dev/null 2>&1 "
+
+start() 
+{
+    echo -n $"Starting ithinkd: "
+    daemon /usr/local/sbin/ithinkd $ITHINKDARGS
+
+    echo
+}
+
+stop() 
+{
+    echo -n $"Shutting down ithinkd: "
+    killproc ithinkd
+
+    echo
+}
+
+[ -f /usr/local/sbin/ithinkd ] || exit 0
+
+# See how we were called.
+case "$1" in
+    start)
+    start
+    ;;
+    stop)
+    stop
+    ;;
+    restart|reload)
+    stop
+    start
+    echo $"Usage: $0 {start|stop|restart|reload}"
+    exit 1
+esac
+
+exit 0

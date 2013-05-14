@@ -1,0 +1,49 @@
+#!/bin/sh
+#
+# HINDEXD:
+#
+# chkconfig:	23 90 60
+# description:  HINDEXD
+#
+#
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+#[ -r /etc/sysconfig/hindexd ] && . /etc/sysconfig/hindexd
+HINDEXDARGS=" -d -c /usr/local/etc/hindexd.ini > /dev/null 2>&1 "
+
+start() 
+{
+    echo -n $"Starting hindexd: "
+    daemon /usr/local/sbin/hindexd $HINDEXDARGS
+    echo
+}
+
+stop() 
+{
+    echo -n $"Shutting down hindexd: "
+    killproc hindexd
+    echo
+}
+
+[ -f /usr/local/sbin/hindexd ] || exit 0
+
+# See how we were called.
+case "$1" in
+  start)
+	start
+        ;;
+  stop)
+	stop
+        ;;
+  restart|reload)
+	stop
+	start
+	;;
+  *)
+        echo $"Usage: $0 {start|stop|restart|reload}"
+        exit 1
+esac
+
+exit 0

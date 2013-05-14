@@ -1,0 +1,51 @@
+#!/bin/sh
+#
+# IDISPATCHD:
+#
+# chkconfig:	2345 70 40
+# description:  IDISPATCHD
+#
+#
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+#[ -r /etc/sysconfig/idispatchd ] && . /etc/sysconfig/idispatchd
+IDISPATCHDARGS=" -d -c /usr/local/etc/idispatchd.ini > /dev/null 2>&1 "
+
+start() 
+{
+    echo -n $"Starting idispatchd: "
+    daemon /usr/local/sbin/idispatchd $IDISPATCHDARGS
+
+    echo
+}
+
+stop() 
+{
+    echo -n $"Shutting down idispatchd: "
+    killproc idispatchd
+
+    echo
+}
+
+[ -f /usr/local/sbin/idispatchd ] || exit 0
+
+# See how we were called.
+case "$1" in
+    start)
+    start
+    ;;
+    stop)
+    stop
+    ;;
+    restart|reload)
+    stop
+    start
+    ;;
+    *)
+    echo $"Usage: $0 {start|stop|restart|reload}"
+    exit 1
+esac
+
+exit 0

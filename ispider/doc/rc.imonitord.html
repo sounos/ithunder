@@ -1,0 +1,3958 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+    <title>采集系统监控管理</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <style>
+        body.IE_M7, body.IE_M8, body.Win6{font-family:"Segoe UI", Tahoma, Verdana, Arial;}
+        body.Safari{min-width:987px;}
+        body.SF_iPhone{-webkit-text-size-adjust:none;}
+        body
+        {
+            margin:0;font-family:Tahoma, Verdana, Arial;
+            background-color:#FFFAFA;
+            color:#333;
+            font-size:12pt;
+            border:0px;
+            width:100%;
+            height:100%;
+        }
+        form{margin:0px;display: inline} 
+            #mainframe
+            {
+                position:relative;
+                background-color:#FFFAFA;
+                border:0px;
+                z-index:0;
+                width:100%;
+                height:100%;
+            }
+            #itab {position:relative;background-color:#D0E9F7;margin:0;padding:0;
+                height:36px; width:100%;top:0px;left:0px;border:0px;font-size:16pt;cursor:pointer;}
+            #itab ul{margin:0;padding:0;list-style:none;font-weight:bolder;cursor: pointer;}
+            #itab li{float:left;background-color:#2F5FA1;color:#c0c0c0;width:150px; height:36px;
+                border-left:1px solid #ccc;font-weight:bolder;padding:3px 8px 3px 8px;}
+            #itab .tab-selected{background-color:#D0E9F7;color:#2F5FA1;border-left:1px solid #ccc;
+                font-weight:bolder;padding:3px 8px 3px 8px;height:36px;}
+            #taskinfo{position:absolute;background-color:#FFFAFA;color:#2F5FA1;display:none;
+                border-top:0px solid #81BEF7; margin:0;padding:0px;left:0px;top:36px;
+                height:100%;width:100%;overflow:auto;}
+            .ktask{font-size:12pt;font-weight:bold;height:30px;}
+            .vtask{font-size:12pt;color:red;font-weight:bold;height:30px;}
+            .btask{background-color:#81BEF7;height:100%;width:100%;margin:0;padding:0;border:0;}
+            .xtask{background-color:#D0E9F7;height:100%;margin:0;padding:0;border:0;}
+            #database{position:absolute;background-color:#FFFAFA;display:none;overflow:auto;
+                border-top:1px solid #81BEF7;margin:0;padding:0px;left:0px;top:36px;
+                width:100%;height:100%;}
+            .dblist{position:relative;padding:0px; background-color:#D0E9F7;height:100%;}
+            .dbtitle{position:relative;background-color:#2F5FA1;color:#c0c0c0; height:30px;}
+            #dbselect{position:relative;background-color:#D0E9F7;width:100%;}
+            #dbfields .dbfields{position:relative;background-color:#FFFAFA;color:#2F5FA1;}
+            .field-title{background-color:#666666;color:#C0c0c0;height:22px;width:100%;}
+            .ulstate{list-style:none;padding:0;margin:0;width:100%;height:100%;
+                background-color:#D0E9F7;color:#2F5FA1;}
+            .ultab{list-style:none;padding:0;margin:0;width:100%;}
+            .ltabname{cursor:pointer;font-size:12pt;}
+            .ltab{background-color:#D0E9F7;cursor: pointer;width:100%;}
+            .ltab-selected{background-color:#FFFAFA;cursor: pointer;width:100%;}
+            .lfname{cursor: pointer;}
+            .lfield{background-color:#FFFAFA;cursor: pointer;}
+            .lfield-selected{background-color:#D0E9F7;cursor: pointer;}
+            #dbfieldform{position:absolute;width:560px;height:50px;background-color:#ffffff;
+                border:1px solid #81BEF7;padding-top:10px;padding-left:6px;font-size:12pt;
+                color:#2F5FA1;z-index:99;overflow:auto;display:none;}
+            #template{position:absolute;background-color:#FFFAFA;display:none;overflow:auto;
+                border-top:1px solid #81BEF7;padding:0px;left:0px;top:36px;
+                margin:0;height:100%;width:100%;}
+            .template-tab{height:100%;width:100%;padding:0px;margin:0;border:0;}
+            .treetab{background-color:#D0E9F7;height:100%;border:0px;margin:0;
+                z-index:99;overflow:auto;padding:0px;}
+            #tree-title{background-color:#2F5FA1;color:#c0c0c0;font-size:13pt;
+                font-weight:bold;height:30px;width:100%;padding:0px;left:0px;}
+            #treebody{position:relative;color:#000000;width:100%;overflow:auto}
+            .treeline{position:relative;border:0px;font-size:12pt;font-weight:bold;}
+            .title{position:relative;background-color:#D0E9F7;width:100%;}
+            .btitle{position:relative;background-color:#FFFAFA;width:100%;}
+            .temptab{background-color:#FFFAFA;height:100%;border:0px;
+                padding:0px;margin:0;overflow:auto;}
+            #template-title{background-color:#2F5FA1;color:#c0c0c0;font-size:13pt;border:0px;
+                font-weight:bold;height:30px;width:100%;padding:0px;}
+            #node-template{position:relative;
+                border:0px solid #ffffff;padding:0px;color:#2F5FA1;}
+            .template-header{background-color:#D0E9F7;}
+            .ltemplate{background-color:#D0E9F7;}
+            .ltemplate-hl{background-color:#FFFAFA;}
+            #txtform{position:absolute;width:290px;background-color:#ffffff;display:inline;
+                border:1px solid #81BEF7;padding:10px;z-index:99;overflow:auto;display:none;}
+            #dbform{position:absolute;width:290px;background-color:#ffffff;display:inline;
+                border:1px solid #81BEF7;padding:10px;z-index:99;overflow:auto;display:none;}
+            #tableview{position:relative;background-color:#2F5FA1;display:none;width:100%}
+            #dbeditform{position:relative;background-color:#2F5FA1;color:#cccccc;
+                height:30px;width:100%;border:0px solid #FFFFFF;}
+            #xtemplateform{position:relative;display:none;width:100%;
+                border:0px solid #81BEF7;padding:0px;font-size:12pt;color:#2F5FA1;}
+            #urlform{position:relative;background-color:#D0E9F7;}
+            #source_code_op{display:none;}
+            #templatediv{display:none;position:relative;}
+            .template-bar{position:relative;background-color:#2F5FA1;height:30px;
+                cursor:move;font-size:13pt;font-weight:bold;color:#C0C0C0;}
+            #editor-frame{height:180px;width:100%;border:1px solid #c0c0c0;overflow:auto;}
+            #template-config{position:absolute;background-color:#D0E9F7;z-index:99;
+                border:1px solid #c0c0c0;padding:0px;font-size:12pt;color:#2F5FA1;height:600px;}
+            #template-config-block{position:relative;width:100%;height:570px;
+                overflow:auto;align:left;}
+            #template-test{position:absolute;background-color:#D0E9F7; border:1px solid #c0c0c0;
+                padding:0px;height:600px;font-size:12pt;color:#2F5FA1;z-index:99;}
+            #template-matches{position:relative;height:520px;overflow:auto;}
+            #template-test-header{position:relative;background-color:#2F5FA1;height:30px;
+                cursor:move;font-size:14pt;color:red;font-weight:bold;}
+            #template-viewer{position:relative;background-color:#D0E9F7;
+                border:0px solid #000000;width:100%;height:500px;
+                font-size:12pt;color:#2F5FA1;}
+            .closetxt{cursor:pointer;font-size:10pt;color:#cccccc;text-align:left;}
+            .closebutton{padding:3px 4px 3px 4px;background-color:#DF0101;
+                cursor:pointer;font-size:6pt;font-weight:bold;color:#ffffff;text-align:right;}
+            .ctxt_block{position:relative;background-color:silver;border:1px solid #000000;}
+            #urlblock{position:absolute;background-color:#FFFAFA;display:none;overflow:auto;
+                border-top:1px solid #81BEF7;padding:0px;left:0px;top:36px;width:100%;height:100%;}
+            #url-header{position:relative;background-color:#2F5FA1;color:#cccccc;
+                height:30px;width:100%;border-bottom:1px solid #81BEF7;}
+            .url-ul{list-style:none;padding:0;margin:0;width:100%;}
+            .url-li{background-color:#D0E9F7;cursor:pointer;}
+            .url-li-warn{background-color:#FF8000;cursor:pointer;}
+            .url-li-selected{background-color:#FFFAFA;cursor:pointer;}
+            .urlli-header{list-style:none;background-color:#2F5FA1;font-weight:bold;
+                font-size:14pt;color:#c0c0c0;}
+            .url-li-page{color:#cccc70;font-weight:bold;font-size:13pt;}
+            #urllist-form{position:absolute;width:720px;height:150px;background-color:#ffffff;
+                border:1px solid #81BEF7;padding-top:10px;padding-left:6px;font-size:12pt;
+                color:#2F5FA1;z-index:99;overflow:auto;display:none;}
+            #record-view{position:absolute;background-color:#D0E9F7; z-index:99;
+                border:1px solid #C0C0C0;padding:0px;height:550px;font-size:12pt;color:#2F5FA1;}
+            #record-res{position:relative;height:520px;overflow:auto;padding:4px 8px 4px 8px;}
+            #record-header{position:relative;background-color:#2F5FA1;height:30px;
+                cursor:move;font-size:14pt;color:red;font-weight:bold;}
+            .record-title{position:relative;height:20px;
+                font-size:14pt;font-weight:bold;width:100%;text-align:left;}
+            .record-txt{position:relative;font-size:14pt;width:100%;text-align:left;}
+            #data{position:absolute;background-color:#FFFAFA;display:none;
+                border-top:1px solid #81BEF7;padding:0px;left:0px;top:36px;width:100%;height:100%;}
+            #dns{position:absolute;background-color:#FFFAFA;display:none;
+                border-top:1px solid #81BEF7;padding:0px;left:0px;top:36px;width:100%;height:100%;}
+            #dns-header{position:relative;background-color:#2F5FA1;color:#cccccc;
+                height:30px;width:100%;border:0px solid #FFFFFF;}
+            #dns-list{position:relative;}
+            .dns-ul{list-style:none;padding:0;margin:0;}
+            .dns-li{background-color:#D0E9F7;cursor: pointer;}
+            .dns-li-selected{background-color:#FFFAFA;cursor: pointer;}
+            #proxy{position:absolute;background-color:#FFFAFA;display:none;
+                border-top:1px solid #81BEF7;padding:0px;left:0px;top:36px;width:100%;height:100%;}
+            #proxy-header{position:relative;background-color:#2F5FA1;color:#cccccc;
+                height:30px;width:100%;border:0px solid #FFFFFF;}
+            #proxy-list{position:relative;}
+            .proxy-ul{list-style:none;padding:0;margin:0;}
+            .proxy-li{background-color:#D0E9F7;cursor: pointer;}
+            .proxy-li-selected{background-color:#FFFAFA;cursor: pointer;}
+            #user{position:absolute;background-color:#D0E9F7; color:#2F5FA1;display:none;
+                border-top:1px solid #81BEF7; padding:0px;left:0px;top:36px;height:100%;width:100%;}
+            #httpx{position:absolute;background-color:#D0E9F7; color:#2F5FA1;display:none;
+                border-top:1px solid #81BEF7; padding:0px;left:0px;top:36px;height:100%;width:100%;}
+            #httpx-header{position:relative;background-color:#2F5FA1;color:#cccccc;
+                height:30px;width:100%;border:0px solid #FFFFFF;}
+            .listform{margin:0px;display: inline;}
+            .node{z-index:99;overflow:hidden;color:black;font-size:12pt;}
+            .nodename{color:black;font-size:12pt;cursor:pointer;}
+            .eadd{color:#5FB404;font-size:13pt;font-weight:bolder;cursor:pointer;}
+            .eupdate{color:#FF8000;font-size:13pt;font-weight:bolder;cursor:pointer;}
+            .edelete{color:#B4045F;font-size:13pt;font-weight:bolder;cursor:pointer;}
+            .eview{color:#0000ff;font-size:13pt;font-weight:bolder;cursor:pointer;}
+            .icon{display:inline;color:#FF8000;font-size:13pt;text-align:center;cursor:pointer;}
+            .nchilds{display:inline;color:red;font-size:12pt;}
+            .hlight{color:red;}
+            #bframe{position:absolute;z-index:1;display:none;border:0}
+        </style>
+    <script language='javascript'>
+            var chradd = '✚', chrfold = '►', chrtree = '▼', chredit='✎', chrdel='✘', chrview = '☜ ';
+            var oTimer = null;
+            var base64EncodeChars = 
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+            var index_types = new Array();
+                index_types['text_index'] = '文本索引字段';
+                index_types['int_index'] = 'int索引字段';
+                index_types['long_index'] = 'long索引字段';
+                index_types['double_index'] = 'double索引字段';
+                index_types['display'] = '非索引字段';
+            var base64DecodeChars = new Array(
+                -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 62, -1, -1, -1, 63,
+                52, 53, 54, 55, 56, 57, 58, 59, 60, 61, -1, -1, -1, -1, -1, -1,
+                -1,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
+                15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1,
+                -1, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+                41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, -1, -1, -1, -1, -1);
+            function base64encode(str) 
+            {
+                var out, i, len;
+                var c1, c2, c3;
+
+                len = str.length;
+                i = 0;
+                out = "";
+                while(i < len) {
+                    c1 = str.charCodeAt(i++) & 0xff;
+                    if(i == len)
+                    {
+                        out += base64EncodeChars.charAt(c1 >> 2);
+                        out += base64EncodeChars.charAt((c1 & 0x3) << 4);
+                        out += "==";
+                        break;
+                    }
+                    c2 = str.charCodeAt(i++);
+                    if(i == len)
+                    {
+                        out += base64EncodeChars.charAt(c1 >> 2);
+                        out += base64EncodeChars.charAt(((c1 & 0x3)<< 4) | ((c2 & 0xF0) >> 4));
+                        out += base64EncodeChars.charAt((c2 & 0xF) << 2);
+                        out += "=";
+                        break;
+                    }
+                    c3 = str.charCodeAt(i++);
+                    out += base64EncodeChars.charAt(c1 >> 2);
+                    out += base64EncodeChars.charAt(((c1 & 0x3)<< 4) | ((c2 & 0xF0) >> 4));
+                    out += base64EncodeChars.charAt(((c2 & 0xF) << 2) | ((c3 & 0xC0) >>6));
+                    out += base64EncodeChars.charAt(c3 & 0x3F);
+                }
+                return out;
+            }
+            function base64decode(str)
+            {
+                var c1, c2, c3, c4;
+                var i, len, out;
+
+                len = str.length;
+                i = 0;
+                out = "";
+                while(i < len) {
+                    /* c1 */
+                    do {
+                        c1 = base64DecodeChars[str.charCodeAt(i++) & 0xff];
+                    } while(i < len && c1 == -1);
+                    if(c1 == -1)
+                    break;
+
+                    /* c2 */
+                    do {
+                        c2 = base64DecodeChars[str.charCodeAt(i++) & 0xff];
+                    } while(i < len && c2 == -1);
+                    if(c2 == -1)
+                    break;
+
+                    out += String.fromCharCode((c1 << 2) | ((c2 & 0x30) >> 4));
+
+                    /* c3 */
+                    do {
+                        c3 = str.charCodeAt(i++) & 0xff;
+                        if(c3 == 61)
+                        return out;
+                        c3 = base64DecodeChars[c3];
+                    } while(i < len && c3 == -1);
+                    if(c3 == -1)
+                    break;
+
+                    out += String.fromCharCode(((c2 & 0XF) << 4) | ((c3 & 0x3C) >> 2));
+
+                    /* c4 */
+                    do {
+                        c4 = str.charCodeAt(i++) & 0xff;
+                        if(c4 == 61)
+                        return out;
+                        c4 = base64DecodeChars[c4];
+                    } while(i < len && c4 == -1);
+                    if(c4 == -1)
+                    break;
+                    out += String.fromCharCode(((c3 & 0x03) << 6) | c4);
+                }
+                return out;
+            }
+            function utf16to8(str)
+            {
+                var out, i, len, c;
+                out = "";
+                len = str.length;
+                for(i = 0; i < len; i++) {
+                    c = str.charCodeAt(i);
+                    if ((c >= 0x0001) && (c <= 0x007F)) {
+                        out += str.charAt(i);
+                        } else if (c > 0x07FF) {
+                        out += String.fromCharCode(0xE0 | ((c >> 12) & 0x0F));
+                        out += String.fromCharCode(0x80 | ((c >>  6) & 0x3F));
+                        out += String.fromCharCode(0x80 | ((c >>  0) & 0x3F));
+                        } else {
+                        out += String.fromCharCode(0xC0 | ((c >>  6) & 0x1F));
+                        out += String.fromCharCode(0x80 | ((c >>  0) & 0x3F));
+                    }
+                }
+                return out;
+            }
+            function utf8to16(str)
+            {
+                var out, i, len, c;
+                var char2, char3;
+                out = "";
+                len = str.length;
+                i = 0;
+                while(i < len) {
+                    c = str.charCodeAt(i++);
+                    switch(c >> 4)
+                    { 
+                        case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7:
+                        // 0xxxxxxx
+                        out += str.charAt(i-1);
+                        break;
+                        case 12: case 13:
+                        // 110x xxxx   10xx xxxx
+                        char2 = str.charCodeAt(i++);
+                        out += String.fromCharCode(((c & 0x1F) << 6) | (char2 & 0x3F));
+                        break;
+                        case 14:
+                        // 1110 xxxx  10xx xxxx  10xx xxxx
+                        char2 = str.charCodeAt(i++);
+                        char3 = str.charCodeAt(i++);
+                        out += String.fromCharCode(((c & 0x0F) << 12) |
+                        ((char2 & 0x3F) << 6) |
+                        ((char3 & 0x3F) << 0));
+                        break;
+                    }
+                }
+
+                return out;
+            }
+            function start_wait()
+            {
+                document.body.style.cursor = 'wait';
+            }
+            function over_wait()
+            {
+                document.body.style.cursor = 'auto';
+            }
+            function base64strdecode(str)
+            {
+                    return utf8to16(base64decode(str));
+            }
+            function trim(str)
+            {
+                return str.replace(/(^\s+|\s+$)/, "");
+            }
+            function highlight(obj)
+            {
+                obj.className = "btitle";
+            }
+            function backcss(obj)
+            {
+                obj.className = "title";
+            }
+            function overBFrame(element)
+            {
+                var bframe = document.getElementById('bframe');
+                if(bframe)
+                {
+                    bframe.style.left = element.offsetLeft+"px";
+                    bframe.style.top = element.offsetTop+"px";
+                    bframe.style.width = element.offsetWidth+"px";
+                    bframe.style.height = element.offsetHeight+"px";
+                    bframe.style.display = 'inline';
+                }
+            }
+            function hideBFrame()
+            {
+                var bframe = document.getElementById('bframe');
+                bframe.style.display = 'none';
+            }
+            function removeElement(_element)
+            {
+                var _parentElement = _element.parentNode;
+                if(_parentElement)
+                {
+                    _parentElement.removeChild(_element);  
+                }
+                return hideBFrame();
+            }
+            function CreateXMLHTTP()
+            {
+                var xmlhttp = null;
+                xmlhttpObj = ["MSXML2.XmlHttp.5.0","MSXML2.XmlHttp.4.0",
+                "MSXML2.XmlHttp.3.0","MSXML2.XmlHttp","Microsoft.XmlHttp"];
+                if(window.XMLHttpRequest)
+                {
+                    xmlhttp = new XMLHttpRequest();
+                }
+                else if(window.ActiveXObject)
+                {
+                    for(i=0;i<xmlhttpObj.length;i++)    
+                    {
+                        try{xmlhttp = new ActiveXObject(xmlhttpObj[i]);break;}
+                        catch(e){xmlhttp = null;}
+                    }
+                }
+                else 
+                {
+                    alert('Can not create XMLHTTP Object');
+                }
+                return xmlhttp;
+            }
+            function rebuildChild(oParent, pid, id, name)
+            {
+                if(oParent && parseInt(id) > 0 && name)
+                {
+                    var strchilds = oParent.getAttribute('childs');
+                    var pName = oParent.getAttribute('UName');
+                    var childs = null;
+                    if(strchilds) childs = eval(strchilds);
+                    else childs = new Array();
+                    childs[id] = name;
+                    strchilds = "({";
+                        for(x in childs)
+                        {
+                            if(x != pid)
+                            strchilds += x+":'"+childs[x]+"',";
+                        }
+                        strchilds += pid+":'"+pName+"'})";
+                    oParent.setAttribute('childs', strchilds);
+                }
+            }
+            function removeChild(oParent, pid, id)
+            {
+                if(oParent && parseInt(id) > 0)
+                {
+                    var strchilds = oParent.getAttribute('childs');
+                    var pName = oParent.getAttribute('UName');
+                    var childs = null;
+                    if(strchilds)
+                    {
+                        childs = eval(strchilds);
+                        childs[id] = '';
+                        strchilds = "({";
+                            for(x in childs)
+                            {
+                                if(x != pid && childs[x])
+                                    strchilds += x+":'"+childs[x]+"',";
+                            }
+                            strchilds += pid+":'"+pName+"'})";
+                        oParent.setAttribute('childs', strchilds);
+                    }
+                }
+            }
+            function AddNode(pid, id, name, count)
+            {
+                if(document.getElementById("node"+id) != null) return;
+                //alert("pid:"+pid+"id:"+id+"name:"+name);
+                var oParent = null;
+                if(pid >= 0)
+                {
+                    oParent = document.getElementById("node"+pid);
+                }
+                else
+                {
+                    oParent = document.getElementById('treebody');
+                }
+                //alert(pid+':'+id+':'+name);
+                if(oParent == null) return;
+                var oNode = document.createElement('div');
+                var level = oParent.getAttribute('level') * 1;
+                var nchilds = oParent.getAttribute('nchilds') * 1;
+                oParent.setAttribute('nchilds', nchilds + 1);
+                if(pid >= 0)
+                {
+                    var strchilds = oParent.getAttribute('childs');
+                    var pName = oParent.getAttribute('UName');
+                    var childs = null;
+                    if(strchilds) childs = eval(strchilds);
+                    else childs = new Array();
+                    childs[id] = name;
+                    strchilds = "({";
+                    for(x in childs)
+                    {
+                        if(x != pid)
+                            strchilds += x+":'"+childs[x]+"',";
+                    }
+                    strchilds += pid+":'"+pName+"'})";
+                    oParent.setAttribute('childs', strchilds);
+                }
+                var ofold = null;
+                if((ofold = document.getElementById('fold_'+pid)))
+                {
+                    if(nchilds == 0) ofold.innerHTML = chrtree; 
+                }
+                var onchilds = null;
+                if((onchilds = document.getElementById('ch_'+pid)))
+                {
+                    onchilds.innerHTML = nchilds+1;
+                }
+                oNode.id = "node" + id;
+                oNode.className = 'node';
+                oNode.setAttribute('level', level + 1);
+                oNode.setAttribute('nchilds', 0);
+                oNode.setAttribute('parent', pid);
+                oNode.setAttribute('UID', id);
+                oNode.setAttribute('UName', name);
+                htmlstr = "<div id='title_"+ id +"' class='title' ";
+                htmlstr += " onmousemove=\"onDiv(this, 'btitle');\" ";
+                htmlstr += " onmouseout=\"outDiv(this, 'title');\">";
+                htmlstr += "<span class='treeline'>";
+                var i = 0;
+                for(i = 0; i < (level-1); i++)
+                {
+                    htmlstr += "&nbsp;&nbsp;&nbsp;&nbsp;";
+                }
+                if(level > 0)
+                {
+                    htmlstr += "&nbsp;&nbsp;&nbsp;";
+                }
+                htmlstr += "</span>";
+                if(count > 0)
+                    htmlstr += "<span id='fold_"+ id +"' class='icon' onclick='Fold(this)'>"+chradd+"</span>";
+                else
+                    htmlstr += "<span id='fold_"+ id +"' class='icon' onclick='Fold(this)'>"+chrfold+"</span>";
+                htmlstr += "&nbsp;&nbsp;";
+                htmlstr += "<span id='nd_"+id+"' class='nodename' title='点击进入模版管理'";
+                htmlstr += " onclick='ViewTemplates("+id+")' >"+name+"</span>";
+                htmlstr += "[<span id='ch_"+ id +"' class='nchilds' >"+count+"</span>]";
+                htmlstr += "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+                htmlstr += "<span class='eadd' title='Add' ";
+                htmlstr += "onclick='XAdd(event)'>"+chradd+"</span>";
+                htmlstr += "&nbsp;&nbsp;&nbsp;&nbsp;";
+                htmlstr += "<span class='eupdate' title='Rename' ";
+                htmlstr += "onclick='XEdit(event)'>"+chredit+"</span>";
+                htmlstr += "&nbsp;&nbsp;&nbsp;&nbsp;";
+                htmlstr += "<span class='edelete' title='Delete' ";
+                htmlstr += "onclick='XDelete("+id+","+pid+")'>"+chrdel+"</span>";
+                htmlstr += "&nbsp;&nbsp;&nbsp;&nbsp;";
+                htmlstr += "</div>";
+                oNode.innerHTML = htmlstr; 
+                oParent.appendChild(oNode);
+                return HiddenEditor();
+            }
+            function UpdateNode(id, name)
+            {
+                var oNode = document.getElementById('node'+id);
+                if(oNode != null)
+                {
+                    oNode.setAttribute('UName', name);
+                    var oName = document.getElementById('nd_'+id);
+                    if(oName != null)
+                    {
+                        oName.innerHTML = name;
+                    }
+                }
+                return HiddenEditor();
+            }
+            function ListChilds(parent, url, argv)
+            {
+                var xmlHttp = CreateXMLHTTP();
+                if(xmlHttp != null)
+                {
+                    xmlHttp.open('POST', url+"&rand="+Math.random(), true);
+                    xmlHttp.setRequestHeader("Content-Length", argv.length);
+                    xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    xmlHttp.onreadystatechange=function()
+                    {
+                        if(xmlHttp.readyState==4)
+                        {
+                            if(xmlHttp.status == 200)
+                            {
+                                var tnode = eval(xmlHttp.responseText);
+                                if(tnode['id'] == parent)
+                                {
+                                    var i = 0;
+                                    for(i = 0; i < tnode['nchilds']; i++)
+                                    {
+                                        AddNode(parent, tnode['childs'][i]['id'] * 1, 
+                                        tnode['childs'][i]['name'], 
+                                        tnode['childs'][i]['nchilds']);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    xmlHttp.send(argv);
+                }
+                return HiddenEditor();
+            }
+            //close form
+            function CloseThis(element)
+            {
+                element.parentNode.parentNode.style.display = "none";
+                hideBFrame(element.parentNode.parentNode);
+            }
+            function CloseThisTable(element)
+            {
+                element.parentNode.parentNode.parentNode.parentNode.parentNode.style.display = "none";
+                hideBFrame(element.parentNode.parentNode);
+            }
+            function CloseThisTip(element)
+            {
+                divremove(element.parentNode.parentNode.parentNode.parentNode.parentNode.parentNode);
+            }
+            //Add child
+            function XAdd(e)
+            {
+                e = e || window.event;
+                var element = e.target || e.srcElement;
+                var Xdiv =  document.getElementById("txtform");
+                var x = e.clientX + document.body.scrollLeft;
+                var y = e.clientY + document.body.scrollTop;
+                Xdiv.style.left = x;
+                Xdiv.style.top = y + 10;
+                Xdiv.style.display = 'inline';
+                overBFrame(Xdiv);
+                var form = document.forms["editorform"];
+                form['op'].value = 'node_add';
+                form['pid'].value = element.parentNode.parentNode.getAttribute('UID');
+                form['nodeid'].value = '';
+                form['nodename'].focus();
+                form['nodename'].value = '';
+            }
+            function XEdit(e)
+            {
+                e = e || window.event;
+                var element = e.target || e.srcElement;
+                var Xdiv =  document.getElementById("txtform");
+                var x = e.clientX;
+                var y = e.clientY;
+                Xdiv.style.left = x;
+                Xdiv.style.top = y + 10;
+                Xdiv.style.display = 'inline';
+                overBFrame(Xdiv);
+                var form = document.forms["editorform"];
+                form['op'].value = 'node_update';
+                form['pid'].value = element.parentNode.parentNode.getAttribute('parent');
+                form['nodeid'].value = element.parentNode.parentNode.getAttribute('UID');
+                form['nodename'].focus();
+                form['nodename'].value = element.parentNode.parentNode.getAttribute('UName');
+            }
+            function HiddenEditor()
+            {
+                var div = document.getElementById('txtform');
+                div.style.display = 'none';
+                hideBFrame();
+                return true;
+            }
+            function EditNode(form)
+            {
+                var argv = "";
+                var op = form['op'].value;
+                var pid = form['pid'].value;
+                var nodeid = form['nodeid'].value;
+                var nodename = form['nodename'].value;
+                if(op == 'node_add' && nodename && pid >= 0)
+                {
+                    argv = "op="+op+"&name="+encodeURIComponent(nodename)+"&parentid="+pid;
+                }
+                else if(op == 'node_update' && nodename)
+                {
+                    if(nodeid > 0)
+                    argv = "op="+op+"&name="+encodeURIComponent(nodename)
+                        +"&nodeid="+nodeid+"&parentid="+pid;
+                    else 
+                    {
+                        UpdateNode(nodeid, nodename);
+                        return HiddenEditor();
+                    }
+                }
+                else return ;
+                //alert("op:"+op+"nodeid:"+nodeid+"pid:"+pid+"nodename:"+nodename);
+                var xmlHttp = CreateXMLHTTP();
+                if(xmlHttp != null)
+                {
+                    xmlHttp.open('POST', '/treenode', true);
+                    xmlHttp.setRequestHeader("Content-Length", argv.length);
+                    xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    xmlHttp.onreadystatechange=function()
+                    {
+                        if(xmlHttp.readyState==4)
+                        {
+                            if(xmlHttp.status == 200)
+                            {
+                                if(op == 'node_add')
+                                {
+                                    var tnode = eval(xmlHttp.responseText);
+                                    if(tnode['id'] == pid)
+                                    {
+                                        for(i = 0; i < tnode['nchilds']; i++)
+                                        {
+                                            AddNode(pid, tnode['childs'][i]['id'] * 1, 
+                                                    tnode['childs'][i]['name'], 
+                                                    tnode['childs'][i]['nchilds']);
+                                        }
+                                    }
+                                }
+                                else if(op == 'node_update')
+                                {
+                                    var id = trim(xmlHttp.responseText);
+                                    if(id > 0 && id == nodeid)
+                                        UpdateNode(id, nodename);
+                                }
+                            }
+                            
+                        }
+                    }
+                    xmlHttp.send(argv);
+                }
+                return HiddenEditor();
+            }
+
+            //delete node
+            function XDelete(nodeid, parentid)
+            {
+                var xmlHttp = null;
+                var oNode = document.getElementById("node"+nodeid);
+                var name = null;
+                if(nodeid > 0 && oNode != null && (name = oNode.getAttribute('UName'))
+                    && confirm('Are you sure delete node:'+nodeid+' name:'+name+' ?') 
+                    && (xmlHttp = CreateXMLHTTP()) != null)
+                {
+                    var argv = "op=node_delete&nodeid="+nodeid+"&parentid="+parentid;
+                    xmlHttp.open('POST', '/xnode', true);
+                    xmlHttp.setRequestHeader("Content-Length", argv.length);
+                    xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    xmlHttp.onreadystatechange=function()
+                    {
+                        if(xmlHttp.readyState==4)
+                        {
+                            if(xmlHttp.status == 200)
+                            {
+                                var id = trim(xmlHttp.responseText);
+                                var pid = oNode.getAttribute('parent');
+                                var oParent = document.getElementById('node'+pid);
+                                if(id == nodeid)
+                                {
+                                    var nchilds = oParent.getAttribute('nchilds') - 1;
+                                    oParent.setAttribute('nchilds', nchilds);
+                                    removeChild(oParent, pid, id);
+                                    var ochild =  document.getElementById('ch_'+pid);
+                                    ochild.innerHTML = nchilds;
+                                    oParent.removeChild(oNode); 
+                                    var urlid = document.forms['templateform']['nodeid'].value
+                                    if(id == urlid)
+                                    {
+                                        HiddenTemplate();
+                                    }
+                                }
+                            }
+                            
+                        }
+                    }
+                    xmlHttp.send(argv);
+                }
+                return HiddenEditor();
+            }
+            //fold node
+            function Fold(element)
+            {
+                var nchilds = element.parentNode.parentNode.getAttribute('nchilds') * 1;
+                var uid = element.parentNode.parentNode.getAttribute('UID') * 1;
+                var url = "/";
+                var argv = "op=node_childs&nodeid="+uid;
+                if(element.innerHTML == chradd)
+                {
+                    element.parentNode.parentNode.style.height = '';
+                    ListChilds(uid, url, argv);
+                    if(nchilds > 0)element.innerHTML = chrtree;
+                }
+                else if(element.innerHTML == chrfold)
+                {
+                    ListChilds(uid, url, argv);
+                }
+                else
+                {
+                    element.parentNode.parentNode.style.height = element.parentNode.offsetHeight;
+                    if(nchilds > 0) element.innerHTML = chradd;
+                }
+                return HiddenEditor();
+            }
+            function LimitSpeed(form)
+            {
+                var xmlHttp = null;
+                var speed = null;
+                if(form && (speed = form['speed'].value) != ''
+                    && (xmlHttp = CreateXMLHTTP()) != null)
+                {
+                    var argv = "op=speed_limit&speed="+speed;
+                    xmlHttp.open('POST', '/speed', true);
+                    xmlHttp.setRequestHeader("Content-Length", argv.length);
+                    xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    xmlHttp.onreadystatechange=function()
+                    {
+                        if(xmlHttp.readyState==4)
+                        {
+                            if(xmlHttp.status == 200)
+                            {
+                                ShowTaskInfo(xmlHttp.responseText);
+                            }
+                        }
+                    }
+                    xmlHttp.send(argv);
+                }
+                return true;
+            }
+
+            //Show Task
+            function ShowTaskInfo(txt)
+            {
+                var taskinfo = null;
+                if(txt && (stateinfo = eval(txt)))
+                {
+                    //var speed = taskinfo['speed_limit'];
+                    var htmlstr = "<table cellspacing=1 align=left valign=top class='btask'><tr>";
+                    htmlstr += "<td valign=top align=left class='xtask'>";
+                    htmlstr += "<ul class='ulstate'>";
+                    htmlstr += "<li class='ktask'>运行时间:&nbsp;";
+                    htmlstr += "<span class='vtask'>"+stateinfo['interval']+"</span>";
+                    htmlstr += "&nbsp;|&nbsp;";
+                    htmlstr += "<span class='vtask'>"+stateinfo['time_total']+"</span>(S)";
+                    htmlstr += "</li>";
+                    htmlstr += "<li class='ktask'>列表速度:&nbsp;";
+                    htmlstr += "<span class='vtask'>"+stateinfo['list_speed']+"</span>";
+                    htmlstr += "&nbsp;|&nbsp;";
+                    htmlstr += "<span class='vtask'>"+stateinfo['list_avg']+"</span>&nbsp;(K/s)";
+                    htmlstr += "</li>";
+                    htmlstr += "<li class='ktask'>页面速度:&nbsp;";
+                    htmlstr += "<span class='vtask'>"+stateinfo['page_speed']+"</span>";
+                    htmlstr += "&nbsp;|&nbsp;";
+                    htmlstr += "<span class='vtask'>"+stateinfo['page_avg']+"</span>&nbsp;(K/s)";
+                    htmlstr += "</li>";
+                    htmlstr += "<li class='ktask'>文件速度:&nbsp;";
+                    htmlstr += "<span class='vtask'>"+stateinfo['file_speed']+"</span>";
+                    htmlstr += "&nbsp;|&nbsp;";
+                    htmlstr += "<span class='vtask'>"+stateinfo['file_avg']+"</span>&nbsp;(K/s)";
+                    htmlstr += "</li>";
+                    htmlstr += "<li class='ktask'>更新速度:&nbsp;";
+                    htmlstr += "<span class='vtask'>"+stateinfo['update_speed']+"</span>";
+                    htmlstr += "&nbsp;|&nbsp;";
+                    htmlstr += "<span class='vtask'>"+stateinfo['update_avg']+"</span>&nbsp;(K/s)";
+                    htmlstr += "</li>";
+                    htmlstr += "<li class='ktask'>重试速度:&nbsp;";
+                    htmlstr += "<span class='vtask'>"+stateinfo['repeat_speed']+"</span>";
+                    htmlstr += "&nbsp;|&nbsp;";
+                    htmlstr += "<span class='vtask'>"+stateinfo['repeat_avg']+"</span>&nbsp;(K/s)";
+                    htmlstr += "</li>";
+                    htmlstr += "</ul></td><td valign=top align=left class='xtask'>";
+                    htmlstr += "<ul class='ulstate'>";
+                    htmlstr += "<li class='ktask'>Host总数:&nbsp;";
+                    htmlstr += "<span class='vtask'>"+stateinfo['host_total']+"</span>";
+                    htmlstr += "</li>";
+                    htmlstr += "<li class='ktask'>优先Host:&nbsp;";
+                    htmlstr += "<span class='vtask'>"+stateinfo['qpriority_total']+"</span>";
+                    htmlstr += "</li>";
+                    htmlstr += "<li class='ktask'>在线Host:&nbsp;";
+                    htmlstr += "<span class='vtask'>"+stateinfo['qwait_total']+"</span>";
+                    htmlstr += "</li>";
+                    htmlstr += "<li class='ktask'>等待解析:&nbsp;";
+                    htmlstr += "<span class='vtask'>"+stateinfo['qhost_total']+"</span>";
+                    htmlstr += "</li>";
+                    htmlstr += "</ul></td><td valign=top align=left class='xtask'>";
+                    htmlstr += "<ul class='ulstate'>";
+                    htmlstr += "<li class='ktask'>URL总数:&nbsp;";
+                    htmlstr += "<span class='vtask'>"+stateinfo['url_total']+"</span>";
+                    htmlstr += "</li>";
+                    htmlstr += "<li class='ktask'>采集完成:&nbsp;";
+                    htmlstr += "<span class='vtask'>"+stateinfo['over_download']+"</span>";
+                    htmlstr += "</li>";
+                    htmlstr += "<li class='ktask'>采集失败:&nbsp;";
+                    htmlstr += "<span class='vtask'>"+stateinfo['err_download']+"</span>";
+                    htmlstr += "</li>";
+                    htmlstr += "<li class='ktask'>采集无效:&nbsp;";
+                    htmlstr += "<span class='vtask'>"+stateinfo['unknown_download']+"</span>";
+                    htmlstr += "</li>";
+                    htmlstr += "</ul></td><td valign=top align=left class='xtask'>";
+                    htmlstr += "<ul class='ulstate'>";
+                    htmlstr += "<li class='ktask'>列表队列:&nbsp;";
+                    htmlstr += "<span class='vtask'>"+stateinfo['qlist_total']+"</span>";
+                    htmlstr += "</li>";
+                    htmlstr += "<li class='ktask'>文件队列:&nbsp;";
+                    htmlstr += "<span class='vtask'>"+stateinfo['qfile_total']+"</span>";
+                    htmlstr += "</li>";
+                    htmlstr += "<li class='ktask'>更新队列:&nbsp;";
+                    htmlstr += "<span class='vtask'>"+stateinfo['qupdate_total']+"</span>";
+                    htmlstr += "</li>";
+                    htmlstr += "<li class='ktask'>重试队列:&nbsp;";
+                    htmlstr += "<span class='vtask'>"+stateinfo['qretry_total']+"</span>";
+                    htmlstr += "</li>";
+                    htmlstr += "</ul></td><td valign=top align=left class='xtask'>";
+                    htmlstr += "<ul class='ulstate'>";
+                    htmlstr += "<li class='ktask'>抽取队列:&nbsp;";
+                    htmlstr += "<span class='vtask'>"+stateinfo['qextract_total']+"</span>";
+                    htmlstr += "</li>";
+                    htmlstr += "<li class='ktask'>抽取完成:&nbsp;";
+                    htmlstr += "<span class='vtask'>"+stateinfo['over_extract']+"</span>";
+                    htmlstr += "</li>";
+                    htmlstr += "<li class='ktask'>抽取错误:&nbsp;";
+                    htmlstr += "<span class='vtask'>"+stateinfo['err_extract']+"</span>";
+                    htmlstr += "</li>";
+                    htmlstr += "</ul></td><td valign=top align=left class='xtask'>";
+                    htmlstr += "<ul class='ulstate'>";
+                    htmlstr += "<li class='ktask'>导出队列:&nbsp;";
+                    htmlstr += "<span class='vtask'>"+stateinfo['qdump_total']+"</span>";
+                    htmlstr += "</li>";
+                    htmlstr += "<li class='ktask'>导出完成:&nbsp;";
+                    htmlstr += "<span class='vtask'>"+stateinfo['over_dump']+"</span>";
+                    htmlstr += "</li>";
+                    htmlstr += "<li class='ktask'>导出失败:&nbsp;";
+                    htmlstr += "<span class='vtask'>"+stateinfo['err_dump']+"</span>";
+                    htmlstr += "</li>";
+                    htmlstr += "</ul></td></tr></table>";
+                    /*
+                    htmlstr += "<span class='ktask'>状态:&nbsp;</span>";
+                    htmlstr += "<a href=\"javascript:ViewTask('task_";
+                    htmlstr += taskinfo['status']+"');\" class='vtask'";
+                    htmlstr += ">"+taskinfo['status']+"</a><hr>";
+                    htmlstr += "<span class='ktask'>URL总数:&nbsp;</span>";
+                    htmlstr += "<span class='vtask'>"+taskinfo['url_total'];
+                    htmlstr += "</span><hr>";
+                    htmlstr += "<span class='ktask'>任务总数:&nbsp;</span>";
+                    htmlstr += "<span class='vtask'>"+taskinfo['url_ntasks'];
+                    htmlstr += "</span><hr>";
+                    htmlstr += "<span class='ktask'>任务完成:&nbsp;</span>";
+                    htmlstr += "<span class='vtask'>"+taskinfo['url_task_ok'];
+                    htmlstr += "</span><hr>";
+                    htmlstr += "<span class='ktask'>任务错误:&nbsp;</span>";
+                    htmlstr += "<span class='vtask'>"+taskinfo['url_task_error'];
+                    htmlstr += "</span><hr>";
+                    htmlstr += "<span class='ktask'>文档大小:&nbsp;</span>";
+                    htmlstr += "<span class='vtask'>"+taskinfo['doc_total_zsize'];
+                    htmlstr += "/" + taskinfo['doc_total_size']+"</span><hr>";
+                    htmlstr += "<span class='ktask'>DNS解析:&nbsp;</span>";
+                    htmlstr += "<span class='vtask'>"+taskinfo['host_current'];
+                    htmlstr += "/" + taskinfo['host_total']+"</span><hr>";
+                    htmlstr += "<span class='ktask'>已用时间:&nbsp;</span>";
+                    htmlstr += "<span class='vtask'>["+taskinfo['t_day'];
+                    htmlstr += "&nbsp;Day(s)&nbsp;&nbsp;"+taskinfo['t_hour'];
+                    htmlstr += ":"+taskinfo['t_min'];
+                    htmlstr += ":"+taskinfo['t_sec'];
+                    htmlstr += "&nbsp;+"+taskinfo['t_usec']+"]";
+                    htmlstr += "</span><hr>";
+                    htmlstr += "<span class='ktask'>下载速度:&nbsp;</span>";
+                    htmlstr += "<span class='vtask'>"+taskinfo['speed'];
+                    htmlstr += " (KB/S) </span><hr>";
+                    htmlstr += "<span class='ktask'>速度限制:&nbsp;</span>";
+                    htmlstr += "<span class='vtask'>";
+                    htmlstr += "<form action='javascript:void(0)' class='listform' ";
+                    htmlstr += " onsubmit='LimitSpeed(this)'>";
+                    htmlstr += "<input type=text name=speed value='"+speed+"'> (KB/S) ";
+                    htmlstr += "&nbsp;<input type=submit name='submit' value='OK'>";
+                    htmlstr +=  "（0和负数表示不限速）</form></span><hr>";
+                    */
+                    var otaskinfo = document.getElementById('taskinfo');
+                    if(otaskinfo) 
+                    {
+                        otaskinfo.style.display = 'inline';
+                        otaskinfo.innerHTML = htmlstr;
+                    }
+                }
+            }
+
+            //view Task
+            function ViewTask(op)
+            {
+                var xmlHttp = null;
+                if((xmlHttp = CreateXMLHTTP()) != null)
+                {
+                    var argv = "op="+op;
+                    xmlHttp.onreadystatechange=function()
+                    {
+                        if(xmlHttp.readyState==4)
+                        {
+                            if(xmlHttp.status == 200)
+                            {
+                                ShowTaskInfo(xmlHttp.responseText);
+                            }
+                        }
+                    }
+                    xmlHttp.open('POST', '/task', true);
+                    xmlHttp.setRequestHeader("Content-Length", argv.length);
+                    xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    xmlHttp.send(argv);
+                }
+            }
+            function onDiv(div, cssName)
+            {
+                div.className = cssName;
+            }
+            function outDiv(div, cssName)
+            {
+                div.className = cssName;
+            }
+            function HideTable()
+            {
+                var div = document.getElementById('tableview');
+                div.style.display = 'none';
+                return true;
+            }
+            function ShowTable(tabid, tabname)
+            {
+                document.forms['dbeditform']['tableid'].value = tabid;
+                var otxt = document.getElementById('tabname');
+                    otxt.innerHTML = tabname;
+                var div = document.getElementById('tableview');
+                div.style.display = 'inline';
+                return true;
+            }
+            function ResetDB()
+            {
+                var odb = document.getElementById('dbselect');
+                    odb.innerHTML = "";
+                var odbf = document.getElementById('dbfields');
+                    odbf.innerHTML = "";
+                HideTable();
+            }
+            function ViewDB(txt, tname)
+            {
+                var db = eval(txt);
+                var tables = null;
+                if(db && (tables = db['tables']))
+                {
+                    var tabid = 0;
+                    var nfields = 0;
+                    var tabname = "";
+                    var htmlstr = "";
+                    htmlstr += "<ul class='ultab'>";
+                    for (x in tables)
+                    {
+                        tabid = x;
+                        tabname = tables[x]['name'];
+                        nfields = tables[x]['nfields'];
+                        htmlstr += "<li class='ltab' onmousemove=\"onDiv(this, 'ltab-selected')\" ";
+                        htmlstr += " onmouseout=\"outDiv(this, 'ltab')\" >";
+                        htmlstr += "<span class='ltabname' onclick='ViewTable(\""+tabid+"\",\"";
+                        htmlstr += tabname+"\")'  title='点击进入数据表管理' >";
+                        htmlstr += tabname+"</span>";
+                        htmlstr += "&nbsp;&nbsp;&nbsp;&nbsp;";
+                        htmlstr += "<span class='eupdate' title='Rename' ";
+                        htmlstr += "onclick=\"DBXEdit(event,"+tabid+", '"+tabname+"')\">"+chredit+"</span>";
+                        htmlstr += "&nbsp;&nbsp;&nbsp;&nbsp;";
+                        htmlstr += "<span class='edelete' title='Delete' ";
+                        htmlstr += "onclick=\"DeleteTable("+tabid+", '"+tabname+"')\">"+chrdel+"</span>";
+                        //htmlstr += "&nbsp;&nbsp;&nbsp;&nbsp;";
+                        //htmlstr += "<span class='eadd' title='点击添加字段' ";
+                        //htmlstr += "onclick=\"DBFXAdd(event, '"+tabid+"')\">"+chradd+"</span>";
+                        htmlstr += "</li>";
+                        if(tabname == tname) ShowTable(tabid, tabname);
+                    }
+                    htmlstr += "</ul>";
+                    var odb = document.getElementById('dbselect');
+                    odb.innerHTML = htmlstr;
+                }
+            }
+
+            function AddTable(form)
+            {
+                var tabname = form['tabname'].value;
+                var xmlHttp = null;
+                if(tabname && (xmlHttp = CreateXMLHTTP()) != null)
+                {
+                    var argv = "op=table_add&name="+tabname;
+                    xmlHttp.open('POST', '/table', true);
+                    xmlHttp.setRequestHeader("Content-Length", argv.length);
+                    xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    xmlHttp.onreadystatechange=function()
+                    {
+                        if(xmlHttp.readyState==4)
+                        {
+                            if(xmlHttp.status == 200)
+                            {
+                                ViewDB(xmlHttp.responseText, tabname);
+                                form['tabname'].value = '';
+                                ViewDatabase();
+                            }
+                        }
+                    }
+                    xmlHttp.send(argv);
+                    ResetDB();
+                }
+                return true;
+            }
+            function DeleteTable(tabid, tabname)
+            {
+                var xmlHttp = null;
+                if(confirm("Are you sure delete tabble:"+tabname+" ?") 
+                    && (xmlHttp = CreateXMLHTTP()) != null)
+                {
+                    var argv = "op=table_delete&tableid="+tabid;
+                    xmlHttp.open('POST', '/tabdel', true);
+                    xmlHttp.setRequestHeader("Content-Length", argv.length);
+                    xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    xmlHttp.onreadystatechange=function()
+                    {
+                        if(xmlHttp.readyState==4)
+                        {
+                            if(xmlHttp.status == 200)
+                            {
+                                //alert(xmlHttp.responseText);
+                                ViewDB(xmlHttp.responseText,'');
+                                ViewDatabase();
+                            }
+                        }
+                    }
+                    xmlHttp.send(argv);
+                    ResetDB();
+                }
+                return true;
+            }
+            //List Table Fields
+            function ViewFields(txt)
+            {
+                var tab = eval(txt);
+                if(tab)
+                {
+                    var tabid = tab['id'];
+                    var tabname = tab['name'];
+                    var fid = null;
+                    var fname = null;
+                    var ftype = 0;
+                    var flag = 0;
+                    var index_type = "";
+                    var last = 0;
+                    htmlstr =  "<ul class='ultab' >";
+                    for (x in tab['fields'])
+                    {
+                        ftype = (tab['fields'][x].flag & (1|2|4|8));
+                        if(last != ftype)
+                        {
+                            if(tab['fields'][x].flag & 32)
+                            {
+                                if(ftype == 1) index_type = "int索引字段";
+                                else if(ftype == 2) index_type = "double索引字段";
+                                else if(ftype == 4) index_type = "文本索引字段";
+                                else if(ftype == 8) index_type = "long索引字段";
+                            }
+                            else index_type = "非索引字段";
+                            htmlstr += "<li class='field-title'>"+index_type+"</li>";
+                            last = ftype;
+                        }
+                        fid = x;
+                        fname = tab['fields'][x]['name'];
+                        flag = tab['fields'][x]['flag'];
+                        htmlstr += "<li class='lfield' ";
+                        htmlstr += " onmousemove=\"onDiv(this, 'lfield-selected')\" ";
+                        htmlstr += " onmouseout=\"outDiv(this, 'lfield');\" >";
+                        htmlstr += "&nbsp;&nbsp;&nbsp;&nbsp;";
+                        htmlstr += "<span class='lfname' ";
+                        htmlstr += "onclick=\"DBFXEdit(event, "+tabid+","+fid+",";
+                        htmlstr += "'"+fname+"', "+ftype+", "+flag+")\">"+fname+"</span>";
+                        htmlstr += "&nbsp;&nbsp;&nbsp;&nbsp;";
+                        htmlstr += "<span class='eupdate' title='Change' ";
+                        htmlstr += "onclick=\"DBFXEdit(event, "+tabid+","+fid+",";
+                        htmlstr += "'"+fname+"', "+ftype+", "+flag+")\">"+chredit+"</span>";
+                        htmlstr += "&nbsp;&nbsp;&nbsp;&nbsp;";
+                        htmlstr += "<span class='edelete' title='Delete' ";
+                        htmlstr += "onclick=\"DeleteField("+tabid+","+fid+",";
+                        htmlstr += "'"+tabname+"', '"+fname+"')\">"+chrdel+"</span>";
+                        htmlstr += "</li>";
+                    }
+                    htmlstr += "</ul>";
+                    var odbfields = document.getElementById('dbfields');
+                    odbfields.innerHTML = htmlstr;
+                }
+            }
+            //List/View Field
+            function ViewTable(tabid, tabname)
+            {
+                var xmlHttp = null;
+                if(tabid >= 0 && (xmlHttp = CreateXMLHTTP()) != null)
+                {
+                    ShowTable(tabid, tabname);
+                    var argv = "op=table_view&tableid="+tabid;
+                    xmlHttp.open('POST', '/tabview', true);
+                    xmlHttp.setRequestHeader("Content-Length", argv.length);
+                    xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    xmlHttp.onreadystatechange=function()
+                    {
+                        if(xmlHttp.readyState==4)
+                        {
+                            if(xmlHttp.status == 200)
+                            {
+                                ViewFields(xmlHttp.responseText);
+                            }
+                        }
+                    }
+                    xmlHttp.send(argv);
+                }
+            }
+             //View database
+            function ViewDatabase()
+            {
+                var xmlHttp = null;
+                if((xmlHttp = CreateXMLHTTP()) != null)
+                {
+                    var argv = "op=database_view";
+                    xmlHttp.open('POST', '/dbview', true);
+                    xmlHttp.setRequestHeader("Content-Length", argv.length);
+                    xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    xmlHttp.onreadystatechange=function()
+                    {
+                        if(xmlHttp.readyState==4)
+                        {
+                            if(xmlHttp.status == 200)
+                            {
+                                var odb = document.getElementById('database');
+                                odb.setAttribute('dbase', xmlHttp.responseText);
+                                LoadLinkOptions();
+                                //alert(xmlHttp.responseText);
+                            }
+                        }
+                    }
+                    xmlHttp.send(argv);
+                }
+                return true;
+            }
+            //List Tables
+            function ListTables()
+            {
+                var xmlHttp = null;
+                if((xmlHttp = CreateXMLHTTP()) != null)
+                {
+                    var argv = "op=table_list";
+                    xmlHttp.open('POST', '/tablelist', true);
+                    xmlHttp.setRequestHeader("Content-Length", argv.length);
+                    xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    xmlHttp.onreadystatechange=function()
+                    {
+                        if(xmlHttp.readyState==4)
+                        {
+                            if(xmlHttp.status == 200)
+                            {
+                                ViewDB(xmlHttp.responseText, '');
+                            }
+                        }
+                    }
+                    xmlHttp.send(argv);
+                }
+            }
+            function HiddenDBform()
+            {
+                var div = document.getElementById('dbform');
+                div.style.display = 'none';
+                hideBFrame();
+                return true;
+            }
+            function DBXAdd(e)
+            {
+                e = e || window.event;
+                var element = e.target || e.srcElement;
+                var x = e.clientX + document.body.scrollLeft;
+                var y = e.clientY + document.body.scrollTop;
+                var Xdiv =  document.getElementById("dbform");
+                Xdiv.style.left = x;
+                Xdiv.style.top = y + 10;
+                Xdiv.style.display = 'inline';
+                overBFrame(Xdiv);
+                var form = document.forms["xdbform"];
+                form['op'].value = 'table_add';
+                form['tableid'].value = '';
+                form['name'].focus();
+                form['name'].value = '';
+            }
+            function DBXEdit(e, id, name)
+            {
+                e = e || window.event;
+                var element = e.target || e.srcElement;
+                var Xdiv =  document.getElementById("dbform");
+                var x = e.clientX + document.body.scrollLeft;
+                var y = e.clientY + document.body.scrollTop;
+                Xdiv.style.left = x;
+                Xdiv.style.top = y + 10;
+                Xdiv.style.display = 'inline';
+                overBFrame(Xdiv);
+                var form = document.forms["xdbform"];
+                form['op'].value = 'table_rename';
+                form['tableid'].value = id;
+                form['name'].focus();
+                form['name'].value = name;
+            }
+            function EditDB(form)
+            {
+                if(form == null) return;
+                var argv = null;
+                var op = form['op'].value;
+                var tableid = form['tableid'].value;
+                var name = form['name'].value;
+                if(op == 'table_add' && name)
+                {
+                    argv = "op=table_add&name="+name;
+                }
+                else if(op == 'table_rename' && tableid >= 0 && name)
+                {
+                    argv = "op=table_rename&tableid="+tableid+"&name="+name;
+                }
+                else if(op == 'table_delete' && tableid >= 0)
+                {
+                    argv = "op=table_delete&tableid="+tableid;
+                }
+                var xmlHttp = null;
+                if(argv && (xmlHttp = CreateXMLHTTP()) != null)
+                {
+                    xmlHttp.open('POST', '/db', true);
+                    xmlHttp.setRequestHeader("Content-Length", argv.length);
+                    xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    xmlHttp.onreadystatechange=function()
+                    {
+                        if(xmlHttp.readyState==4)
+                        {
+                            if(xmlHttp.status == 200)
+                            {
+                                ViewDB(xmlHttp.responseText, name);
+                            }
+                        }
+                    }
+                    xmlHttp.send(argv);
+                }
+                return HiddenDBform();
+            }
+            function DBFXAdd(e, tabid)
+            {
+                e = e || window.event;
+                var element = e.target || e.srcElement;
+                var Xdiv =  document.getElementById("dbfieldform");
+                var x = e.clientX + document.body.scrollLeft;
+                var y = e.clientY + document.body.scrollTop;
+                Xdiv.style.left = x;
+                Xdiv.style.top = y + 10;
+                Xdiv.style.display = 'inline';
+                overBFrame(Xdiv);
+                var form = document.forms["dbfieldform"];
+                form['op'].value = 'field_add';
+                form['tableid'].value = tabid;
+                form['fieldid'].value = '';
+                form['oldname'].value = '';
+                form['type'].value = '';
+                form['flag'].value = '';
+                form['is_index'].checked = false;
+                //form['is_null'].checked = false;
+                form['name'].focus();
+                form['name'].value = '';
+            }
+            function DBFXEdit(e, tabid, fieldid, fname, ftype, flag)
+            {
+                e = e || window.event;
+                var element = e.target || e.srcElement;
+                var Xdiv =  document.getElementById("dbfieldform");
+                var x = e.clientX + document.body.scrollLeft;
+                var y = e.clientY + document.body.scrollTop;
+                Xdiv.style.left = x;
+                Xdiv.style.top = y + 10;
+                Xdiv.style.display = 'inline';
+                overBFrame(Xdiv);
+                var form = document.forms["dbfieldform"];
+                form['op'].value = 'field_update';
+                form['tableid'].value = tabid;
+                form['fieldid'].value = fieldid;
+                form['oldname'].value = fname;
+                form['type'].value = ftype;
+                form['flag'].value = flag;
+                form['is_index'].checked = false;
+                //form['is_null'].checked = false;
+                for(i = 0; i < form['ftype'].options.length; i++)
+                {
+                    if(form['ftype'].options[i].value == ftype)
+                        form['ftype'].options[i].selected = true;
+                    else 
+                        form['ftype'].options[i].selected = false;
+                }
+                if(flag & 32) form['is_index'].checked = true;
+                //if(flag & 16) form['is_null'].checked = true;
+                form['name'].focus();
+                form['name'].value = fname;
+            }
+            function HiddenDBFieldform()
+            {
+                var div = document.getElementById('dbfieldform');
+                div.style.display = 'none';
+                hideBFrame();
+                return true;
+            }
+            function ResetDBFieldform(form)
+            {
+                if(form['op'].value == 'field_add')
+                    form['name'].value = '';
+                else
+                    HiddenDBFieldform();
+                return true;
+            }
+            function EditField(form)
+            {
+                if(form == null) return;
+                var argv = null;
+                var op = form['op'].value;
+                var tableid = form['tableid'].value;
+                var fieldid = form['fieldid'].value;
+                var fname = form['name'].value;
+                var ftype = form['ftype'].value;
+                var oldname = form['oldname'].value;
+                var oldtype = form['type'].value;
+                var oldflag = form['flag'].value;
+                var flag = 0;
+                if(op == 'field_add' && tableid > 0 && fname && ftype > 0)
+                {
+                    argv = "op=field_add&tableid="+tableid+"&name="+fname;
+                    //if(form['is_null'].checked == true) flag |= 16;
+                    if(form['is_index'].checked == true) flag |= (32|ftype);
+                    else flag |= 4;
+                    if(flag > 0) argv += "&flag="+flag;
+                }
+                else if(op == 'field_update' && tableid > 0 && fieldid >= 0) 
+                {
+                    var eargv = "";
+                    if(fname && fname != oldname) eargv += "&name="+fname;
+                    if(eargv)
+                        argv = "op=field_rename&tableid="+tableid+"&fieldid="+fieldid+eargv;
+                }
+                var xmlHttp = null;
+                if(argv && (xmlHttp = CreateXMLHTTP()) != null)
+                {
+                    xmlHttp.open('POST', '/field', true);
+                    xmlHttp.setRequestHeader("Content-Length", argv.length);
+                    xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    xmlHttp.onreadystatechange=function()
+                    {
+                        if(xmlHttp.readyState==4)
+                        {
+                            if(xmlHttp.status == 200)
+                            {
+                                ViewFields(xmlHttp.responseText);
+                                ViewDatabase();
+                            }
+                        }
+                    }
+                    xmlHttp.send(argv);
+                }
+                return ResetDBFieldform(form);
+            }
+            function DeleteField(tabid, fieldid, tabname, fieldname)
+            {
+                if(confirm("Are you sure delete Table:"+tabname+" Field:"+fieldname+"?") 
+                    && (xmlHttp = CreateXMLHTTP()) != null)
+                {
+                    var argv = "op=field_delete&tableid="+tabid+"&fieldid="+fieldid;
+                    xmlHttp.open('POST', '/field', true);
+                    xmlHttp.setRequestHeader("Content-Length", argv.length);
+                    xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    xmlHttp.onreadystatechange=function()
+                    {
+                        if(xmlHttp.readyState==4)
+                        {
+                            if(xmlHttp.status == 200)
+                            {
+                                ViewFields(xmlHttp.responseText);
+                                ViewDatabase();
+                            }
+                        }
+                    }
+                    xmlHttp.send(argv);
+                }
+                return true;
+            }
+            //delete div
+            function divremove(element)
+            {
+                document.body.removeChild(element);
+                hideBFrame();
+                return true;
+            }
+            function divhidden(element)
+            {
+                if(element && element.innerHTML)
+                {
+                    element.innerHTML = "";
+                }
+                hideBFrame();
+            }
+            
+            //moving div
+            function divmove(e, o)
+            {
+                o.onselectstart = function()
+                {
+                    return(false);
+                };
+                o.onmousedown = function(e)
+                {
+                    e = e||window.event;
+                    var x = parseInt(e.clientX - o.parentNode.offsetLeft);
+                    var y = parseInt(e.clientY - o.parentNode.offsetTop);
+                    document.onmousemove = function(e)
+                    {
+                        e=e||window.event;
+                        o.parentNode.style.left=(e.clientX-x)+"px";
+                        o.parentNode.style.top=(e.clientY-y)+"px";
+                        overBFrame(o.parentNode);
+                    };
+                    document.onmouseup=function()
+                    {
+                        document.onmousemove=null;
+                    };
+                };
+            }
+
+            function ResetTemplateform()
+            {
+                var form = document.forms["templateform"];
+                form['op'].value = 'template_add';
+                form['templateid'].value = -1;
+                form['pattern'].value = ''
+                form['is_sub'].checked = false;
+                form['is_global'].checked = false;
+                form['is_ignorecase'].checked = false;
+                form['flag'].value = '';
+                form['nfields'].value = 0;
+                form['link'].value = '';
+                form['linkmap'].value = '';
+                form['map'].value = '';
+                form['link_method'][0].checked = true;
+                form['link_list'].checked = false;
+                form['link_table'].options[0].selected = true;
+                form['link_field'].options[0].selected = true;
+                form['link_node'].options[0].selected = true;
+            }
+            function XTReset()
+            {
+                var odiv = document.getElementById('source_view');
+                if(odiv) odiv.innerHTML = "";
+                var form = document.forms["templateform"];
+                form['op'].value = 'template_add';
+                form['nodeid'].value = -1;
+                form['templateid'].value = -1;
+                form['code'].value = '';
+                form['pattern'].value = ''
+                form['is_sub'].checked = false;
+                form['is_global'].checked = false;
+                form['is_ignorecase'].checked = false;
+                form['flag'].value = '';
+                form['nfields'].value = 0;
+                form['url'].value = '';
+                form['link'].value = '';
+                form['linkmap'].value = '';
+                form['map'].value = '';
+                form['method'].value = 0;
+                form['link_method'][0].checked = true;
+                form['link_list'].checked = false;
+                form['link_table'].options.length = 1;
+                form['link_field'].options.length = 1;
+                form['link_node'].options.length = 1;
+                form = document.forms['urlform'];
+                form['method'][0].checked = true;
+                hideBFrame();
+            }
+            function XTAdd(nodeid)
+            {
+                var Xdiv =  document.getElementById("xtemplateform");
+                Xdiv.style.display = 'inline';
+                XTReset();
+                var xform = document.forms["templateform"];
+                xform['nodeid'].value = nodeid;
+                var urlform = document.forms["urlform"];
+                urlform['method'][0].checked = true;
+                urlform['url'].focus();
+                urlform['url'].value = 'http://';
+                urlform['url'].select();
+            }
+            function XTEdit(formid)
+            {
+                XTReset();
+                var xform = document.forms["templateform"];
+                var form = document.forms[formid];
+                xform['op'].value = 'template_update';
+                xform['nodeid'].value = form['nodeid'].value;
+                xform['tableid'].value = form['tableid'].value;
+                xform['templateid'].value = form['templateid'].value;
+                xform['pattern'].value = form['pattern'].value;
+                xform['flag'].value = form['flag'].value;
+                xform['nfields'].value = form['nfields'].value;
+                xform['url'].value = form['url'].value;
+                xform['link'].value = form['link'].value;
+                xform['linkmap'].value = form['linkmap'].value;
+                xform['map'].value = form['map'].value;
+                if(xform['flag'].value & 1)
+                    xform['is_sub'].checked = true;
+                if(xform['flag'].value & 2)
+                    xform['is_global'].checked = true;
+                if(xform['flag'].value & 4)
+                    xform['is_ignorecase'].checked = true;
+                xform['method'].value = 0;
+                if(form['method'].value == 1)
+                {
+                    xform['method'].value = 1;
+                    xform['flag'].value |= 16;
+                }
+                var strlinkmap = form['linkmap'].value;
+                var linkmap = null;
+                if(strlinkmap && (linkmap = eval(strlinkmap)))
+                {
+                    if(linkmap['flag'] & 16)
+                    {
+                        xform['link_method'][1].checked = true;
+                    }
+                    if(linkmap['flag'] & 64)
+                    {
+                        xform['link_list'].checked = true;
+                    }
+                }
+                var ediv = null;
+                if((ediv = document.getElementById('xtemplateform'))) 
+                {
+                    ediv.style.display = "inline";
+                }
+                if((ediv = document.getElementById('templatediv'))) 
+                {
+                    ediv.style.display = "inline";
+                }
+                var urlform = document.forms["urlform"];
+                urlform['method'][0].checked = true;
+                if(form['flag'].value & 16)
+                    urlform['method'][1].checked = true;
+                urlform['url'].focus();
+                if(form['url'].value)
+                {
+                    urlform['url'].value = form['url'].value;
+                    LoadURL(urlform);
+                }
+            }
+            function XTDelete(nodeid, templateid)
+            {
+                var xmlHttp = null;
+                var msg = "Are you sure delete template["+templateid+"] from node["+nodeid+"] ?";
+                if(confirm(msg) && (xmlHttp = CreateXMLHTTP()) != null)
+                {
+                    var argv = "op=template_delete&nodeid="+nodeid+"&templateid="+templateid;
+                    xmlHttp.open('POST', '/temp', true);
+                    xmlHttp.setRequestHeader("Content-Length", argv.length);
+                    xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    xmlHttp.onreadystatechange=function()
+                    {
+                        if(xmlHttp.readyState==4)
+                        {
+                            if(xmlHttp.status == 200)
+                            {
+                                //HiddenTemplate();
+                                ShowTemplates(xmlHttp.responseText);
+                            }
+                        }
+                    }
+                    xmlHttp.send(argv);
+                }
+                return true;
+            }
+            function HiddenTemplate()
+            {
+                var div = null;
+                if((div = document.getElementById('template-config')))
+                    div.innerHTML = "";
+                if((div = document.getElementById('node-template')))
+                    div.innerHTML = "";
+                if((div = document.getElementById('source_view')))
+                    div.innerHTML = "";
+                if((div = document.getElementById('source_code_op')))
+                    div.style.display = 'none';
+                if((div = document.getElementById('templatediv')))
+                    div.style.display = 'none';
+                if((div = document.getElementById('xtemplateform')))
+                    div.style.display = 'none';
+                XTReset();
+                return true;
+            }
+            function changeTable(form, fselectid, el)
+            {
+                var odiv = null;
+                var strdb = null;
+                var dbase = null;
+                var fields = null;
+                var tabid = -1;
+                var fieldsoptions = "";
+                var select = form[fselectid];
+                if(select) select.options.length = 1;
+                if(form && (odiv = document.getElementById('database')) 
+                    && (strdb = odiv.getAttribute('dbase')) && (dbase = eval(strdb)))
+                {
+                    if((tabid = el.options[el.selectedIndex].value) >= 0 
+                        && (fields = dbase['tables'][tabid]['fields'])
+                        && select)
+                    {
+                        i = 1;
+                        for(x in fields)
+                        {
+                            select.options[i++] = new Option(fields[x]['name'], x);
+                        }
+                        //alert(fieldsoptions);
+                    }
+                }
+            }
+            function selectURL(form, box, id)
+            {
+                if(form && box && id >= 0)
+                {
+                    if(box.checked == true)
+                    {
+                        form['is_uniqe_'+id].disabled = false;
+                        form['is_list_'+id].disabled = false;
+                        form['is_file_'+id].disabled = false;
+                        form['is_page_'+id].disabled = false;
+                        form['is_url_'+id].disabled = true;
+                        form['nodeid_'+id].disabled = false;
+                    }
+                    else
+                    {
+                        form['is_uniqe_'+id].disabled = true;
+                        form['is_list_'+id].disabled = true;
+                        form['is_file_'+id].disabled = true;
+                        form['is_page_'+id].disabled = true;
+                        form['is_url_'+id].disabled = false;
+                        form['nodeid_'+id].disabled = true;
+                    }
+                }
+                return true;
+            }
+            function ConfigTemplate(form)
+            {
+                var pattern = null;
+                var patterns = "";
+                var arr = null;
+                var code = null;
+                if(form && (pattern = form['pattern'].value) && (code = form['code'].value))
+                {
+                    patterns = pattern.replace(/\r/mig,''); 
+                    code = code.replace(/\r|\n/mig,'');
+                    if(form['is_sub'].checked == true)
+                    {
+                        var list = pattern.split("\n");  
+                        var p0 = list[0].replace(/\r|\n/mig,'');
+                        var p1 = list[1].replace(/\r|\n/mig,'');
+                        var top = new RegExp(p0, 'm');
+                        var res = top.exec(code);
+                        code = res[1];
+                        pattern = p1;
+                    }
+                    else
+                    {
+                        pattern = pattern.replace(/\r|\n/mig,'');
+                    }
+                    var nodeid = form['nodeid'].value;
+                    var tableid = form['link_table'].value;
+                    var templateid = form['templateid'].value;
+                    var url = form['url'].value;
+                    var method = form['method'].value;
+                    var op = form['op'].value;
+                    var map = null;
+                    var condition = "m";
+                    var is_sub = false;
+                    var is_ignorecase = false;
+                    var is_global = false;
+                    if(form['is_sub'].checked == true) 
+                    {
+                        is_sub = true;
+                    }
+                    if(form['is_ignorecase'].checked == true) 
+                    {
+                        is_ignorecase = true;
+                        condition += "i"; 
+                    }
+                    if(form['is_global'].checked == true) 
+                    {
+                        is_global = true;
+                    }
+                    var reg = new  RegExp(pattern, condition);
+                    if((arr = reg.exec(code)) && arr.length > 1) 
+                    {
+                        //alert(form['map'].value);
+                        if(form['map'].value) map = eval(form['map'].value);
+                        form['nfields'].value = arr.length;
+                        var odiv = null;
+                        var fieldsoptions = "";
+                        var childsoptions = "";
+                        if((odiv = document.getElementById('database')))
+                        {
+                            var strdb = odiv.getAttribute('dbase');
+                            var dbase = eval(strdb);
+                            if(dbase && dbase['tables'][tableid] && tableid >= 0)
+                            {
+                                for(x in dbase['tables'][tableid]['fields'])
+                                {
+                                    fieldsoptions += "<option value='"+x+"'>";
+                                    fieldsoptions += dbase['tables'][tableid]['fields'][x]['name']
+                                        +"</option>";
+                                }
+                            }
+                        }
+                        if(nodeid > 0 && (odiv = document.getElementById('node'+nodeid)))
+                        {
+                            var strchilds = odiv.getAttribute('childs');
+                            var childs = eval(strchilds);
+                            if(childs)
+                            {
+                                for(x in childs)
+                                {
+                                    childsoptions += "<option value='"+x+"'>";
+                                    childsoptions += childs[x]+" </option>\n";
+                                }
+                            }
+                        }
+                        if(templateid > 0) op = "template_update";
+                        var str = "<div class='template-bar' ";
+                            str += "onmousedown='divmove(event, this)'>";
+                            str += "<table width=100%><tr><td align=left>";
+                            str += "<span class='closetxt' onclick='CloseThisTip(this)'>关闭</span>";
+                            str += "</td><td align=right>";
+                            str += "<span class='closebutton' onclick='CloseThisTip(this)'>╳</span>";
+                            str += "</td></tr></table>";
+                            str += "</div>";
+                       var  block = "<div id='template-config-block'>";
+                            block += "<form action='javascript:void(0)' class='listform' ";
+                            block += "onsubmit='EditTemplate(this, this.parentNode.parentNode)' >";
+                            block += "<input type=hidden name='nodeid' value='"+nodeid+"'>";
+                            block += "<input type=hidden name='op' value='"+op+"'>";
+                            block += "<input type=hidden name='method' value='"+method+"'>";
+                            block += "<input type=hidden name='tableid' value='"+tableid+"'>";
+                            block += "<input type=hidden name='templateid' value='"+templateid+"'>";
+                            block += "<input type=hidden name='nfields' value='"+arr.length+"'>";
+                            block += "&nbsp;";
+                            block += "URL:<input type=text name='url' size=80 value='"+url+"'>";
+                            block += "<br>";
+                            block += "模版:<textarea name='pattern' cols=76 rows=4>" 
+                                +patterns+"</textarea>";
+                            block += "<br>";
+                            block += "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+                            block += "<input type=checkbox name='is_sub' ";
+                            if(is_sub) block += "checked";
+                            block += ">结果二次匹配";
+                            block += "<input type=checkbox name='is_global' ";
+                            if(is_global) block += "checked";
+                            block += ">重复匹配多条";
+                            block += "&nbsp;&nbsp;&nbsp;&nbsp;";
+                            block += "<input type=checkbox name='is_ignorecase' ";
+                            if(is_ignorecase) block += "checked";
+                            block += ">忽略大小写";
+                            block += "<hr>";
+                        for(i = 1; i < arr.length;i++)
+                        {
+                            block += "&nbsp;&nbsp;";
+                            if(i < 10) block += '0';
+                            block += i+":";
+                            block += "<textarea name='r_"+i+"' cols=76 rows=1 readonly/disabled>";
+                            block += arr[i];
+                            block += "</textarea><br>";
+                            block += "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+                            block += "<select name='nodeid_"+i+"' ";
+                            if(map && (map[i-1]['flag'] & 1)) block += " ";
+                            else block += " disabled ";
+                            block += ">";
+                            block += "<option value='-1' selected>关联节点</option>";
+                            if(map)
+                            {
+                                for(x in childs)
+                                {
+                                    block += "<option value='"+x+"' ";
+                                    if(map && map[i-1]['nodeid'] == x) block += " selected ";
+                                    block += ">"+ childs[x]+" </option>";
+                                }
+                            }
+                            else
+                            {
+                                block += childsoptions;
+                            }
+                            block += "</select>";
+                            block += "&nbsp;&nbsp;";
+                            block += "<span title='自动拼接为完成链接'>";
+                            block += "<input type=checkbox name='is_link_"+i+"'";
+                            if(map && map[i-1]['flag'] & 1) block += " checked ";
+                            block += " onclick='selectURL(this.form,this,"+i+")'>链接</span>";
+                           
+                            block += "<span title='链接标识一条完整信息的结束'>";
+                            block += "<input type=checkbox name='is_uniqe_"+i+"'";
+                            if(map && map[i-1]['flag'] & 1) 
+                            {
+                                if(map[i-1]['flag'] & 32)
+                                    block += " checked ";
+                            }
+                            else 
+                                block += " disabled=true ";
+                            block += ">标识性链接</span>";
+                            block += "&nbsp;&nbsp;";
+                            block += "<span title='列表页将会优先下载并且会定期更新'>";
+                            block += "<input type=checkbox name='is_list_"+i+"'";
+                            if(map && map[i-1]['flag'] & 1) 
+                            {
+                                if(map[i-1]['flag'] & 64)
+                                    block += " checked ";
+                            }
+                            else 
+                                block += " disabled=true ";
+                            block += ">列表页</span>";
+                            block += "&nbsp;&nbsp;";
+                            block += "<span title='下载存储为文件比如:图片,mp3等'>";
+                            block += "<input type=checkbox name='is_file_"+i+"'";
+                            if(map && map[i-1]['flag'] & 1) 
+                            {
+                                if(map[i-1]['flag'] & 2)
+                                    block += " checked ";
+                            }
+                            else 
+                                block += " disabled=true ";
+                            block += ">文件</span>";
+                            block += "&nbsp;&nbsp;";
+                            block += "<span title='列表页分页'>";
+                            block += "<input type=checkbox name='is_page_"+i+"'";
+                            if(map && map[i-1]['flag'] & 1) 
+                            {
+                                if(map[i-1]['flag'] & 256)
+                                    block += " checked ";
+                            }
+                            else 
+                                block += " disabled=true ";
+                            block += ">分页</span>";
+                            block += "<br>";
+                            block += "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+                            block += "<select name='fieldid_"+i+"'>";
+                            block += "<option value='-1' selected>对应字段</option>";
+                            if(map && tableid >= 0)
+                            {
+                                for(x in dbase['tables'][tableid]['fields'])
+                                {
+                                    block += "<option value='"+x+"' ";
+                                    if(map && map[i-1]['fieldid'] == x) 
+                                        block += " selected ";
+                                    block += ">"+dbase['tables'][tableid]['fields'][x]['name']
+                                        +"</option>";
+                                }
+                            }
+                            else
+                            {
+                                block += fieldsoptions;
+                            }
+                            block += "</select>";
+                            block += "&nbsp;&nbsp;";
+                            block += "<span title='同一字段多块内容合并在一起'>";
+                            block += "<input type=checkbox name='is_multiple_"+i+"'";
+                            if(map && map[i-1]['flag'] & 1024) block += " checked ";
+                            block += ">内容合并</span>";
+                            block += "&nbsp;&nbsp;";
+                            block += "<span title='转换时间戳为UNIXTIME'>";
+                            block += "<input type=checkbox name='is_datetime_"+i+"'";
+                            if(map && map[i-1]['flag'] & 512) block += " checked ";
+                            block += ">时间戳</span>";
+                            block += "&nbsp;&nbsp;";
+                            block += "<span title='拼接完整的URL地址'>";
+                            block += "<input type=checkbox name='is_url_"+i+"'";
+                            if(map && map[i-1]['flag'] & 128) block += " checked ";
+                            block += ">URL</span>";
+                            block += "&nbsp;&nbsp;";
+                            block += "<span title='去掉html标签后的文本内容'>";
+                            block += "<input type=checkbox name='is_need_clearhtml_"+i+"'";
+                            if(map && map[i-1]['flag'] & 4) block += " checked ";
+                            block += ">去HTML</span>";
+                            block += "&nbsp;&nbsp;";
+                            block += "<span title='去掉疑似广告的部分内容，该功能谨慎使用'>";
+                            block += "<input type=checkbox name='is_need_antispam_"+i+"'";
+                            if(map && map[i-1]['flag'] & 8) block += " checked ";
+                            block += ">去广告</span>";
+                            block += "<hr>";
+                        }
+                        block += "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+                        block += "<input type=submit value='OK' >";
+                        block += "</form></div>";
+                        var element = null;
+                        if((element = document.getElementById('template-config')))
+                        {
+                            document.body.removeChild(element);
+                        }
+                        element = document.createElement('div');
+                        element.innerHTML = str + block;
+                        element.id = 'template-config';
+                        var divwidth = 720;
+                        var obody = document.getElementById('mainframe');
+                        var xleft = parseInt(obody.offsetWidth) - divwidth;
+                        var x = obody.offsetLeft +(xleft/2);
+                        var y = 20 + document.body.scrollTop;
+                        element.style.left = x+'px';
+                        element.style.top = y+'px';
+                        element.style.width = divwidth + 'px';
+                        document.body.appendChild(element);
+                        overBFrame(element);
+                        /*
+                        var frame = document.createElement('iframe');
+                        frame.id = 'template-config-frame';
+                        element.appendChild(frame);
+                        frame.contentWindow.document.open();
+                        frame.contentWindow.document.write(block);
+                        frame.contentWindow.document.close();
+                        */
+                    }
+                }
+                return true;
+            }
+            function TestTemplate(form)
+            {
+                var pattern = "";
+                var link = "";
+                var code = "";
+                var arr = null;
+                var condition = "m";
+                var count = 0;
+                var is_global= 0;
+                if(form && (pattern = form['pattern'].value)
+                    && (code = form['code'].value))
+                {
+                    code = code.replace(/\r|\n/mig,'');
+                    if(form['is_sub'].checked == true) 
+                    {
+                        var list = pattern.split("\n"); 
+                        var p0 = list[0].replace(/\r|\n/mig,'');
+                        var p1 = list[1].replace(/\r|\n/mig,'');
+                        var top = new RegExp(p0, 'm');
+                        var res = top.exec(code);
+                        code = res[1];
+                        pattern = p1;
+                    }
+                    else
+                    {
+                        pattern = pattern.replace(/\r|\n/mig,'');
+                    }
+                    if(form['is_ignorecase'].checked == true) 
+                        condition += "i"; 
+                    if(form['is_global'].checked == true) 
+                    {
+                        is_global = 1;
+                        condition += "g"; 
+                    }
+                    //alert(pattern);
+                    //alert(condition);
+                    var reg = new  RegExp(pattern, condition);
+                    var matches = new Array();
+                    if(is_global)
+                    {
+                        while((arr = reg.exec(code))
+                            && arr.length > 1)
+                        {
+                            //alert(arr[0]);
+                            matches[count++] = arr;
+                        }
+                    }
+                    else
+                    {
+                        if((arr = reg.exec(code)) 
+                            && arr.length > 1)
+                        {
+                            matches[count++] = arr;
+                        }
+                    }
+                    if(count > 0)
+                    {
+                    var str = "<div id='template-test-header' ";
+                        str += "onmousedown='divmove(event, this)'>";
+                        str += "<table width=100%><tr><td align=left>";
+                        str += "<span class='closetxt' onclick='CloseThisTip(this)'>关闭</span>";
+                        str += "&nbsp;&nbsp;<span style='color:#FE642E;'>匹配数量:"+count+"</span>";
+                        str += "</td><td align=right>";
+                        str += "<span class='closebutton' onclick='CloseThisTip(this)'>╳</span>";
+                        str += "</td></tr></table>";
+                        str += "</div>";
+                        str += "<div id='template-matches' >";
+                        var url = "";
+                        link = form['link'].value;
+                        for(i = 0; i < count; i++)
+                        {
+                            if(link) url = link;
+                            str += "<span>result:"+i+"<hr>";
+                            for(j = 1; j < matches[i].length; j++) 
+                            {
+                                if(j < 10) str += "0"; 
+                                str += j+":<textarea cols=76 rows=1>"
+                                    +matches[i][j]+"</textarea><br>";    
+                                if(link)
+                                {
+                                    reg = new RegExp("<"+j+">", "ig");
+                                    url = url.replace(reg, matches[i][j]);
+                                }
+                            }
+                            if(url)
+                            {
+                                str += "URL:<input type=text size=48 value='"+url+"'><br>";
+                            }
+                            str += "</span><hr>";
+                        }
+                        str += "</div>";
+                        var element = null;
+                        if((element = document.getElementById('template-test')))
+                        {
+                            document.body.removeChild(element);
+                        }
+                        element = document.createElement('div');
+                        element.innerHTML = str;
+                        element.id = 'template-test';
+                        var divwidth = 700;
+                        var obody = document.getElementById('mainframe');
+                        var xleft = parseInt(obody.offsetWidth) - divwidth;
+                        var x = obody.offsetLeft +(xleft/2);
+                        var y = 20 + document.body.scrollTop;
+                        element.style.left = x+'px';
+                        element.style.top = y+'px';
+                        element.style.width = divwidth + 'px';
+                        document.body.appendChild(element);
+                        overBFrame(element);
+                        /*
+                        var frame = document.createElement('iframe');
+                        frame.id = 'template-viewer';
+                        element.appendChild(frame);
+                        element.focus();
+                        var block = "";
+                                                for(i = 0; i < count; i++)
+                        {
+                            if(link) url = link;
+                            block += "<span class='ctxt_block'>Result:"+i+"";
+                            for(j = 1; j < matches[i].length; j++) 
+                            {
+                                if(j < 10) block += "0"; 
+                                block += j+":<textarea cols=76 rows=1>" 
+                                    +matches[i][j]+"</textarea><br>";    
+                                if(link)
+                                {
+                                    reg = new RegExp("<"+j+">", "ig");
+                                    url = url.replace(reg, matches[i][j]);
+                                }
+                            }
+                            if(url)
+                            {
+                                block += "URL:<input type=text size=48 value='"+url+"'><br>";
+                            }
+                            block += "</span><hr>";
+                        }
+                        frame.contentWindow.document.open();
+                        frame.contentWindow.document.write(block);
+                        frame.contentWindow.document.close();
+                        */
+                    }
+                }
+                return true;
+            }
+            function ShowTemplates(txt)
+            {
+                var arr = null;
+                var ediv = document.getElementById('node-template');
+                if(ediv) ediv.innerHTML = "";
+                if(txt && ediv && (arr = eval(txt)))
+                {
+                    //alert(txt);
+                    var temp = null;
+                    var nodeid = arr['id'];
+                    var tempid = 0;
+                    var flag = 0;
+                    var pattern = "";
+                    var map = null;
+                    var strmap = "";
+                    var tableid = 0;
+                    var nfields = 0;
+                    var url = "";
+                    var link = "";
+                    var linkmap = null;
+                    var strlinkmap = "";
+                    var name = arr['name'];
+                    document.forms['templateform']['nodeid'].value = nodeid;
+                    var htmlstr =  "<ul class='ultab' >";
+                        /*
+                        htmlstr += "<li class='template-header'>";
+                        htmlstr += "&nbsp;&nbsp;&nbsp;&nbsp;";
+                        htmlstr += "输入URL测试模版";
+                        htmlstr += "然后添加到&nbsp;&nbsp;";
+                        htmlstr += name + "[" + arr['ntemplates'] + "]";
+                        htmlstr += "</li>";
+                        */
+                    for(i = 0; i < arr['ntemplates']; i++)
+                    {
+                        temp = arr['templates'][i];
+                        pattern = base64strdecode(temp['pattern']);
+                        flag = temp['flags'];
+                        tempid = temp['id'];
+                        tableid = temp['tableid'];
+                        map = temp['map'];
+                        linkmap = temp['linkmap'];
+                        strmap = "";
+                        if(map.length > 0)
+                        {
+                            strmap = "{[";
+                            for(x in map)
+                            {
+                                strmap += "{fieldid:"+map[x]['fieldid']+ "," 
+                                    +"nodeid:"+map[x]['nodeid']+ "," 
+                                    +"flag:"+map[x]['flag']+ "}";
+                                if(x < (map.length - 1)) strmap += ",";
+                            }
+                            strmap += "]}";
+                        }
+                        strlinkmap = "";
+                        if(linkmap)
+                        {
+                            strlinkmap = "({" 
+                                +"fieldid:'"+linkmap['fieldid']+"'," 
+                                +"nodeid:'"+linkmap['nodeid']+"'," 
+                                +"flag:'"+linkmap['flag']+"'" 
+                                +"})";
+                        }
+                        url = temp['url'];
+                        link = temp['link'];
+                        if(i%2) cssname = 'ltemplate';
+                        else cssname = 'ltemplate-hl';
+                        nfields = temp['nfields']+1;
+                        htmlstr += "<form action='javascript:void(0)' class='listform' ";
+                        htmlstr += " name='xform"+tempid+"' onsubmit='XTEdit(this)'>";
+                        htmlstr += "<li class='"+cssname+"' >";
+                        htmlstr += "<textarea name='pattern' cols=80 rows=1 readonly/disabled >" 
+                            +pattern+"</textarea>&nbsp;&nbsp;&nbsp;&nbsp;";
+                        htmlstr += "<input type=hidden name='nodeid' value='"+nodeid+"'>";
+                        htmlstr += "<input type=hidden name='templateid' value='"+tempid+"'>";
+                        htmlstr += "<input type=hidden name='flag' value='"+flag+"'>";
+                        htmlstr += "<input type=hidden name='tableid' value='"+tableid+"'>";
+                        htmlstr += "<input type=hidden name='nfields' value='"+nfields+"'>";
+                        htmlstr += "<input type=hidden name='map' value='"+strmap+"'>";
+                        htmlstr += "<input type=hidden name='link' value='"+link+"'>";
+                        htmlstr += "<input type=hidden name='linkmap' value=\""+strlinkmap+"\">";
+                        htmlstr += "<input type=hidden name='url' value='"+url+"'>";
+                        htmlstr += "<span class='eupdate' title='Change' ";
+                        htmlstr += "onclick=\"XTEdit('xform"+tempid+"')\" >"+chredit+"</span>";
+                        htmlstr += "&nbsp;&nbsp;&nbsp;&nbsp;";
+                        htmlstr += "<span class='edelete' title='Delete' ";
+                        htmlstr += "onclick='XTDelete("+nodeid+", "+tempid+")'>"+chrdel+"</span>";
+                        htmlstr += "</li>";
+                        htmlstr += "</form>";
+                    }
+                    htmlstr += "</ul>";
+                    ediv.innerHTML = htmlstr;
+                }
+            }
+            function ViewTemplates(nodeid)
+            {
+                var oldnodeid = document.forms['templateform']['nodeid'].value;
+                if(oldnodeid != nodeid)
+                {
+                    HiddenTemplate();
+                }
+                Fold(document.getElementById('fold_'+nodeid));
+                var xmlHttp = null;
+                if(nodeid > 0 && (xmlHttp = CreateXMLHTTP()) != null)
+                {
+                    var argv = "op=template_list&nodeid="+nodeid;
+                    xmlHttp.open('POST', '/template', true);
+                    xmlHttp.setRequestHeader("Content-Length", argv.length);
+                    xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    xmlHttp.onreadystatechange=function()
+                    {
+                        if(xmlHttp.readyState==4)
+                        {
+                            if(xmlHttp.status == 200)
+                            {
+                                //alert(xmlHttp.responseText);
+                                ShowTemplates(xmlHttp.responseText);
+                                XTAdd(nodeid);
+                            }
+                        }
+                    }
+                    xmlHttp.send(argv);
+                }
+                return true;
+            }
+            //edit Link
+            function EditLink(form)
+            {
+                var link = "";
+                if(form && (link = form['link'].value))
+                {
+                    var op = form['op'].value;
+                    var nodeid = form['nodeid'].value;
+                    var tableid = form['link_table'].value;
+                    var templateid = form['templateid'].value;
+                    var pattern = form['pattern'].value;
+                    var link = form['link'].value;
+                    var url = form['url'].value;
+                    var flag = 8;
+                    if(form['is_sub'].checked == true) flag |= 1;
+                    if(form['is_global'].checked == true) flag |= 2;
+                    if(form['is_ignorecase'].checked == true) flag |= 4;
+                    if(form['method'].value == 1) flag |= 16;
+                    var link_flag = 0;
+                    if(form['link_method'][1].checked == true) link_flag |= 16;
+                    if(form['link_list'].checked == true) link_flag |= 64;
+                    var linkmap = "[" + form['link_field'].value + ','
+                        + form['link_node'].value + ','
+                        + link_flag + ']';
+                    //alert(linkmap);
+                    var xmlHttp = null;
+                    var argv = "nodeid="+nodeid+"&tableid="+tableid+"&flag="+flag
+                        +"&linkmap="+encodeURIComponent(linkmap)
+                        +"&link="+encodeURIComponent(link)
+                        +"&pattern="+encodeURIComponent(pattern);
+                    if(url) argv += "&url="+encodeURIComponent(url);
+                    if(op == 'template_add')
+                    {
+                        argv += "&op=template_add";
+                    }
+                    else if(op == 'template_update')
+                    {
+                        argv += "&op=template_update&templateid="+templateid;
+                    }
+                    else return false;
+                    if(argv && (xmlHttp = CreateXMLHTTP()) != null)
+                    {
+                        //alert(argv);
+                        xmlHttp.open('POST', '/editlink', true);
+                        xmlHttp.setRequestHeader("Content-Length", argv.length);
+                        xmlHttp.setRequestHeader("Content-Type", 
+                            "application/x-www-form-urlencoded");
+                        xmlHttp.onreadystatechange=function()
+                        {
+                            if(xmlHttp.readyState==4)
+                            {
+                                if(xmlHttp.status == 200)
+                                {
+                                    if(op == 'template_add') ResetTemplateform();
+                                    else HiddenTemplate();
+                                    ShowTemplates(xmlHttp.responseText);
+                                }
+                            }
+                        }
+                        xmlHttp.send(argv);
+                    }
+                }
+                return true;
+            }
+
+            //edit template
+            function EditTemplate(form, element)
+            {
+                var op = form['op'].value;
+                var nodeid = form['nodeid'].value;
+                var templateid = form['templateid'].value;
+                var tableid = form['tableid'].value;
+                var pattern = form['pattern'].value;
+                var url = form['url'].value;
+                var method = form['method'].value;
+                var flag = 0;
+                if(form['is_sub'].checked == true) flag |= 1;
+                if(form['is_global'].checked == true) flag |= 2;
+                if(form['is_ignorecase'].checked == true) flag |= 4;
+                if(method == 1) flag |= 16;
+                var nfields = form['nfields'].value;
+                var fieldid = null;
+                var is_link = 0;
+                var is_url = 0;
+                var is_multiple = 0;
+                var is_file = 0;
+                var is_need_clearhtml = 0;
+                var is_need_antispam = 0;
+                var child_nodeid = 0;
+                var child_flag = 0;
+                var map = "{";
+                for(i = 1; i < nfields; i++)
+                {
+                    fieldid =  form['fieldid_'+i].value;
+                    node_flag = 0;
+                    node_id = -1;
+                    if(form['is_link_'+i].checked == true) 
+                    {
+                        node_flag |= 1;
+                        if(form['is_uniqe_'+i].checked == true)
+                            node_flag |= 32;
+                        if(form['is_file_'+i].checked == true) 
+                            node_flag |= 2;
+                        if(form['is_list_'+i].checked == true)
+                            node_flag |= 64;
+                        if(form['is_page_'+i].checked == true)
+                            node_flag |= 256;
+                        node_id = form['nodeid_'+i].value;
+                    }
+                    if(form['is_multiple_'+i].checked == true) 
+                        node_flag |= 1024;
+                    if(form['is_url_'+i].checked == true) 
+                        node_flag |= 128;
+                    if(form['is_datetime_'+i].checked == true) 
+                        node_flag |= 512;
+                    if(form['is_need_clearhtml_'+i].checked == true) 
+                        node_flag |= 4;
+                    if(form['is_need_antispam_'+i].checked == true) 
+                        node_flag |= 8;
+                    map += "["+fieldid+","+node_id+","+node_flag+"]";
+                    if(i < (nfields - 1)) map += ";";
+                }
+                map += "}";
+                var xmlHttp = null;
+                var argv = "nodeid="+nodeid+"&tableid="+tableid+"&flag=" 
+                    +flag+"&map="+encodeURIComponent(map)
+                    +"&pattern="+encodeURIComponent(pattern);
+                if(url) argv += "&url="+encodeURIComponent(url);
+                if(op == 'template_add')
+                {
+                    argv += "&op=template_add";
+                }
+                else if(op == 'template_update')
+                {
+                    argv += "&op=template_update&templateid="+templateid;
+                }
+                else return false;
+                //alert(argv);
+                if(argv && (xmlHttp = CreateXMLHTTP()) != null)
+                {
+                    //alert(argv);
+                    xmlHttp.open('POST', '/edittemp', true);
+                    xmlHttp.setRequestHeader("Content-Length", argv.length);
+                    xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    xmlHttp.onreadystatechange=function()
+                    {
+                        if(xmlHttp.readyState==4)
+                        {
+                            if(xmlHttp.status == 200)
+                            {
+                                //alert(xmlHttp.responseText);
+                                divremove(element);
+                                if(op == 'template_add') 
+                                    ResetTemplateform();
+                                else 
+                                    HiddenTemplate();
+                                ShowTemplates(xmlHttp.responseText);
+                            }
+                        }
+                    }
+                    xmlHttp.send(argv);
+                }
+                return true;
+            }
+            //database
+            function selectView(div, e)
+            {
+                var elist = new Array('taskinfo','database', 'template', 
+                    'urlblock', 'dns', 'proxy', 'httpx', 'data', 'user');
+                e = e || window.event;
+                var element = e.target || e.srcElement;
+                var oli = null, ob = null, odiv = null;
+                hideBFrame();
+                for(i = 0; i < elist.length; i++)
+                {
+                    if((oli = document.getElementById('tab'+i)))
+                    {
+                        if(oli == element)
+                            oli.className = 'tab-selected';
+                        else 
+                            oli.className = '';
+                    }
+                    if(div == elist[i])
+                    {
+                        ob = document.getElementById(elist[i]);
+                        ob.style.display = 'inline';
+                    }
+                    else
+                    {
+                        odiv = document.getElementById(elist[i]);
+                        odiv.style.display = 'none';
+                        if(elist[i] == 'taskinfo') 
+                        {
+                            if(oTimer) window.clearInterval(oTimer);
+                            oTimer = null;
+                        }
+                        else if(elist[i] == 'database')
+                        {
+                            var divform = document.getElementById('dbform');
+                            if(divform) divform.style.display = 'none';
+                            if((divform = document.getElementById('dbfieldform')))
+                                divform.style.display = 'none';
+                        }
+                        else if(elist[i] == 'template')
+                        {
+                            var divform = document.getElementById('txtform');
+                            if(divform) divform.style.display = 'none';
+                            if((divform = document.getElementById('template-test'))) 
+                                divform.style.display = 'none';
+                            if((divform = document.getElementById('template-config'))) 
+                                divform.style.display = 'none';
+                        }
+                        else if(elist[i] == 'urlblock')
+                        {
+                            var divform =  document.getElementById('urllist-form');
+                            if(divform) divform.style.display = 'none';
+                            if((divform = document.getElementById('record-view'))) 
+                                divform.style.display = 'none';
+                        }
+                    }
+                }
+                if(div == 'taskinfo')
+                {
+                    //alert('OK');
+                    loadTaskInfo();
+                }
+                else if(div == 'database')
+                {
+                    var odb = document.getElementById('dbselect');
+                    if(odb.innerHTML == '')
+                    {
+                        ListTables();
+                    }
+                }
+                else if(div == 'template')
+                {
+                    var treebody = document.getElementById('treebody');
+                    if(treebody.innerHTML == '')
+                    {
+                        AddNode(-1,0,"Root",0);
+                        Fold(document.getElementById('fold_0'));
+                    }
+                }
+                else if(div == 'urlblock')
+                {
+                    var urlblock = document.getElementById('urlblock');
+                    if(urlblock)
+                    {
+                        urlblock.style.display = 'inline';
+                        var urllist = document.getElementById('url-list');
+                        if(urllist.innerHTML == '')
+                        {
+                            //var form = document.forms['urlblockform'];
+                            ListPNodes(0);
+                        }
+                    }
+                }
+                else if(div == 'data')
+                {
+
+                }
+                else if(div == 'dns')
+                //&& ob.innerHTML == '')
+                {
+                    ResetDNSList();
+                    ListDNS();
+                }
+                else if(div == 'proxy')
+                //&& ob.innerHTML == '')
+                {
+                    ResetProxyList();
+                    ListProxy();
+                }
+                else if(div == 'httpx')
+                {
+                    ResetHttpHeaders();
+                    GetHttpHeaders();
+                }
+                else if(div == 'user')
+                {
+
+                }
+            }
+            function loadTaskInfo()
+            {
+                ViewTask('task_view');
+                oTimer = window.setInterval("ViewTask('task_view')", 10000);
+            }
+            function GetContent(url)
+            {
+                var xmlHttp = null;
+                if(argv && (xmlHttp = CreateXMLHTTP()) != null)
+                {
+                    xmlHttp.open('GET', url, true);
+                    //xmlHttp.setRequestHeader("Content-Length", argv.length);
+                    //xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    xmlHttp.onreadystatechange=function()
+                    {
+                        if(xmlHttp.readyState==4)
+                        {
+                            if(xmlHttp.status == 200)
+                            {
+                                alert(xmlHttp.responseText);
+                            }
+                        }
+                    }
+                    xmlHttp.send(null);
+                }
+                return HiddenDBFieldform();
+            }
+	        function getFrameDocument(id)
+	        {
+	            var iframe = document.getElementById(id);
+	            var Doc = null;
+	            if(iframe)
+	            {
+                    var browser = navigator.appName;
+                    var version = navigator.appVersion;
+                    if(version.match(/MSIE/i) && iframe.contentWindow) //IE
+	                {
+	                    Doc = iframe.contentWindow.document;
+	                }
+	                else if(iframe.contentDocument) // For NS6
+	                {
+	                    Doc = iframe.contentDocument;
+	                }
+	                else if(iframe.document)
+	                {
+	                    Doc = iframe.document;
+	                }
+                    else return null;
+	                if(Doc)
+	                {
+	                    if(Doc.designMode) Doc.designMode = 'On';
+	                    if(Doc.contentEditable) Doc.contentEditable = true;
+	                }
+	            }
+	            return Doc;
+	        }
+	        function getSelectContent(id)
+	        {
+	            var Doc = getFrameDocument(id);
+	            if(Doc)
+	            {
+                    if(Doc.getSelection)
+                    {
+	                    alert(Doc.getSelection().parentNode.innerHTML);
+                    }
+                    else if(Doc.selection)
+                    {
+                        alert(Doc.selection.parentNode.innerHTML);
+                    }
+	            }
+	        }
+            function ViewSelect(e)
+            {
+                e = e || window.event;
+                var element = e.target || e.srcElement;
+                if(element.innerHTML)
+                {
+                    alert(element.parentNode.innerHTML);
+                }
+            }
+            function LoadLinkOptions()
+            {
+                var nodeid = -1;
+                var tableid = -1;
+                var flag = 0;
+                var odiv = null;
+                var linkmap = null;
+                var oselect = null;
+                var dbase = null;
+                var form = document.forms['templateform'];
+                if(form && (nodeid = form['nodeid'].value) > 0 )
+                {
+                    if(form['linkmap'].value) linkmap = eval(form['linkmap'].value);
+                    flag = form['flag'].value;
+                    tableid = form['tableid'].value;
+                    if((odiv = document.getElementById('database'))
+                        && (strdb = odiv.getAttribute('dbase')) 
+                        && (dbase = eval(strdb)))
+                    {
+                        var table = null;
+                        oselect = form['link_table'];
+                        oselect.options.length = 1;
+                        i = 1;
+                        for(x in dbase['tables'])
+                        {
+                            table = dbase['tables'][x];
+                            oselect.options[i] = new Option(table['name'], x);
+                            if(linkmap && x == tableid)
+                            {
+                                oselect.options[i].selected = true;
+                            }
+                            ++i;
+                        }
+                        if(linkmap && tableid  >= 0)
+                        {
+                            var fields = dbase['tables'][tableid]['fields'];
+                            oselect = form['link_field'];
+                            oselect.options.length = 1;
+                            i = 1;
+                            for(x in fields)
+                            {
+                                oselect.options[i] = new Option(fields[x]['name'], x);
+                                if(linkmap && flag >= 0 && (flag & 8) && x == linkmap['fieldid'])
+                                {
+                                    oselect.options[i].selected = true;
+                                }
+                                ++i;
+                            }
+                        }
+                    }
+                    var strchilds = "";
+                    var childs = null;
+                    if(nodeid > 0 && (odiv = document.getElementById('node'+nodeid))
+                        && (strchilds = odiv.getAttribute('childs')) 
+                        && (childs = eval(strchilds)) )
+                    {
+                        //alert(strchilds);
+                        //alert(form['linkmap'].value);
+                        oselect = form['link_node'];
+                        oselect.options.length = 1;
+                        if(childs)
+                        {
+                            i = 1;
+                            for(x in childs)
+                            {
+                                oselect.options[i] = new Option(childs[x], x); 
+                                if(linkmap && x == linkmap['nodeid'])
+                                {
+                                    oselect.options[i].selected = true;
+                                }
+                                ++i;
+                            }
+                        }
+                        //alert(strchilds);
+                    }
+                }
+            }
+		    function LoadURL(form)
+		    {
+		        var url = form['url'].value;
+		        if(url)
+		        {
+		            var xmlHttp = null;
+		            if((xmlHttp = CreateXMLHTTP()) != null)
+		            {
+		                var requestURL = '/proxy/'+url;
+                        var argv = null;
+                        var method = 0;
+                        if(form['method'][1].checked == true)
+                        {
+                            var pos = 0;
+                            method = 1;
+                            if((pos = url.indexOf('?')) >= 0)
+                            {
+                                requestURL = '/proxy/'+url.substring(0, pos-1);
+                                argv = url.substring(pos + 1);
+                            }
+                            else
+                            {
+                                requestURL = '/proxy/'+url;
+                                argv = "";
+                            }
+		                    xmlHttp.open('POST', requestURL, true);
+                            xmlHttp.setRequestHeader("Content-Length", argv.length);
+                            xmlHttp.setRequestHeader("Content-Type", 
+                                "application/x-www-form-urlencoded");
+                        }
+                        else
+                        {
+		                    requestURL = '/proxy/'+url;
+		                    xmlHttp.open('GET', requestURL, true);
+                            argv = null;
+                        }
+		                xmlHttp.onreadystatechange=function()
+		                {
+		                    if(xmlHttp.readyState==4)
+		                    {
+		                        if(xmlHttp.status == 200)
+		                        {
+		                            var str = xmlHttp.responseText;
+                                    var ediv = null;
+                                    if((ediv = document.getElementById('source_code_op'))) 
+                                        ediv.style.display = "inline";
+		                            var element = document.getElementById('source_view');
+		                            if(element) element.innerHTML = "";
+		                            if((ediv = document.getElementById('templatediv'))) 
+                                    {
+                                        ediv.style.display = "inline";
+		                                document.forms['templateform']['code'].value = str;
+		                                document.forms['templateform']['url'].value = url;
+		                                document.forms['templateform']['method'].value = method;
+                                    }
+                                    var frame = document.createElement("iframe");
+		                                frame.setAttribute("id", 'editor-frame');
+		                                frame.setAttribute("src", 'about:blank');
+		                                element.appendChild(frame);
+		                            var doc = null;
+                                    if((doc = getFrameDocument('editor-frame')))
+		                            {
+                                        var htmlstr = str;
+                                        if(str.match(/<base .*?href=.*?>/i) == null)
+                                        {
+                                            var baseurl = url;
+                                            var post = 0;
+                                            if((pos = url.lastIndexOf('/')) > 6)
+                                            {
+                                                baseurl = url.substring(0, pos+1);
+                                            }
+                                            var basehref = "<head><base href='"+baseurl+"'>";
+                                            htmlstr = str.replace(/<head>/i, basehref);
+                                        }
+		                                doc.open();
+		                                doc.write(htmlstr);
+		                                doc.close();
+                                    }
+                                    ViewDatabase();
+		                        }
+                                else
+                                {
+		                            document.forms['templateform']['code'].value 
+                                        = xmlHttp.getAllResponseHeaders();
+                                }
+		                    }
+                            over_wait();
+		                }
+		                xmlHttp.send(argv);
+                        start_wait();
+		            }
+		        }
+		    }
+            function ResetDiv(id)
+            {
+                var div = document.getElementById(id);
+                if(div) div.innerHTML = '';
+            }
+            function ResetURLList()
+            {
+                var form = document.forms['urlblockform'];
+                if(form)
+                {
+                    ResetDiv('url-list');
+                    //form['level'].options[0].selected = true;
+                    form['url'].focus();
+                    form['url'].value = 'http://';
+                    form['url'].select();
+                }
+            }
+            function ListPNodes(nodeid)
+            {
+                var form = document.forms['urlblockform'];
+                if(form && nodeid >= 0)
+                {
+                    var argv = "";
+                    if(nodeid > 0)
+                        argv = "op=node_brother&nodeid="+nodeid;
+                    else 
+                        argv = "op=node_childs&nodeid="+nodeid;
+                    //alert(argv);
+                    var xmlHttp = null;
+                    if(argv && (xmlHttp = CreateXMLHTTP()) != null)
+                    {
+                        xmlHttp.open('POST', '/nodelist', true);
+                        xmlHttp.setRequestHeader("Content-Length", argv.length);
+                        xmlHttp.setRequestHeader("Content-Type", 
+                        "application/x-www-form-urlencoded");
+                        xmlHttp.onreadystatechange=function()
+                        {
+                            if(xmlHttp.readyState==4)
+                            {
+                                if(xmlHttp.status == 200)
+                                {
+                                    //ResetURLList(); 
+                                    //alert(xmlHttp.responseText);
+                                    var tnode = eval(xmlHttp.responseText);
+                                    var oselect = form['nodeid'];
+                                    if(oselect)
+                                    {
+                                        oselect.options.length = 1;
+                                        var i = 0, x = 1, tid = 0;
+                                        var tname = "..";
+                                        if(tnode['id'] > 0)
+                                            oselect.options[x++]=new Option(tname, tnode['id']);
+                                        for(i = 0; i < tnode['nchilds']; i++)
+                                        {
+                                            tid = tnode['childs'][i]['id'];
+                                            tname = tnode['childs'][i]['name'];
+                                            if(nodeid == tid)
+                                                oselect.options[x] = new Option(tname, tid, true);
+                                            else
+                                                oselect.options[x] = new Option(tname, tid);
+                                            ++x;
+                                        }
+                                    }
+                                }   
+                            }
+                        }
+                        xmlHttp.send(argv);
+                    }
+                }
+                return true;
+            }
+            function moveChildNodes(form, nodeid)
+            {
+                var olist = null;
+                var ochilds = null;
+                if(form && (olist = form['nodeid']) && (ochilds = form['childs']))
+                {
+                    olist.options.length = 1;
+                    x = 1;
+                    for(i = 1; i < ochilds.options.length; i++)
+                    {
+                        tname = ochilds.options[i].text;
+                        tid = ochilds.options[i].value;
+                        if(tid > 0)
+                        {
+                            if(tname == '*') tname = '..';
+                            if(nodeid == tid)
+                            {
+                                olist.options[x++] = new Option(tname, tid, true);
+                            }
+                            else 
+                            {
+                                olist.options[x++] = new Option(tname, tid);
+                            }
+                        }
+                    }
+                    ochilds.options.length = 1;
+                }
+            }
+            function ListNodeURLs(form, oname)
+            {
+                var nodeid = -1;
+                var level = -1;
+                var oselect = null;
+                var index = 0;
+                var otext = null;
+                if(form && (oselect = form[oname]) && (index = oselect.selectedIndex) > 0 
+                    && (nodeid = oselect.options[index].value) >= 0) 
+                {
+                    //if(oname == 'childs') moveChildNodes(form, nodeid);
+                    //level = form['level'].value;
+                    form['method'].options[1].selected = true;
+                    form['level'].options[2].selected = true;
+                    ResetURLList();
+                    return ListURLs('list', nodeid, level, 1);
+                }
+            }
+            function ViewChildsURL(urlnodeid, level, page)
+            {
+                var xmlHttp = null; 
+                if(urlnodeid >= 0 && (xmlHttp = CreateXMLHTTP()) != null)
+                {
+                    ResetURLList();
+                    var argv = "op=urlnode_childs&urlnodeid="+urlnodeid+"&page="+page;
+                    if(level >= 0) argv += "&level="+level;
+                    xmlHttp.open('POST', '/viewchilds', true);
+                    xmlHttp.setRequestHeader("Content-Length", argv.length);
+                    xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    xmlHttp.onreadystatechange=function()
+                    {
+                        if(xmlHttp.readyState==4)
+                        {
+                            if(xmlHttp.status == 200)
+                            {
+                                //alert(xmlHttp.responseText);
+                                ShowNodeURLs(xmlHttp.responseText, page);
+                            }
+                        }
+                    }
+                    xmlHttp.send(argv);
+                }
+            }
+            
+            function ListURLs(type, nodeid, level, page)
+            {
+                var xmlHttp = null; 
+                if(nodeid >= 0 && (xmlHttp = CreateXMLHTTP()) != null)
+                {
+                    ResetURLList();
+                    var argv = "";
+                    if(type == 'list')
+                    {
+                        argv = "op=urlnode_list&nodeid="+nodeid;
+                    }
+                    else
+                    {
+                        argv = "op=urlnode_childs&urlnodeid="+nodeid;
+                    }
+                    argv += "&page="+page;
+                    //if(level >= 0) argv += "&level="+level;
+                    xmlHttp.open('POST', '/urlnode', true);
+                    xmlHttp.setRequestHeader("Content-Length", argv.length);
+                    xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    xmlHttp.onreadystatechange=function()
+                    {
+                        if(xmlHttp.readyState==4)
+                        {
+                            if(xmlHttp.status == 200)
+                            {
+                                //alert(xmlHttp.responseText);
+                                ShowNodeURLs(xmlHttp.responseText, page);
+                            }
+                        }
+                    }
+                    xmlHttp.send(argv);
+                }
+            }
+            function ShowRecord(txt)
+            {
+                var res = null;
+                var fields = null;
+                var x = 0;
+                if(txt && (res = eval(txt)) != null && (fields = res['fields'])) 
+                {
+                    var str = "<div id='record-header' ";
+                        str += "onmousedown='divmove(event, this)'>";
+                        str += "<table width=100%><tr><td align=left>";
+                        str += "<span class='closetxt' onclick='CloseThisTip(this)'>关闭</span>";
+                        str += "</td><td align=right>";
+                        str += "<span class='closebutton' onclick='CloseThisTip(this)'>╳</span>";
+                        str += "</td></tr></table>";
+                        str += "</div>";
+                        str += "<div id='record-res' >";
+                    for(x in fields)
+                    {
+                        str += "<div class='record-title'>"+x+"</div>";
+                        str += "<div class='record-txt'>"
+                        str += "<textarea cols=90 rows=4 >"+base64strdecode(fields[x])
+                        +"</textarea>";    
+                        str += "</div>";
+                    }
+                    str += "</div>";
+                    var element = null;
+                    if((element = document.getElementById('record-view')))
+                    {
+                        document.body.removeChild(element);
+                    }
+                    element = document.createElement('div');
+                    element.innerHTML = str;
+                    element.id = 'record-view';
+                    var divwidth = 680;
+                    var obody = document.getElementById('mainframe');
+                    var xleft = parseInt(obody.offsetWidth) - divwidth;
+                    var x = obody.offsetLeft +(xleft/2);
+                    var y = 20 + document.body.scrollTop;
+                    element.style.left = x+'px';
+                    element.style.top = y+'px';
+                    element.style.width = divwidth + 'px';
+                    document.body.appendChild(element);
+                    element.style.display = 'inline';
+                    overBFrame(element);
+                }
+            }
+            function ViewRecord(urlid)
+            {
+                var xmlHttp = null; 
+                if(urlid > 0 && (xmlHttp = CreateXMLHTTP()) != null)
+                {
+                    var argv = "op=record_view&urlnodeid="+urlid;
+                    xmlHttp.open('POST', '/record', true);
+                    xmlHttp.setRequestHeader("Content-Length", argv.length);
+                    xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    xmlHttp.onreadystatechange=function()
+                    {
+                        if(xmlHttp.readyState==4)
+                        {
+                            if(xmlHttp.status == 200)
+                            {
+                                //alert(xmlHttp.responseText);
+                                ShowRecord(xmlHttp.responseText);
+                            }
+                        }
+                    }
+                    xmlHttp.send(argv);
+                }
+            }
+            /* Show Node URLs */
+            function ShowNodeURLs(txt, page)
+            {
+                var form = document.forms['urlblockform'];
+                var urllist = null;
+                if(txt && form && (urllist = eval(txt)) != null)
+                {
+                    ResetURLList(); 
+                    var urlitem = null;
+                    var tname = "";
+                    var nchilds = 0;
+                    var urlnodeid = -1;
+                    var recordid = -1;
+                    var i = 0, x = 1;
+                    var htmlstr = "<ul class='url-ul'>";
+                    var from = 0, to = 0;
+                    var phtmlstr = "";
+                    var level = 0;
+                    var url = "";
+                    var listtype = "";
+                    var ppid = 0;
+                    var type = "childs";
+                    urlnodeid = urllist['id'];
+                    from = parseInt(page) - 10;
+                    if(from < 1) from = 1;
+                    to = from + 20;
+                    if(to > urllist['pages']) to = parseInt(urllist['pages']) + 1;
+                    phtmlstr += "<li class='urlli-header'> ";
+                    if((ppid = urllist['parent']) >= 0) 
+                    {
+                        if(ppid == 0) 
+                        {
+                            listtype = "list";
+                            ppid = urllist['ppnode'];
+                        }
+                        else
+                        {
+                            listtype = type;
+                        }
+                        phtmlstr += "[<a href='javascript:;' class='eadd' onclick=\"ListURLs('"
+                            +listtype+"',"+ppid+", "+level+", 1);\">上一层</a>]&nbsp;&nbsp;";
+                    }
+                    phtmlstr += "URL总数："+urllist['nchilds'];
+                    if(urllist['pages'] > 1)
+                    {
+                        phtmlstr += " 共"+urllist['pages']+"页";
+                        phtmlstr += "&nbsp;&nbsp;&nbsp;&nbsp;";
+                        if(from > 20)
+                        {
+                            phtmlstr += "<a class='url-li-page' href='javascript:;' ";
+                            phtmlstr += " onclick=\"ListURLs('"+type+"', "+id+",'"
+                                +level+"','1');\">1</a>";
+                            phtmlstr += "&nbsp;&nbsp;...";
+                        }
+                        for(i = from; i < to; i++)
+                        {
+                            phtmlstr += "&nbsp;&nbsp;&nbsp;&nbsp;";
+                            if(i == page) phtmlstr += i;
+                            else 
+                            {
+                                phtmlstr += "<a class='url-li-page' href='javascript:;' ";
+                                phtmlstr += "onclick=\"ListURLs('"+type+"', "+urlnodeid+",'"
+                                    +level+"','"+i+"');\">"+i+"</a>";
+                            }
+                        }
+                        if(to < (urllist['pages'] - 20))
+                        {
+                            i = urllist['pages'];
+                            phtmlstr += "&nbsp;&nbsp;&nbsp;&nbsp;...&nbsp;&nbsp;";
+                            phtmlstr += "<a class='url-li-page' href='javascript:;' ";
+                            phtmlstr += "onclick=\"ListURLs('"+type+"', "+urlnodeid +",'"
+                                +level+"','"+i+"');\">"+i+"</a>";
+                        }
+                    }
+                    phtmlstr += "</li>";
+                    if(phtmlstr != "")htmlstr += phtmlstr + "<hr>";
+                    //alert(phtmlstr);
+                    i = 0;
+                    for(x in urllist['childs'])
+                    {
+                        i++;
+                        urlitem = urllist['childs'][x];
+                        nodeid = urlitem['nodeid'];
+                        //urlid = urlitem['urlid'];
+                        level = urlitem['level'];
+                        urlnodeid = urlitem['id'];
+                        //recordid = urlitem['recordid'];
+                        nchilds = urlitem['nchilds'];
+                        url = urlitem['url'];
+                        css = 'url-li';
+                        if(urlitem['status'] < 0) css = 'url-li-warn';
+                        htmlstr += "<li class='"+css+"' onmouseout=\"outDiv(this,'"+css+"')\" ";
+                        htmlstr += " onmousemove=\"onDiv(this, 'url-li-selected')\" >";
+                        htmlstr += i+":&nbsp;&nbsp;";
+                        htmlstr += "<a href='"+url+"' target='_blank'>"+url+"</a>";
+                        htmlstr += "&nbsp;&nbsp;";
+                        if(nchilds > 0)
+                        {
+                            htmlstr += "[<span class='eview' "
+                            htmlstr += " onclick=\"ViewChildsURL("+urlnodeid+",0,1)\">";
+                            htmlstr += nchilds+"</span>]";
+                        }
+                        htmlstr += "&nbsp;&nbsp;&nbsp;&nbsp;";
+                        htmlstr += "&nbsp;&nbsp;&nbsp;";
+                        htmlstr += "<span class='eview' title='View' ";
+                        htmlstr += "onclick=\"ViewRecord("+urlnodeid+")\">"+chrview+"</span>";
+                        htmlstr += "&nbsp;&nbsp;&nbsp;";
+                        htmlstr += "<span class='edelete' title='Delete' ";
+                        htmlstr += "onclick=\"DeleteNodeURL("+nodeid+", "+urlnodeid+",";
+                        htmlstr += "'"+url+"','"+page+"')\">"+chrdel+"</span>";
+                        htmlstr += "</li>";
+                    }
+                    if(urllist['pages'] > 1) htmlstr += "<hr>";
+                    if(phtmlstr != "")htmlstr += phtmlstr;
+                    htmlstr += "</ul>";
+                    var div = document.getElementById('url-list');
+                    if(div) div.innerHTML = htmlstr;
+                }
+                return true;
+            }
+            function HiddenURLListForm()
+            {
+                var div = document.getElementById('urllist-form');
+                if(div) div.style.display = 'none';
+                hideBFrame();
+            }
+            function AddNodeURL(form)
+            {
+                var nodeid = -1;
+                var parentid = -1;
+                var level = -1;
+                var xmlHttp = null; 
+                if(form && (nodeid = form['nodeid'].value) > 0 
+                    && (url = form['url'].value) && url != "http://"
+                    && (xmlHttp = CreateXMLHTTP()) != null)
+                {
+                    var argv = "op=urlnode_add&nodeid="+nodeid;
+                        argv += "&url="+encodeURIComponent(url);
+                    if((parentid = form['parentid'].value) >= 0)
+                        argv += "&parentid="+parentid;
+                    if((level = form['level'].value) >= 0)
+                        argv += "&level="+level;
+                    xmlHttp.open('POST', '/addnodeurl', true);
+                    xmlHttp.setRequestHeader("Content-Length", argv.length);
+                    xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    xmlHttp.onreadystatechange=function()
+                    {
+                        if(xmlHttp.readyState==4)
+                        {
+                            if(xmlHttp.status == 200)
+                            {
+                                //alert(argv);
+                                //alert(xmlHttp.responseText);
+                                ShowNodeURLs(xmlHttp.responseText, 1);
+                            }
+                        }
+                    }
+                    xmlHttp.send(argv);
+                    return HiddenURLListForm();
+                }
+                return true;
+            }
+            function XAddNodeURL(e, parentid)
+            {
+                e = e || window.event;
+                var element = e.target || e.srcElement;
+                var Xdiv =  document.getElementById("urllist-form");
+                var x = e.clientX + document.body.scrollLeft;
+                var y = e.clientY + document.body.scrollTop;
+                Xdiv.style.left = x;
+                Xdiv.style.top = y + 10;
+                Xdiv.style.display = 'inline';
+                var form = document.forms["urllist-add-form"];
+                form['parentid'].value = parentid;
+                form['url'].focus();
+                form['url'].value = 'http://';
+                form['url'].select();
+                overBFrame(Xdiv);
+            }
+
+            function UpdateNodeURL(urlid, oselect, page)
+            {
+                var xmlHttp = null; 
+                var index = (oselect) ? oselect.selectedIndex : 0;
+                var level = (index >= 0) ? oselect.options[index].value : -1;
+                var text = (index >= 0)? oselect.options[index].text : "";
+                if(urlid > 0 && level >= 0
+                    && confirm("您确认修改优先级为["+text+"]?")
+                    &&(xmlHttp = CreateXMLHTTP()) != null)
+                {
+                    var argv = "op=urlnode_update&urlnodeid=" 
+                        +urlnodeid+"&level="+level;
+                    xmlHttp.open('POST', '/upnodeurl', true);
+                    xmlHttp.setRequestHeader("Content-Length", argv.length);
+                    xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    xmlHttp.onreadystatechange=function()
+                    {
+                        if(xmlHttp.readyState==4)
+                        {
+                            if(xmlHttp.status == 200)
+                            {
+                                ShowNodeURLs(xmlHttp.responseText, page);
+                            }
+                        }
+                    }
+                    xmlHttp.send(argv);
+                }
+                return true;
+            }
+            function DeleteNodeURL(nodeid, urlnodeid, url, page)
+            {
+                var xmlHttp = null; 
+                if(nodeid > 0 && urlnodeid > 0 
+                    && confirm("您确认删除URL["+url+"] ?")
+                    &&(xmlHttp = CreateXMLHTTP()) != null)
+                {
+                    var argv = "op=urlnode_delete&nodeid="+nodeid+"&urlnodeid="+urlnodeid;
+                    xmlHttp.open('POST', '/nodeurl', true);
+                    xmlHttp.setRequestHeader("Content-Length", argv.length);
+                    xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    xmlHttp.onreadystatechange=function()
+                    {
+                        if(xmlHttp.readyState==4)
+                        {
+                            if(xmlHttp.status == 200)
+                            {
+                                ShowNodeURLs(xmlHttp.responseText, page);
+                            }
+                        }
+                    }
+                    xmlHttp.send(argv);
+                    ResetDiv('url-list');
+                }
+                return true;
+            }
+            function ResetDNSList()
+            {
+                var form = document.forms['dns-add-form'];
+                if(form)
+                {
+                    form['host'].focus();
+                    form['host'].value = '';
+                }
+            }
+            function ShowDNS(txt)
+            {
+                var div = document.getElementById('dns-list');
+                var objdnslist = null;
+                var dnslist = null;
+                if(txt && div && (objdnslist = eval(txt)) != null 
+                    && (dnslist = objdnslist['dnslist']))
+                {
+                    ResetDNSList(); 
+                    var hostid = -1;
+                    var host = "";
+                    var status = -1;
+                    var htmlstr = "<ul class='dns-ul'>";
+                    for(x in dnslist)
+                    {
+                        hostid = x;
+                        host =  dnslist[x]['host'];
+                        status = dnslist[x]['status'];
+                        htmlstr += "<li class='dns-li' onmouseout=\"outDiv(this, 'dns-li')\" ";
+                        htmlstr += " onmousemove=\"onDiv(this, 'dns-li-selected')\" >";
+                        htmlstr += host;
+                        htmlstr += "&nbsp;&nbsp;&nbsp;&nbsp;";
+                        if(status > 0) htmlstr += "<span class='status_err'>有效</span>";
+                        else  htmlstr += "<span class='status_ok'>失效</span>";
+                        htmlstr += "&nbsp;&nbsp;&nbsp;&nbsp;";
+                        htmlstr += "<span class='edelete' title='Delete' ";
+                        htmlstr += "onclick=\"DeleteDNS("+hostid+", '"+host+"')\">"+chrdel+"</span>";
+                        htmlstr += "</li>";
+                    }
+                    htmlstr += "</ul>";
+                    div.innerHTML = htmlstr;
+                }
+                return true;
+            }
+            function AddDNS(form)
+            {
+                var host = "";
+                var xmlHttp = null; 
+                if(form && (host = form['host'].value) 
+                    && (xmlHttp = CreateXMLHTTP()) != null)
+                {
+                    var argv = "op=dns_add&host="+host;
+                    xmlHttp.open('POST', '/dns', true);
+                    xmlHttp.setRequestHeader("Content-Length", argv.length);
+                    xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    xmlHttp.onreadystatechange=function()
+                    {
+                        if(xmlHttp.readyState==4)
+                        {
+                            if(xmlHttp.status == 200)
+                            {
+                                //alert(argv);
+                                ShowDNS(xmlHttp.responseText);
+                            }
+                        }
+                    }
+                    xmlHttp.send(argv);
+                }
+                return true;
+            }
+            function DeleteDNS(hostid, host)
+            {
+                var xmlHttp = null; 
+                if(hostid >= 0 && host
+                    && confirm("您确认删除DNS["+host+"] ?")
+                    &&(xmlHttp = CreateXMLHTTP()) != null)
+                {
+                    var argv = "op=dns_delete&hostid="+hostid+"&host="+host;
+                    xmlHttp.open('POST', '/dnsdel', true);
+                    xmlHttp.setRequestHeader("Content-Length", argv.length);
+                    xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    xmlHttp.onreadystatechange=function()
+                    {
+                        if(xmlHttp.readyState==4)
+                        {
+                            if(xmlHttp.status == 200)
+                            {
+                                ShowDNS(xmlHttp.responseText);
+                            }
+                        }
+                    }
+                    xmlHttp.send(argv);
+                }
+                return true;
+            }
+            function ListDNS()
+            {
+                var xmlHttp = null; 
+                if((xmlHttp = CreateXMLHTTP()) != null)
+                {
+                    var argv = "op=dns_list";
+                    xmlHttp.open('POST', '/dnslist', true);
+                    xmlHttp.setRequestHeader("Content-Length", argv.length);
+                    xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    xmlHttp.onreadystatechange=function()
+                    {
+                        if(xmlHttp.readyState==4)
+                        {
+                            if(xmlHttp.status == 200)
+                            {
+                                ShowDNS(xmlHttp.responseText);
+                            }
+                        }
+                    }
+                    xmlHttp.send(argv);
+                }
+                return true;
+            }
+            function ResetHttpHeaders()
+            {
+                var form = document.forms['http-headers-form'];
+                if(form)
+                {
+                    form['headers'].focus();
+                    form['headers'].value = '';
+                }
+            }
+            function ShowHttpHeaders(txt)
+            {
+                var xlist = null;
+                var form = document.forms['http-headers-form'];
+                if(txt && form && (xlist = eval(txt)) != null && xlist['headers'])
+                {
+                    form['headers'].focus();
+                    form['headers'].value= base64decode(xlist['headers']);
+                }
+            }
+            function AutoHttpHeaders()
+            {
+                var xmlHttp = null; 
+                if((xmlHttp = CreateXMLHTTP()) != null)
+                {
+                    var argv = "op=header_auto";
+                    xmlHttp.open('POST', '/headers', true);
+                    xmlHttp.setRequestHeader("Content-Length", argv.length);
+                    xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    xmlHttp.onreadystatechange=function()
+                    {
+                        if(xmlHttp.readyState==4)
+                        {
+                            if(xmlHttp.status == 200)
+                            {
+                                //alert(argv);
+                                ShowHttpHeaders(xmlHttp.responseText);
+                            }
+                        }
+                    }
+                    xmlHttp.send(argv);
+                }
+                return true;
+            }
+
+            function SetHttpHeaders(form)
+            {
+                var headers = "";
+                var xmlHttp = null; 
+                if(form && (headers = form['headers'].value) 
+                    && (xmlHttp = CreateXMLHTTP()) != null)
+                {
+                    var line = "";
+                    if((arr = headers.split("\n")) && arr.length > 0)
+                    {
+                        for(i = 0; i < arr.length; i++)
+                        {
+                            line += base64encode(arr[i])+"|"; 
+                        }
+                    }
+                    var argv = "op=header_set&headers="+line;
+                    xmlHttp.open('POST', '/headers', true);
+                    xmlHttp.setRequestHeader("Content-Length", argv.length);
+                    xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    xmlHttp.onreadystatechange=function()
+                    {
+                        if(xmlHttp.readyState==4)
+                        {
+                            if(xmlHttp.status == 200)
+                            {
+                                //alert(argv);
+                                ShowHttpHeaders(xmlHttp.responseText);
+                            }
+                        }
+                    }
+                    xmlHttp.send(argv);
+                }
+                return true;
+            }
+
+            function GetHttpHeaders()
+            {
+                var xmlHttp = null; 
+                if((xmlHttp = CreateXMLHTTP()) != null)
+                {
+                    var argv = "op=header_get";
+                    xmlHttp.open('POST', '/headers', true);
+                    xmlHttp.setRequestHeader("Content-Length", argv.length);
+                    xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    xmlHttp.onreadystatechange=function()
+                    {
+                        if(xmlHttp.readyState==4)
+                        {
+                            if(xmlHttp.status == 200)
+                            {
+                                //alert(xmlHttp.responseText);
+                                ShowHttpHeaders(xmlHttp.responseText);
+                            }
+                        }
+                    }
+                    xmlHttp.send(argv);
+                }
+                return true;
+            }
+            function ResetProxyList()
+            {
+                var form = document.forms['proxy-add-form'];
+                if(form)
+                {
+                    form['host'].focus();
+                    form['host'].value = '';
+                }
+            }
+            function ShowProxy(txt)
+            {
+                var div = document.getElementById('proxy-list');
+                var proxylist = null;
+                if(txt && div && (proxylist = eval(txt)) != null)
+                {
+                    ResetProxyList(); 
+                    var hostid = -1;
+                    var host = "";
+                    var status = -1;
+                    var htmlstr = "<ul class='proxy-ul'>";
+                    for(x in proxylist)
+                    {
+                        hostid = x;
+                        host =  proxylist[x]['host'];
+                        status = proxylist[x]['status'];
+                        htmlstr += "<li class='proxy-li' onmouseout=\"outDiv(this, 'proxy-li')\" ";
+                        htmlstr += " onmousemove=\"onDiv(this, 'proxy-li-selected')\" >";
+                        htmlstr += host;
+                        htmlstr += "&nbsp;&nbsp;&nbsp;&nbsp;";
+                        if(status > 0) htmlstr += "有效";
+                        else  htmlstr += "失效";
+                        htmlstr += "&nbsp;&nbsp;";
+                        htmlstr += "<span class='edelete' title='Delete' ";
+                        htmlstr += "onclick=\"DeleteProxy("+hostid+", '"+host+"')\">"+chrdel+"</span>";
+                        htmlstr += "</li>";
+                    }
+                    htmlstr += "</ul>";
+                    div.innerHTML = htmlstr;
+                }
+            }
+            function AddProxy(form)
+            {
+                var host = "";
+                var xmlHttp = null; 
+                if(form == null || (host=form['host'].value) == "" || host.indexOf(':') <= 0) 
+                {
+                    alert('代理服务器格式为:202.106.0.20:8888');
+                    return false;
+                }
+                if(host && (xmlHttp = CreateXMLHTTP()) != null)
+                {
+                    var argv = "op=proxy_add&host="+host;
+                    xmlHttp.open('POST', '/proxyadd', true);
+                    xmlHttp.setRequestHeader("Content-Length", argv.length);
+                    xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    xmlHttp.onreadystatechange=function()
+                    {
+                        if(xmlHttp.readyState==4)
+                        {
+                            if(xmlHttp.status == 200)
+                            {
+                                //alert(argv);
+                                ShowProxy(xmlHttp.responseText);
+                            }
+                        }
+                    }
+                    xmlHttp.send(argv);
+                }
+                return true;
+            }
+            function DeleteProxy(hostid, host)
+            {
+                var xmlHttp = null; 
+                if(hostid >= 0 && host
+                    && confirm("您确认删除代理["+host+"] ?")
+                    && (xmlHttp = CreateXMLHTTP()) != null)
+                {
+                    var argv = "op=proxy_delete&hostid="+hostid+"&host="+host;
+                    xmlHttp.open('POST', '/proxydel', true);
+                    xmlHttp.setRequestHeader("Content-Length", argv.length);
+                    xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    xmlHttp.onreadystatechange=function()
+                    {
+                        if(xmlHttp.readyState==4)
+                        {
+                            if(xmlHttp.status == 200)
+                            {
+                                ShowProxy(xmlHttp.responseText);
+                            }
+                        }
+                    }
+                    xmlHttp.send(argv);
+                }
+                return true;
+            }
+            function ListProxy()
+            {
+                var xmlHttp = null; 
+                if((xmlHttp = CreateXMLHTTP()) != null)
+                {
+                    var argv = "op=proxy_list";
+                    xmlHttp.open('POST', '/proxylist', true);
+                    xmlHttp.setRequestHeader("Content-Length", argv.length);
+                    xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    xmlHttp.onreadystatechange=function()
+                    {
+                        if(xmlHttp.readyState==4)
+                        {
+                            if(xmlHttp.status == 200)
+                            {
+                                //alert(xmlHttp.responseText);
+                                ShowProxy(xmlHttp.responseText);
+                            }
+                        }
+                    }
+                    xmlHttp.send(argv);
+                }
+                return true;
+            }
+
+    </script>
+    </head>
+ <body onload='javascript:loadTaskInfo();'>
+  <div id='mainframe'>
+    <div id='itab'>
+        <ul>
+        <li class='tab-selected' id='tab0' onclick="selectView('taskinfo',event)" >运行状态</li>
+        <li id='tab1' onclick="selectView('database',event)" >数据库配置</li>
+        <li id='tab2' onclick="selectView('template', event)" >模版配置</li>
+        <li id='tab3' onclick="selectView('urlblock', event)" >URL管理</li>
+        <li id='tab4' onclick="selectView('dns', event)" >DNS管理</li>
+        <li id='tab5' onclick="selectView('proxy', event)" >代理设置</li>
+        <li id='tab6' onclick="selectView('httpx', event)" >HTTP设置</li>
+        <!--<li id='tab7' onclick="selectView('user', event)" >用户管理</li> -->
+        </ul>
+    </div>
+    <div id='taskinfo'></div>
+    <div id='database'>
+        <table width=100% height=100% cellspacing=0 border=0 valign=top align=left >
+        <tr>
+        <td class='dblist' valign=top width=300 height=100% >
+            <table cellspacing=0 border=0 valign=top align=left width=100% >
+            <tr>
+                <td valign=top class='dbtitle' width=100% >
+                点击<span class='eadd' title='Add' onclick='DBXAdd(event)'> ✚ </span>添加数据表</div>
+                </td>
+            </tr>
+            <tr>
+                <td valign=top width=100% >
+                    <div id='dbselect'></div>
+                </td>
+            </tr>
+            </table>
+        </td>
+        <td valign=top align=left cellspacing=0 border=0 >
+        <div id='tableview'>
+        <div id='dbeditform'>
+        <form name="dbeditform" class='listform' action="javascript:void(0)" 
+            onsubmit="return EditField(this);"> 
+            <input type=hidden name='op' value='field_add' >
+            <input type=hidden name='tableid' value='' >
+            <input type=hidden name='fieldid' value='' >
+            <input type=hidden name='oldname' value='' >
+            <input type=hidden name='type' value='' >
+            <input type=hidden name='flag' value='' >
+            数据表[<span id='tabname' class='hlight'></span>]
+            &nbsp;&nbsp;
+            字段名:<input type='text' name='name' class='txtinput' size=24>
+            &nbsp;&nbsp;
+            类型:<select name='ftype' >
+                <option value='1'>int</option>
+                <option value='2'>double</option>
+                <option value='4' selected>text</option>
+                <option value='8'>long</option>
+            </select>
+            &nbsp;&nbsp;
+            <input type=checkbox name='is_index' value=32 >索引
+            &nbsp;&nbsp;
+            <input type=submit value='ok' class='submit' >
+        </form>
+        </div>
+        <div id='dbfields'></div>
+        </div>
+        </td>
+        </tr>
+        </table>
+    </div>
+    <div id='template'>
+    <table cellspacing=0 border=0 valign=top align=left class='template-tab' >
+        <tr>
+        <td cellspacing=0 border=0 valign=top align=left height=100% width=300 class='treetab'>
+            <div id='tree-title'>抓取树用于指导爬虫的爬取路径</div>
+            <div id='treebody' level='0'></div>
+        </td>
+        <td valign=top align=left cellspacing=0 border=0 class='temptab'>
+              <div id='template-title'>模版用于抽取自己需要的数据</div>
+              <div id='node-template'></div>
+              <div id='xtemplateform'>
+                <form action='javascript:void(0);' name='urlform' onsubmit='return LoadURL(this);'>
+                <div id=urlform >
+               请输入地址:<input type=text size='64' name='url'>
+                &nbsp;
+                <input type=radio name='method' value='0' checked>GET
+                &nbsp;
+                <input type=radio name='method' value='1'>POST
+                &nbsp;
+                <input type=submit value='访问'>
+                </div>
+                </form>
+                <div id='source_code_op'>
+                  <div id='source_view'></div>
+                  <!--<div id='source_op'></div>-->
+                </div>
+                <div id='templatediv'>
+                <form name="templateform" action="javascript:void(0)" >
+                <input type=hidden name='op' value='template_add' >
+                <input type=hidden name='nodeid' value='-1' >
+                <input type=hidden name='templateid' value='-1' >
+                <input type=hidden name='tableid' value='-1' >
+                <input type=hidden name='flag' value='0' >
+                <input type=hidden name='nfields' value='-1' >
+                <input type=hidden name='map' value='' >
+                <input type=hidden name='linkmap' value='' >
+                <input type=hidden name='url' value='' >
+                <input type=hidden name='method' value='' >
+                代码:<textarea name='code' rows=18  cols=120></textarea> 
+                <br>
+                模版:<textarea name='pattern' rows=4  cols=120></textarea>
+                <br>
+                <span align=center>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <input type=checkbox name='is_sub' >结果二次匹配
+                &nbsp;&nbsp;&nbsp;&nbsp;
+                <input type=checkbox name='is_global' >重复匹配多条
+                &nbsp;&nbsp;&nbsp;&nbsp;
+                <input type=checkbox name='is_ignorecase' >忽略大小写
+                &nbsp;&nbsp;&nbsp;&nbsp;
+                <select name='link_table' onchange="changeTable(this.form, 'link_field', this)">
+                    <option value='-1' selected>数据表</option>
+                </select>
+                &nbsp;&nbsp;&nbsp;&nbsp;
+                <input type='button' value='模板测试' onclick="TestTemplate(this.form)">
+                &nbsp;&nbsp;&nbsp;&nbsp;
+                <input type='button' value='确认模板' onclick="ConfigTemplate(this.form)">
+                <div class='template-bar'>用于拼接隐藏的链接和Ajax内容块地址</div>
+                URL规则:<input type=text name='link' value='' size=48>
+                &nbsp;&nbsp;&nbsp;&nbsp;
+                <input type='button' value='测试' onclick="TestTemplate(this.form)">
+                &nbsp;&nbsp;&nbsp;&nbsp;
+                <input type='button' value='确认' onclick="EditLink(this.form);">
+                <br>
+                <input type=radio name='link_method' value='0' checked>GET
+                &nbsp;
+                <input type=radio name='link_method' value='1'>POST
+                &nbsp;
+                <span title='列表页会定期更新'><input type=checkbox name='link_list' >列表页</span>
+                &nbsp;
+                <select name='link_field' >
+                    <option value='-1' selected>字段</option>
+                </select>
+                &nbsp;&nbsp;&nbsp;&nbsp;
+                <select name='link_node' >
+                    <option value='-1' selected>子节点</option>
+                </select>
+                </span>
+                </form>
+                </div>
+            </div>
+        </td>
+        </tr>
+       </table>
+    </div>
+    <div id='urlblock'>
+    <div id='url-header'>
+    <form name='urlblockform' class='listform' action='javascript:void(0)' 
+            onsubmit='return AddNodeURL(this)' >
+    <input type=hidden name='op'value='url_add' >
+    <input type=hidden name='parentid' value='0' >
+    &nbsp;&nbsp;
+    <select name='nodeid' onchange='ListNodeURLs(this.form, "nodeid")'>
+    <option value='-1' selected>选择站点</option>
+    </select>
+    <!--
+    &nbsp;&nbsp;
+    <select name='childs' onchange='ListNodeURLs(this.form, "childs")'>
+    <option value='-1' selected>选择子节点</option>
+    </select>
+    !-->
+    &nbsp;&nbsp;
+    <select name='method'>
+    <option value='-1' selected>请求方法</option>
+    <option value='0' >GET</option>
+    <option value='1' >POST</option>
+    </select>
+    &nbsp;&nbsp;
+    <select name='level' >
+    <option value='-1' selected>优先级</option>
+    <option value='0' >普通</option>
+    <option value='1' >紧急</option>
+    </select>
+    &nbsp;&nbsp;
+    <input type=text name=url size=48 value='http://' onmouseover="this.select()" >
+    &nbsp;&nbsp;
+    <input type=submit name='submit' value='Add'>
+    </form>
+    </div>
+    <div id='url-list'></div>
+    </div>
+    <div id='dns'>
+    <div id='dns-header'>
+    <form name='dns-add-form' class='listform' action='javascript:void(0)' 
+            onsubmit='return AddDNS(this)'>
+    添加DNS:<input type=text name='host' size=48 value='' >
+    <input type=submit value='ok'>
+    </form>
+    </div>
+    <div id='dns-list'></div>
+    </div>
+    <div id='proxy'>
+    <div id='proxy-header'>
+    <form name='proxy-add-form' action='javascript:void(0)' onsubmit='return AddProxy(this)'>
+    添加代理:<input type=text name='host' size=48 value='' >
+    <input type=submit value='ok'>
+    </form>
+    </div>
+    <div id='proxy-list'></div>
+    </div>
+    <div id='httpx'>
+    <div id='httpx-header'>
+        自定义HTTP请求头 &nbsp;&nbsp;&nbsp;&nbsp;
+        <input type=button value='自动识别浏览器头文件' onclick="AutoHttpHeaders()">
+    </div>
+    <form name='http-headers-form' action='javascript:void(0)' onsubmit='return SetHttpHeaders(this)'>
+    <textarea type=text name='headers' rows=24 cols=120 value='' ></textarea>
+    <input type=submit value='ok'>
+    </form>
+    </div>
+
+    <div id='data'></div>
+    <div id='user'></div>
+</div>
+    <div id='txtform'>
+        <table width=100% ><tr><td align=left >
+        <span class='closetxt' onclick="CloseThisTable(this)" >关闭</span>
+        </td>
+        <form name="editorform" class='listform' action="javascript:void(0)" onsubmit="return EditNode(this);"> 
+        <td>
+            <input type=hidden name='op' value='node_add' >
+            <input type=hidden name='nodeid' value='0' >
+            <input type=hidden name='pid' value='0' >
+            <input type='text' name='nodename' class='txtinput' size=24>
+            &nbsp;
+            <input type=submit value='ok' class='submit' >
+        </td>
+        </form>
+        <td align=right >
+        <span title='点击关闭' class='closebutton' onclick="CloseThisTable(this)">╳</span>
+        </td>
+        </tr>
+        </table>
+    </div>
+    <div id='dbform'>
+        <table width=100% ><tr><td align=left >
+        <span class='closetxt' onclick="CloseThisTable(this)" >关闭</span>
+        </td>
+        <form name="xdbform" class='listform' action="javascript:void(0)" onsubmit="return EditDB(this);"> 
+        <td>
+            <input type=hidden name='op' value='table_add' >
+            <input type=hidden name='tableid' value='0' >
+            <input type='text' name='name' class='txtinput' size=18>
+            &nbsp;
+            <input type=submit value='ok' class='submit' >
+            &nbsp;
+        </td>
+        </form>
+        <td  align=right >
+        <span title='点击关闭' class='closebutton' onclick="CloseThisTable(this)">╳</span>
+        </td>
+        </tr>
+        </table>
+    </div>
+    <div id='dbfieldform'>
+        <table width=100% ><tr><td align=left >
+        <span class='closetxt' onclick="CloseThisTable(this)" >关闭</span>
+        </td>
+        <form name="dbfieldform" class='listform' action="javascript:void(0)" onsubmit="return EditField(this);"> 
+        <td>
+            <input type=hidden name='op' value='table_add' >
+            <input type=hidden name='tableid' value='' >
+            <input type=hidden name='fieldid' value='' >
+            <input type=hidden name='oldname' value='' >
+            <input type=hidden name='type' value='' >
+            <input type=hidden name='flag' value='' >
+            字段名:<input type='text' name='name' class='txtinput' size=24>
+            &nbsp;&nbsp;
+            类型:<select name='ftype' >
+                <option value='1'>int</option>
+                <option value='2'>double</option>
+                <option value='4' selected>text</option>
+                <option value='8'>long</option>
+            </select>
+            &nbsp;&nbsp;
+            <input type=checkbox name='is_index' value=32 >索引
+            &nbsp;&nbsp;
+            <!--<input type=checkbox name='is_null' value=16 >允许为空 --!>
+            <input type=submit value='ok' class='submit' >
+            &nbsp;&nbsp;
+        </td>
+        </form>
+        <td align=right>
+            <span title='点击关闭' class='closebutton' onclick="CloseThisTable(this)">╳</span>
+        </td>
+        </tr>
+        </table>
+    </div>
+    <div id='urllist-form'>
+        <table width=100% ><tr><td align=left >
+        <span class='closetxt' onclick="CloseThisTable(this)" >关闭</span>
+        </td>
+        <form name="urllist-add-form" class='listform' action="javascript:void(0)" 
+            onsubmit="return AddNodeURL(this);"> 
+        <td>
+            <input type=hidden name='op' value='url_add' >
+            <input type=hidden name='parentid' value='0' >
+            <select name='method'>
+                <option value='-1' selected>请求方法</option>
+                <option value='0' >GET</option>
+                <option value='1' >POST</option>
+            </select>
+            &nbsp;&nbsp;
+            <select name='level' >
+                <option value='-1' selected>优先级</option>
+                <option value='0' >普通</option>
+                <option value='1' >紧急</option>
+            </select>
+            &nbsp;&nbsp;
+            <select name='nodeid' >
+                <option value='-1' selected>选择子节点</option>
+            </select>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <hr>
+            &nbsp;&nbsp;
+            URL:<input type=text name=url size=48 value='http://' onmouseover="this.select()">
+            &nbsp;&nbsp;
+            <input type=submit name='submit' value='Add'><br>
+            <hr>
+            http://abc.com/list/[1-4876].html &nbsp;&nbsp;http://abc.com/00list/[1-4876]{2}.html<br>
+            http://abc.com/abclist/[a-z].html &nbsp;&nbsp;http://abc.com/aaalist/[a-z]{3}.html
+        </td>
+        </form>
+        <td align=right>
+            <span title='点击关闭' class='closebutton' onclick="CloseThisTable(this)">╳</span>
+        </td>
+        </tr>
+        </table>
+    </div>
+    <iframe id='bframe' frameborder=0 ></iframe>
+    </body>
+</html>

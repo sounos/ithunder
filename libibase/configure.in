@@ -1,0 +1,72 @@
+#                                               -*- Autoconf -*-
+# Process this file with autoconf to produce a configure script.
+
+AC_PREREQ(2.59)
+AC_INIT(libibase, [0.5.22], [SounOS@gmail.com])
+AC_CONFIG_SRCDIR([src/ibase.h])
+AC_CONFIG_HEADER([config.h])
+AM_INIT_AUTOMAKE
+
+# Checks for programs.
+AC_PROG_CC
+AC_PROG_LIBTOOL
+
+# Checks for libraries.
+# FIXME: Replace `main' with a function in `-lm':
+AC_CHECK_LIB([m], [main])
+# FIXME: Replace `main' with a function in `-lz':
+AC_CHECK_LIB([z], [main])
+
+# Checks for header files.
+AC_HEADER_STDC
+AC_CHECK_HEADERS([fcntl.h stdint.h stdlib.h string.h sys/time.h unistd.h])
+
+# Checks for typedefs, structures, and compiler characteristics.
+AC_TYPE_OFF_T
+AC_TYPE_SIZE_T
+AC_HEADER_TIME
+AC_STRUCT_TM
+
+# Checks for library functions.
+AC_FUNC_MMAP
+AC_FUNC_STAT
+AC_CHECK_FUNCS([ftruncate gettimeofday memset mkdir munmap strerror])
+
+#pthread
+havepthread=no
+AC_CHECK_LIB(pthread,pthread_create,havepthread=yes)
+if test "$havepthread" = "yes" ; then
+    CPPFLAGS="${CPPFLAGS} -DHAVE_PTHREAD"
+    LDFLAGS="${LDFLAGS} -lpthread"
+    LIBS="${LIBS} -lpthread"
+fi
+#semaphore
+#havesemaphore=no
+#AC_CHECK_LIB(c, sem_timedwait, havesemaphore=yes)
+#if test "$havesemaphore" = "yes" ; then
+#        CPPFLAGS="${CPPFLAGS} -DHAVE_SEMAPHORE"
+#fi
+
+#check mmap
+havemmap=no
+AC_CHECK_LIB(c, munmap, havemmap=yes)
+if test "$havemmap" = "yes" ; then
+        CPPFLAGS="${CPPFLAGS} -DHAVE_MMAP"
+fi
+
+#scws
+havescws=no
+AC_CHECK_LIB(scws,scws_get_result,havescws=yes)
+if test "$havescws" = "yes" ; then
+    CPPFLAGS="${CPPFLAGS} -DHAVE_SCWS"
+    LDFLAGS="${LDFLAGS} -lscws"
+    LIBS="${LIBS} -lscws"
+fi
+
+
+AC_CHECK_EXTRA_OPTIONS
+
+AC_CONFIG_FILES([Makefile
+                 doc/Makefile
+                 src/Makefile])
+AC_OUTPUT

@@ -1,0 +1,50 @@
+#!/bin/sh
+#
+# QTASKD:
+#
+# chkconfig:	2345 70 40
+# description:  QTASKD
+#
+#
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+#[ -r /etc/sysconfig/qtaskd ] && . /etc/sysconfig/qtaskd
+QTASKDARGS=" -d -c /usr/local/etc/qtaskd.ini > /dev/null 2>&1 "
+
+start() 
+{
+    echo -n $"Starting qtaskd: "
+    daemon /usr/local/sbin/qtaskd $QTASKDARGS
+    echo
+}
+
+stop() 
+{
+    echo -n $"Shutting down qtaskd: "
+    killproc qtaskd
+
+    echo
+}
+
+[ -f /usr/local/sbin/qtaskd ] || exit 0
+
+# See how we were called.
+case "$1" in
+    start)
+    start
+    ;;
+    stop)
+    stop
+    ;;
+    restart|reload)
+    stop
+    start
+    ;;
+    *)
+    echo $"Usage: $0 {start|stop|restart|reload}"
+    exit 1
+esac
+
+exit 0

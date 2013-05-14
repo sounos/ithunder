@@ -1,0 +1,13 @@
+#compile and install
+./configure --enable-debug
+make && make install
+
+#INDEX
+./hibase  --basedir=/tmp/index --add --dict=/data/dict/dict.txt --doc=/data/html/index.html --url="http://www.sina.com.cn/" --charset="gbk" --date="Thu, 03 Jul 2008 03:15:52 GMT" 
+
+#QUERY
+./hibase --basedir=/tmp/index --query --request="贵州瓮安死者第3次尸检公开进行 结果数天后公布" --topN=1000
+
+#INDEX AND QUERY
+./hibase   --basedir=/tmp/index --dict=/data/dict/dict.txt --add --doc=/data/html/index.html --url="http://www.sina.com.cn/" --charset="gbk" --date="Thu, 03 Jul 2008 03:15:52 GMT" --query --request="贵州瓮安死者第3次尸检公开进行 结果数天后公布" --topN=1000
+
