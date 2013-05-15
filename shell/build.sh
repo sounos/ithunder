@@ -2,6 +2,9 @@
 basedir="`pwd`";
 arch=`uname -p`
 pushd /usr/src/redhat/SPECS;
+[ "`rpm -qa|grep zlib-devel`" ] || yum -y install zlib-devel
+[ "`rpm -qa|grep pcre-devel`" ] || yum -y install pcre-devel
+[ "`rpm -qa|grep php-devel`" ] || yum -y install php-devel
 #rpm -e soworker --nodeps;rm -f /etc/*dispatchd.ini.* /etc/*thinkd.ini.*
 rpm -e ispider --nodeps ;rm -f /etc/*spider.ini* /etc/*extractor.ini* /etc/*monitord.ini*
 rpm -e ithunder --nodeps ;rm -f /etc/*dispatchd.ini* /etc/*thinkd.ini*
@@ -41,41 +44,34 @@ buildrpm()
 #libevbase
 buildrpm libevbase 1.0.2 1 yes 0 
 #libsbase
-buildrpm libsbase 1.0.5 8 yes 0
+buildrpm libsbase 1.0.6 13 yes 0
 #libscws
 buildrpm libscws 1.1.8 1  yes 0
+#php-scws
+#buildrpm php-scws 1.2.0 1  yes 0
 #libmtask & qmtask
-buildrpm qmtask 0.0.5 51 yes 0
+buildrpm qmtask 0.0.5 52 yes 0
 #hidbase 
-buildrpm hidbase 0.0.5 2 yes 0
+buildrpm hidbase 0.0.5 26 yes 0
 #libibase
-buildrpm libibase 0.5.21 9 yes 0
-#libsobase
-#buildrpm libsobase 1.5.21 4 yes 0
+buildrpm libibase 0.5.22 9 yes 0
 #libchardet
 buildrpm libchardet 0.0.4 2 yes 0
 #hibase
-buildrpm hibase 0.4.21 10 yes  0
-#sodo
-#buildrpm sodo 1.4.21 3 no 0
+buildrpm hibase 0.4.21 14 yes  0
 #ispider
-buildrpm ispider 0.0.2 8 yes 0
+buildrpm ispider 0.0.4 3 yes 0
 #ithunder
-buildrpm ithunder 0.0.4 11 yes 0
-#sowork
-#buildrpm soworker 1.0.3 73 no 0
+buildrpm ithunder 0.0.4 12 yes 0
 popd
-#perl -i -p -e "s@/tmp@/data/tmp@g" /etc/hidocd.ini; 
-#service hidocd start
-#perl -i -p -e "s@/tmp@/index/tmp@g" /etc/sodocd.ini;
-#service sodocd start
 rm -rf /tmp/*
 #tarball
-mkdir -p ${basedir}/{debuginfo,4DB,srpms,rpms,src}
+mkdir -p ${basedir}/{debuginfo,srpms,rpms,src}
 cp -f /usr/src/redhat/SOURCES/*.tar.gz ${basedir}/src/ 
 mv -f /usr/src/redhat/SRPMS/* ${basedir}/srpms/ 
 #mv -f /usr/src/redhat/RPMS/${arch}/*4DB* ${basedir}/4DB/rpms
-mv -f /usr/src/redhat/RPMS/${arch}/*debuginfo* ${basedir}/debuginfo/
+[ "`ls /usr/src/redhat/RPMS/${arch}/*debuginfo*`" ] \
+    && mv -f /usr/src/redhat/RPMS/${arch}/*debuginfo* ${basedir}/debuginfo/
 mv -f /usr/src/redhat/RPMS/${arch}/* ${basedir}/rpms/
 pushd ${basedir}/;
 ./tarball.sh
