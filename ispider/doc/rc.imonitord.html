@@ -1116,7 +1116,7 @@
                     for (x in tab['fields'])
                     {
                         ftype = (tab['fields'][x].flag & (1|2|4|8));
-                        if(last != ftype)
+                        if(last != tab['fields'][x].flag)
                         {
                             if(tab['fields'][x].flag & 32)
                             {
@@ -1127,7 +1127,7 @@
                             }
                             else index_type = "非索引字段";
                             htmlstr += "<li class='field-title'>"+index_type+"</li>";
-                            last = ftype;
+                            last = tab['fields'][x].flag;
                         }
                         fid = x;
                         fname = tab['fields'][x]['name'];

@@ -996,7 +996,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *http_req)
             {
                 if(*p == '[') ++p;
                 else goto err_end;
-                template.map[i].fieldid = atoi(p);
+                template.map[i].fieldid = (short)atoi(p);
                 while(*p != '\0' && ((*p >= '0' && *p <= '9') || *p == '-'))++p;
                 while(*p != '\0' && *p != ',')++p;
                 if(*p != ',') goto err_end;
@@ -1006,7 +1006,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *http_req)
                 while(*p != '\0' && *p != ',')++p;
                 if(*p != ',') goto err_end;
                 ++p;
-                template.map[i].flag = atoi(p);
+                template.map[i].flag = (short)atoi(p);
                 while(*p != '\0' && ((*p >= '0' && *p <= '9') || *p == '-'))++p;
                 while(*p != '\0' && *p != ']')++p;
                 ++p;
