@@ -881,13 +881,14 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *http_req)
 {
     int ret = -1, i = 0, id = 0, n = 0, op = -1, nodeid = -1, x = -1, fieldid = -1, parentid = -1,
         urlid = -1, hostid = -1, tableid = -1, type = -1,  flag = 0, templateid = -1,
-        urlnodeid = -1, recordid = -1, level = -1, count = 0, page = 1, from = 0,
-        total = 0, is_purl = 0, ppid = 0, userid = -1, len = 0, to = 0;
-    char buf[HTTP_LINE_MAX], *p = NULL, *end = NULL, *name = NULL, *host = NULL, 
-         *url = NULL, *link = NULL, *pattern = NULL, *map = NULL, *linkmap = NULL, 
-         *pp = NULL, *user = NULL, *passwd = NULL, format[URL_LEN_MAX], *headers = NULL,
-         block[HTTP_BUF_SIZE];
-    XTNODE *nodes = NULL, node = {0};
+        urlnodeid = -1, recordid = -1, level = -1, page = 1, from = 0,
+        is_purl = 0, len = 0, to = 0;
+        //total = 0, userid = -1, count = 0, ppid = 0,
+    char buf[HTTP_LINE_MAX], *p = NULL, *name = NULL, *host = NULL, *url = NULL, 
+         *link = NULL, *pattern = NULL, *map = NULL, *linkmap = NULL, 
+         format[URL_LEN_MAX], *headers = NULL;
+        //block[HTTP_BUF_SIZE],*user = NULL, *passwd = NULL, *pp = NULL, *end = NULL,
+    XTNODE node = {0};
     ITEMPLATE template = {0};
     //XTURLNODE *urlnodes = NULL;
     PURL purl = {0};

@@ -55,23 +55,15 @@ typedef struct _ETASK
 }ETASK;
 static SBASE *sbase = NULL;
 static SERVICE *extractor = NULL;
-static SERVICE *httpd = NULL;
 static dictionary *dict = NULL;
 static void *logger = NULL;
 static ETASK *tasks = NULL;
 static void *taskqueue = NULL;
 static int ntasks = 0;
-static void *http_headers_map = NULL;
-static char *http_default_charset = "UTF-8";
-static char *httpd_home = NULL;
-static int is_inside_html = 1;
-static unsigned char *httpd_index_html_code = NULL;
-static int  nhttpd_index_html_code = 0;
 static int running_status = 1;
 static char *extractord_ip = "127.0.0.1";
 static int  extractord_port = 3086;
 static void *argvmap = NULL;
-static int http_task_type = 0;
 static int task_wait_time = 10000000;
 #define E_OP_RESYNC             0x00
 #define E_OP_STATE              0x01
@@ -89,18 +81,8 @@ int extractor_data_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA 
 int extractor_error_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *chunk);
 int extractor_timeout_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *chunk);
 int extractor_evtimeout_handler(CONN *conn);
-int httpd_request_handler(CONN *conn, HTTP_REQ *http_req);
 int extractor_ok_handler(CONN *conn);
 void extractor_over_task();
-/* httpd packet reader */
-int httpd_packet_reader(CONN *conn, CB_DATA *buffer)
-{
-    if(conn)
-    {
-        return 0;
-    }
-    return -1;
-}
 
 /* converts hex char (0-9, A-Z, a-z) to decimal */
 char hex2int(unsigned char hex)
@@ -143,179 +125,6 @@ do                                                                              
     *ps = '\0';                                                                         \
 }while(0)
 
-/* httpd request handler */
-int httpd_request_handler(CONN *conn, HTTP_REQ *http_req)
-{
-    char *p = NULL, buf[HTTP_BUF_SIZE], line[HTTP_LINE_MAX];
-    int id = -1, n = -1, op = -1, i = 0;
-
-    if(conn && http_req)
-    {
-        for(i = 0; i < http_req->nargvs; i++)
-        {
-
-            if(http_req->argvs[i].nk > 0 && (n = http_req->argvs[i].k) > 0
-                    && (p = (http_req->line + n)))
-            {
-                 if((id = (mtrie_get(argvmap, p, http_req->argvs[i].nk) - 1)) >= 0
-                        && http_req->argvs[i].nv > 0
-                        && (n = http_req->argvs[i].v) > 0
-                        && (p = (http_req->line + n)))
-                {
-                    switch(id)
-                    {
-                        case E_ARGV_OP :
-                            op = atoi(p);
-                            break;
-                        default :
-                            break;
-                    }
-                }
-            }
-        }
-        if(op == E_OP_STATE)
-        {
-            //if((n = kindex_state(kindex, line)) > 0)        
-            {
-                p = buf;
-                p += sprintf(p, "HTTP/1.0 200 OK\r\nContent-Length: %d\r\n"
-                        "Content-Type: text/html;charset=%s\r\n\r\n",n, http_default_charset);
-                conn->push_chunk(conn, buf, (p - buf));
-                conn->push_chunk(conn, line, n);
-                return conn->over(conn);
-            }
-        }
-    }
-    return -1;
-}
-
-/* packet handler */
-int httpd_packet_handler(CONN *conn, CB_DATA *packet)
-{
-    char buf[HTTP_BUF_SIZE], file[HTTP_PATH_MAX], *p = NULL, *end = NULL;
-    HTTP_REQ http_req = {0};
-    struct stat st = {0};
-    int ret = -1, n = 0;
-
-    if(conn && packet)
-    {
-        p = packet->data;
-        end = packet->data + packet->ndata;
-        if(http_request_parse(p, end, &http_req, http_headers_map) == -1) goto err_end;
-        if(http_req.reqid == HTTP_GET)
-        {
-            if(http_req.nargvs > 0)
-            {
-                if(httpd_request_handler(conn, &http_req) < 0) goto err_end;
-            }
-            else if(is_inside_html && httpd_index_html_code && nhttpd_index_html_code > 0)
-            {
-                p = buf;
-                p += sprintf(p, "HTTP/1.0 200 OK\r\nContent-Length: %d\r\n"
-                        "Content-Type: text/html;charset=%s\r\n",
-                        nhttpd_index_html_code, http_default_charset);
-                if((n = http_req.headers[HEAD_GEN_CONNECTION]) > 0)
-                    p += sprintf(p, "Connection: %s\r\n", (http_req.hlines + n));
-                p += sprintf(p, "Connection:Keep-Alive\r\n");
-                p += sprintf(p, "\r\n");
-                conn->push_chunk(conn, buf, (p - buf));
-                conn->push_chunk(conn, httpd_index_html_code, nhttpd_index_html_code);
-                return conn->over(conn);
-            }
-            else if(httpd_home)
-            {
-                p = file;
-                if(http_req.path[0] != '/')
-                    p += sprintf(p, "%s/%s", httpd_home, http_req.path);
-                else
-                    p += sprintf(p, "%s%s", httpd_home, http_req.path);
-                if(http_req.path[1] == '\0')
-                    p += sprintf(p, "%s", "index.html");
-                if((n = (p - file)) > 0 && stat(file, &st) == 0)
-                {
-                    if(st.st_size == 0)
-                    {
-                        conn->push_chunk(conn, HTTP_NO_CONTENT, strlen(HTTP_NO_CONTENT));
-                        return conn->over(conn);
-                    }
-                    else if((n = http_req.headers[HEAD_REQ_IF_MODIFIED_SINCE]) > 0
-                            && str2time(http_req.hlines + n) == st.st_mtime)
-                    {
-                        conn->push_chunk(conn, HTTP_NOT_MODIFIED, strlen(HTTP_NOT_MODIFIED));
-                        return conn->over(conn);
-                    }
-                    else
-                    {
-                        p = buf;
-                        p += sprintf(p, "HTTP/1.0 200 OK\r\nContent-Length:%lld\r\n"
-                                "Content-Type: text/html;charset=%s\r\n",
-                                (long long int)(st.st_size), http_default_charset);
-                        if((n = http_req.headers[HEAD_GEN_CONNECTION]) > 0)
-                            p += sprintf(p, "Connection: %s\r\n", http_req.hlines + n);
-                        p += sprintf(p, "Last-Modified:");
-                        p += GMTstrdate(st.st_mtime, p);
-                        p += sprintf(p, "%s", "\r\n");//date end
-                        p += sprintf(p, "%s", "\r\n");
-                        conn->push_chunk(conn, buf, (p - buf));
-                        conn->push_file(conn, file, 0, st.st_size);
-                        return conn->over(conn);
-                    }
-                }
-                else
-                {
-                    conn->push_chunk(conn, HTTP_NOT_FOUND, strlen(HTTP_NOT_FOUND));
-                    return conn->over(conn);
-                }
-            }
-        }
-        else if(http_req.reqid == HTTP_POST)
-        {
-            if((n = http_req.headers[HEAD_ENT_CONTENT_LENGTH]) > 0
-                    && (n = atol(http_req.hlines + n)) > 0)
-            {
-                conn->save_cache(conn, &http_req, sizeof(HTTP_REQ));
-                return conn->recv_chunk(conn, n);
-            }
-        }
-err_end:
-        ret = conn->push_chunk(conn, HTTP_BAD_REQUEST, strlen(HTTP_BAD_REQUEST));
-        return conn->over(conn);
-    }
-    return ret;
-}
-
-/*  data handler */
-int httpd_data_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *chunk)
-{
-    int ret = -1;
-
-    if(conn && packet && cache && chunk && chunk->ndata > 0)
-    {
-        ret = 0;
-    }
-    return ret;
-}
-
-/* httpd timeout handler */
-int httpd_timeout_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *chunk)
-{
-    if(conn)
-    {
-        conn->over_timeout(conn);
-        return conn->over(conn);
-    }
-    return -1;
-}
-
-/* OOB data handler for httpd */
-int httpd_oob_handler(CONN *conn, CB_DATA *oob)
-{
-    if(conn)
-    {
-        return 0;
-    }
-    return -1;
-}
 
 /* match data */
 int extractor_data_match(int tid, XTROW *row, char *url, int *ids, 
@@ -609,7 +418,7 @@ void extractor_over_task(int tid)
        //conn->start_cstate(conn);
         n = tasks[tid].p - tasks[tid].chunk->data;
         head->cmd = XT_REQ_EXTRACT;
-        head->flag |= (http_task_type|XT_TASK_OVER);
+        head->flag |= XT_TASK_OVER;
         head->length = n - sizeof(XTHEAD);
         tasks[tid].chunk = NULL;
         ACCESS_LOGGER(logger, "over-working tid:%d ndata:%d on remote[%s:%d] local[%s:%d]", tid, head->length, conn->remote_ip, conn->remote_port, conn->local_ip, conn->local_port);
@@ -633,7 +442,6 @@ int extractor_ok_handler(CONN *conn)
     if(conn && (tid = (conn->session.xids[0] - 1)) >= 0)
     {
        head.cmd = XT_REQ_EXTRACT; 
-       head.flag = http_task_type; 
        ACCESS_LOGGER(logger, "ready-extractor tid:%d on remote[%s:%d] local[%s:%d]", tid, conn->remote_ip, conn->remote_port, conn->local_ip, conn->local_port);
        //conn->start_cstate(conn);
         return conn->push_chunk(conn, &head, sizeof(XTHEAD));
@@ -742,21 +550,12 @@ void cb_heartbeat_handler(void *arg)
 /* Initialize from ini file */
 int sbase_initialize(SBASE *sbase, char *conf)
 {
-    char *s = NULL, *p = NULL;// *dictfile = NULL, *dictrules = NULL, *host = NULL; 
-         //*property_name = NULL, *text_index_name = NULL, *int_index_name = NULL,
-         //*long_index_name = NULL, *double_index_name = NULL, *display_name = NULL,
-         //*block_name = NULL, *key_name;
-    int interval = 0, i = 0, n = 0;// port = 0;// commitid = 0, queueid = 0;
+    int interval = 0, i = 0, n = 0;
+    // port = 0;// commitid = 0, queueid = 0;
 
     if((dict = iniparser_new(conf)) == NULL)
     {
         fprintf(stderr, "Initializing conf:%s failed, %s\n", conf, strerror(errno));
-        _exit(-1);
-    }
-    /* http headers map */
-    if((http_headers_map = http_headers_map_init()) == NULL)
-    {
-        fprintf(stderr, "Initialize http_headers_map failed,%s", strerror(errno));
         _exit(-1);
     }
     /* SBASE */
@@ -776,76 +575,6 @@ int sbase_initialize(SBASE *sbase, char *conf)
             mtrie_add(argvmap, e_argvs[i], strlen(e_argvs[i]), i+1);
         }
     }
-    /* httpd */
-    is_inside_html = iniparser_getint(dict, "HTTPD:is_inside_html", 1);
-    httpd_home = iniparser_getstr(dict, "HTTPD:httpd_home");
-    http_default_charset = iniparser_getstr(dict, "HTTPD:httpd_charset");
-    /* decode html base64 */
-    /*
-    if(html_code_base64 && (n = strlen(html_code_base64)) > 0
-            && (httpd_index_html_code = (unsigned char *)calloc(1, n + 1)))
-    {
-        nhttpd_index_html_code = base64_decode(httpd_index_html_code,
-                (char *)html_code_base64, n);
-    }
-    */
-    if((httpd = service_init()) == NULL)
-    {
-        fprintf(stderr, "Initialize service failed, %s", strerror(errno));
-        _exit(-1);
-    }
-    httpd->family = iniparser_getint(dict, "HTTPD:inet_family", AF_INET);
-    httpd->sock_type = iniparser_getint(dict, "HTTPD:socket_type", SOCK_STREAM);
-    httpd->ip = iniparser_getstr(dict, "HTTPD:service_ip");
-    httpd->port = iniparser_getint(dict, "HTTPD:service_port", 80);
-    httpd->working_mode = iniparser_getint(dict, "HTTPD:working_mode", WORKING_PROC);
-    httpd->service_type = iniparser_getint(dict, "HTTPD:service_type", S_SERVICE);
-    httpd->service_name = iniparser_getstr(dict, "HTTPD:service_name");
-    httpd->nprocthreads = iniparser_getint(dict, "HTTPD:nprocthreads", 1);
-    httpd->ndaemons = iniparser_getint(dict, "HTTPD:ndaemons", 0);
-    httpd->niodaemons = iniparser_getint(dict, "HTTPD:niodaemons", 1);
-    httpd->use_cond_wait = iniparser_getint(dict, "HTTPD:use_cond_wait", 0);
-    if(iniparser_getint(dict, "HTTPD:use_cpu_set", 0) > 0) httpd->flag |= SB_CPU_SET;
-    if(iniparser_getint(dict, "HTTPD:event_lock", 0) > 0) httpd->flag |= SB_EVENT_LOCK;
-    if(iniparser_getint(dict, "HTTPD:newconn_delay", 0) > 0) httpd->flag |= SB_NEWCONN_DELAY;
-    if(iniparser_getint(dict, "HTTPD:tcp_nodelay", 0) > 0) httpd->flag |= SB_TCP_NODELAY;
-    if(iniparser_getint(dict, "HTTPD:socket_linger", 0) > 0) httpd->flag |= SB_SO_LINGER;
-    if(iniparser_getint(dict, "HTTPD:while_send", 0) > 0) httpd->flag |= SB_WHILE_SEND;
-    if(iniparser_getint(dict, "HTTPD:log_thread", 0) > 0) httpd->flag |= SB_LOG_THREAD;
-    if(iniparser_getint(dict, "HTTPD:use_outdaemon", 0) > 0) httpd->flag |= SB_USE_OUTDAEMON;
-    if(iniparser_getint(dict, "HTTPD:use_evsig", 0) > 0) httpd->flag |= SB_USE_EVSIG;
-    if(iniparser_getint(dict, "HTTPD:use_cond", 0) > 0) httpd->flag |= SB_USE_COND;
-    if((n = iniparser_getint(dict, "HTTPD:sched_realtime", 0)) > 0) httpd->flag |= (n & (SB_SCHED_RR|SB_SCHED_FIFO));
-    if((n = iniparser_getint(dict, "HTTPD:io_sleep", 0)) > 0) httpd->flag |= ((SB_IO_NANOSLEEP|SB_IO_USLEEP|SB_IO_SELECT) & n);
-    httpd->nworking_tosleep = iniparser_getint(dict, "HTTPD:nworking_tosleep", SB_NWORKING_TOSLEEP);
-    httpd->set_log(httpd, iniparser_getstr(dict, "HTTPD:logfile"));
-    httpd->set_log_level(httpd, iniparser_getint(dict, "HTTPD:log_level", 0));
-    httpd->session.packet_type = iniparser_getint(dict, "HTTPD:packet_type",PACKET_DELIMITER);
-    httpd->session.packet_delimiter = iniparser_getstr(dict, "HTTPD:packet_delimiter");
-    p = s = httpd->session.packet_delimiter;
-    while(*p != 0 )
-    {
-        if(*p == '\\' && *(p+1) == 'n')
-        {
-            *s++ = '\n';
-            p += 2;
-        }
-        else if (*p == '\\' && *(p+1) == 'r')
-        {
-            *s++ = '\r';
-            p += 2;
-        }
-        else
-            *s++ = *p++;
-    }
-    *s++ = 0;
-    httpd->session.packet_delimiter_length = strlen(httpd->session.packet_delimiter);
-    httpd->session.buffer_size = iniparser_getint(dict, "HTTPD:buffer_size", SB_BUF_SIZE);
-    httpd->session.packet_reader = &httpd_packet_reader;
-    httpd->session.packet_handler = &httpd_packet_handler;
-    httpd->session.data_handler = &httpd_data_handler;
-    httpd->session.timeout_handler = &httpd_timeout_handler;
-    httpd->session.oob_handler = &httpd_oob_handler;
     /* EXTRACTOR */
     if((extractor = service_init()) == NULL)
     {
@@ -906,7 +635,7 @@ int sbase_initialize(SBASE *sbase, char *conf)
             tasks[i].html = html_init();
         }
     }
-    return (sbase->add_service(sbase, httpd) | sbase->add_service(sbase, extractor));
+    return sbase->add_service(sbase, extractor);
 }
 
 /* stop extractor */
@@ -988,7 +717,6 @@ int main(int argc, char **argv)
     //sbase->running(sbase, 60000000);
     //sbase->stop(sbase);
     sbase->clean(sbase);
-    if(http_headers_map) http_headers_map_clean(http_headers_map);
     if(dict)iniparser_free(dict);
     if(tasks)
     {
@@ -1000,6 +728,5 @@ int main(int argc, char **argv)
     }
     if(taskqueue){iqueue_clean(taskqueue);}
     if(argvmap)mtrie_clean(argvmap);
-    if(httpd_index_html_code) free(httpd_index_html_code);
     return 0;
 }
