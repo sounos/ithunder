@@ -4070,7 +4070,7 @@ int xtask_over_extract(XTASK *xtask, int taskid, char *data, int ndata)
     char *p = NULL, *end = NULL, *tail = NULL, *mm = NULL;
     int ret = -1, x = 0, parentid = 0, id = 0;
     XTURLNODE urlnode = {0};
-    char url[XT_URL_MAX];
+    char url[XT_URL_SIZE];
     XTRES *res = NULL;
     XTITEM *item = NULL;
 
@@ -4129,7 +4129,7 @@ int xtask_over_extract(XTASK *xtask, int taskid, char *data, int ndata)
                         }
                     }
                 }
-                if(res->length < sizeof(XTRES)) xtask_get_url(xtask, res->id, url);
+                if(res->length <= sizeof(XTRES)) xtask_get_url(xtask, res->id, url);
                 OVER_EXTRACT_STATE(xtask, res, url);
                 ACCESS_LOGGER(xtask->logger, "over-extract-data urlid:%d", res->id);
             }

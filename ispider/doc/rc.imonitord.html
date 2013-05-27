@@ -1840,7 +1840,8 @@
                             block += "</textarea><br>";
                             block += "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
                             block += "<select name='nodeid_"+i+"' ";
-                            if(map && (map[i-1]['flag'] & 1)) block += " ";
+                            if(map && map.length >= arr.length && (map[i-1]['flag'] & 1)) 
+                                block += " ";
                             else block += " disabled ";
                             block += ">";
                             block += "<option value='-1' selected>关联节点</option>";
@@ -1849,7 +1850,8 @@
                                 for(x in childs)
                                 {
                                     block += "<option value='"+x+"' ";
-                                    if(map && map[i-1]['nodeid'] == x) block += " selected ";
+                                    if(map && map.length >= arr.length && map[i-1]['nodeid'] == x) 
+                                        block += " selected ";
                                     block += ">"+ childs[x]+" </option>";
                                 }
                             }
@@ -1861,12 +1863,13 @@
                             block += "&nbsp;&nbsp;";
                             block += "<span title='自动拼接为完成链接'>";
                             block += "<input type=checkbox name='is_link_"+i+"'";
-                            if(map && map[i-1]['flag'] & 1) block += " checked ";
+                            if(map && map.length >= arr.length && (map[i-1]['flag'] & 1)) 
+                                block += " checked ";
                             block += " onclick='selectURL(this.form,this,"+i+")'>链接</span>";
                            
                             block += "<span title='链接标识一条完整信息的结束'>";
                             block += "<input type=checkbox name='is_uniqe_"+i+"'";
-                            if(map && map[i-1]['flag'] & 1) 
+                            if(map && map.length >= arr.length && (map[i-1]['flag'] & 1)) 
                             {
                                 if(map[i-1]['flag'] & 32)
                                     block += " checked ";
@@ -1877,7 +1880,7 @@
                             block += "&nbsp;&nbsp;";
                             block += "<span title='列表页将会优先下载并且会定期更新'>";
                             block += "<input type=checkbox name='is_list_"+i+"'";
-                            if(map && map[i-1]['flag'] & 1) 
+                            if(map && map.length >= arr.length && (map[i-1]['flag'] & 1)) 
                             {
                                 if(map[i-1]['flag'] & 64)
                                     block += " checked ";
@@ -1888,7 +1891,7 @@
                             block += "&nbsp;&nbsp;";
                             block += "<span title='下载存储为文件比如:图片,mp3等'>";
                             block += "<input type=checkbox name='is_file_"+i+"'";
-                            if(map && map[i-1]['flag'] & 1) 
+                            if(map && map.length >= arr.length && (map[i-1]['flag'] & 1)) 
                             {
                                 if(map[i-1]['flag'] & 2)
                                     block += " checked ";
@@ -1899,7 +1902,7 @@
                             block += "&nbsp;&nbsp;";
                             block += "<span title='列表页分页'>";
                             block += "<input type=checkbox name='is_page_"+i+"'";
-                            if(map && map[i-1]['flag'] & 1) 
+                            if(map && map.length >= arr.length && (map[i-1]['flag'] & 1)) 
                             {
                                 if(map[i-1]['flag'] & 256)
                                     block += " checked ";
@@ -1916,7 +1919,7 @@
                                 for(x in dbase['tables'][tableid]['fields'])
                                 {
                                     block += "<option value='"+x+"' ";
-                                    if(map && map[i-1]['fieldid'] == x) 
+                                    if(map && map.length >= arr.length && map[i-1]['fieldid'] == x) 
                                         block += " selected ";
                                     block += ">"+dbase['tables'][tableid]['fields'][x]['name']
                                         +"</option>";
@@ -1930,27 +1933,32 @@
                             block += "&nbsp;&nbsp;";
                             block += "<span title='同一字段多块内容合并在一起'>";
                             block += "<input type=checkbox name='is_multiple_"+i+"'";
-                            if(map && map[i-1]['flag'] & 1024) block += " checked ";
+                            if(map && map.length >= arr.length && (map[i-1]['flag'] & 1024)) 
+                                block += " checked ";
                             block += ">内容合并</span>";
                             block += "&nbsp;&nbsp;";
                             block += "<span title='转换时间戳为UNIXTIME'>";
                             block += "<input type=checkbox name='is_datetime_"+i+"'";
-                            if(map && map[i-1]['flag'] & 512) block += " checked ";
+                            if(map && map.length >= arr.length && (map[i-1]['flag'] & 512)) 
+                                block += " checked ";
                             block += ">时间戳</span>";
                             block += "&nbsp;&nbsp;";
                             block += "<span title='拼接完整的URL地址'>";
                             block += "<input type=checkbox name='is_url_"+i+"'";
-                            if(map && map[i-1]['flag'] & 128) block += " checked ";
+                            if(map && map.length >= arr.length && (map[i-1]['flag'] & 128)) 
+                                block += " checked ";
                             block += ">URL</span>";
                             block += "&nbsp;&nbsp;";
                             block += "<span title='去掉html标签后的文本内容'>";
                             block += "<input type=checkbox name='is_need_clearhtml_"+i+"'";
-                            if(map && map[i-1]['flag'] & 4) block += " checked ";
+                            if(map && map.length >= arr.length && (map[i-1]['flag'] & 4)) 
+                                block += " checked ";
                             block += ">去HTML</span>";
                             block += "&nbsp;&nbsp;";
                             block += "<span title='去掉疑似广告的部分内容，该功能谨慎使用'>";
                             block += "<input type=checkbox name='is_need_antispam_"+i+"'";
-                            if(map && map[i-1]['flag'] & 8) block += " checked ";
+                            if(map && map.length >= arr.length && (map[i-1]['flag'] & 8))
+                                block += " checked ";
                             block += ">去广告</span>";
                             block += "<hr>";
                         }
