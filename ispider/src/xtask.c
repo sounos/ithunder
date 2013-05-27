@@ -4051,14 +4051,14 @@ int xtask__over__extract(XTASK *xtask, int taskid)
     }
     return ret;
 }
-#define OVER_EXTRACT_STATE(xtask, res)                                          \
+#define OVER_EXTRACT_STATE(xtask, res, url)                                     \
 do                                                                              \
 {                                                                               \
     MUTEX_LOCK(xtask->mutex);                                                   \
     if(res->length <= sizeof(XTRES))                                            \
     {                                                                           \
-        WARN_LOGGER(xtask->logger, "err_extract{urlid:%d,nodeid:%d,length:%d}", \
-                res->id, res->nodeid, res->length);                             \
+        WARN_LOGGER(xtask->logger, "err_extract{urlid:%d,nodeid:%d,length:%d(%s)}", \
+                res->id, res->nodeid, res->length, url);                             \
         xtask->state->err_extract++;                                            \
     }                                                                           \
     xtask->state->over_extract++;                                               \
@@ -4070,6 +4070,7 @@ int xtask_over_extract(XTASK *xtask, int taskid, char *data, int ndata)
     char *p = NULL, *end = NULL, *tail = NULL, *mm = NULL;
     int ret = -1, x = 0, parentid = 0, id = 0;
     XTURLNODE urlnode = {0};
+    char url[XT_URL_MAX];
     XTRES *res = NULL;
     XTITEM *item = NULL;
 
@@ -4128,7 +4129,8 @@ int xtask_over_extract(XTASK *xtask, int taskid, char *data, int ndata)
                         }
                     }
                 }
-                OVER_EXTRACT_STATE(xtask, res);
+                if(res->length < sizeof(XTRES)) xtask_get_url(xtask, res->id, url);
+                OVER_EXTRACT_STATE(xtask, res, url);
                 ACCESS_LOGGER(xtask->logger, "over-extract-data urlid:%d", res->id);
             }
             else

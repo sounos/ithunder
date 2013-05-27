@@ -1116,7 +1116,7 @@ int sbase_initialize(SBASE *sbase, char *conf)
     httpd->ip = iniparser_getstr(dict, "HTTP:service_ip");
     httpd->port = iniparser_getint(dict, "HTTP:service_port", 80);
     httpd->working_mode = iniparser_getint(dict, "HTTP:working_mode", WORKING_PROC);
-    httpd->service_type = iniparser_getint(dict, "HTTP:service_type", S_SERVICE);
+    httpd->service_type = iniparser_getint(dict, "HTTP:service_type", C_SERVICE);
     httpd->service_name = iniparser_getstr(dict, "HTTP:service_name");
     httpd->nprocthreads = iniparser_getint(dict, "HTTP:nprocthreads", 1);
     httpd->ndaemons = iniparser_getint(dict, "HTTP:ndaemons", 0);
