@@ -71,7 +71,7 @@ do                                                                              
 {                                                                               \
     if(x &&  MMT(x)->end <  MMT(x)->size)                                       \
     {                                                                           \
-        MMT(x)->old += MMT(x)->end ;                                            \
+        MMT(x)->old = MMT(x)->end ;                                             \
         MMT(x)->end += (off_t)MMTREE_INCRE_NUM * (off_t)sizeof(MTNODE);         \
         if(ftruncate(MMT(x)->fd, MMT(x)->end) == 0)                             \
         {                                                                       \
