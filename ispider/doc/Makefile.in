@@ -135,7 +135,7 @@ EXTRA_DIST = base64.php ispider.spec rc.imonitord.ini rc.imonitord.html \
 rc.imonitord.init rc.ispider.ini rc.ispider.init rc.iextractor.ini rc.iextractor.init
 
 conftodir = "`echo $(sysconfdir)|sed -e 's|/usr/etc|/etc|'`"
-initdir = "$(DESTDIR)$(conftodir)/rc.d/init.d"
+initdir = "$(DESTDIR)$(conftodir)/init.d"
 sysconftodir = "$(DESTDIR)$(conftodir)"
 bintodir = "$(DESTDIR)/$(bindir)"
 htmltodir = "$(DESTDIR)$(htmldir)"

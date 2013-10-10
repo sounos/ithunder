@@ -135,7 +135,7 @@ EXTRA_DIST = rc.ithinkd.ini rc.ithinkd.html rc.ithinkd.init base64.php \
 rc.idispatchd.ini rc.idispatchd.html rc.idispatchd.init ithunder.spec 
 
 conftodir = "`echo $(sysconfdir)|sed -e 's|/usr/etc|/etc|'`"
-initdir = "$(DESTDIR)$(conftodir)/rc.d/init.d"
+initdir = "$(DESTDIR)$(conftodir)/init.d"
 sysconftodir = "$(DESTDIR)$(conftodir)"
 htmltodir = "$(DESTDIR)$(htmldir)"
 all: all-am

@@ -137,7 +137,7 @@ EXTRA_DIST = rc.hindexd.ini rc.hidocd.ini rc.himasterd.ini rc.dict.txt \
 			 rc.hindexd.html rc.hidocd.html rc.himasterd.html hiservice.sh
 
 conftodir = "`echo $(sysconfdir)|sed -e 's|/usr/etc|/etc|'`"
-initdir = "$(DESTDIR)$(conftodir)/rc.d/init.d"
+initdir = "$(DESTDIR)$(conftodir)/init.d"
 sysconftodir = "$(DESTDIR)$(conftodir)"
 sbintodir = $(DESTDIR)$(sbindir)
 htmltodir = $(DESTDIR)$(htmldir)
