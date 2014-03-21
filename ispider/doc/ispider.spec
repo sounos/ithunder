@@ -67,7 +67,7 @@ Internet Infomation Spider
 %{_bindir}/*
 %{_sbindir}/*
 %{_localstatedir}/*
-%{_sysconfdir}/rc.d/*
+%{_sysconfdir}/init.d/*
 %config(noreplace) %{_sysconfdir}/*.ini
 
 %changelog
