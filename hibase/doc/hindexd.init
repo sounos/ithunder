@@ -1,25 +1,25 @@
 #!/bin/sh
 
 ### BEGIN INIT INFO
-# Provides:	  hidocd
+# Provides:	  hindexd
 # Required-Start:    $local_fs $remote_fs $network $syslog $named
 # Required-Stop:     $local_fs $remote_fs $network $syslog $named
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
-# Short-Description: starts hidocd service
-# Description:       starts hidocd using start-stop-daemon
+# Short-Description: starts hindexd service
+# Description:       starts hindexd using start-stop-daemon
 ### END INIT INFO
 
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
-DAEMON=/usr/sbin/hidocd
-NAME=hidocd
-DESC=hidocd
-DAEMON_OPTS="-d -c /etc/hidocd.ini"
+DAEMON=/usr/sbin/hindexd
+NAME=hindexd
+DESC=hindexd
+DAEMON_OPTS="-d -c /etc/hindexd.ini"
 
 
-# Include hidocd defaults if available
-if [ -r /etc/default/hidocd ]; then
-	. /etc/default/hidocd
+# Include hindexd defaults if available
+if [ -r /etc/default/hindexd ]; then
+	. /etc/default/hindexd
 fi
 
 test -x $DAEMON || exit 0
@@ -27,9 +27,9 @@ test -x $DAEMON || exit 0
 . /lib/init/vars.sh
 . /lib/lsb/init-functions
 
-PID=/var/run/hidocd.pid
+PID=/var/run/hindexd.pid
 
-# Check if the ULIMIT is set in /etc/default/hidocd
+# Check if the ULIMIT is set in /etc/default/hindexd
 if [ -n "$ULIMIT" ]; then
 	# Set the ulimits
 	ulimit $ULIMIT
@@ -51,7 +51,7 @@ do_start()
 		|| return 2
 }
 
-test_hidocd_config() {
+test_hindexd_config() {
 	$DAEMON -t $DAEMON_OPTS >/dev/null 2>&1
 }
 
@@ -89,15 +89,15 @@ do_rotate() {
 }
 
 #
-# Online upgrade hidocd executable
+# Online upgrade hindexd executable
 #
 # "Upgrading Executable on the Fly"
-# http://hidocd.org/en/docs/control.html
+# http://hindexd.org/en/docs/control.html
 #
 do_upgrade() {
 	# Return
-	#   0 if hidocd has been successfully upgraded
-	#   1 if hidocd is not running
+	#   0 if hindexd has been successfully upgraded
+	#   1 if hindexd is not running
 	#   2 if the pid files were not created on time
 	#   3 if the old master could not be killed
 	if start-stop-daemon --stop --signal USR2 --quiet --pidfile $PID --name $NAME; then
@@ -140,8 +140,8 @@ case "$1" in
 	restart)
 		log_daemon_msg "Restarting $DESC" "$NAME"
 
-		# Check configuration before stopping hidocd
-		if ! test_hidocd_config; then
+		# Check configuration before stopping hindexd
+		if ! test_hindexd_config; then
 			log_end_msg 1 # Configuration error
 			exit 0
 		fi
@@ -165,13 +165,13 @@ case "$1" in
 	reload|force-reload)
 		log_daemon_msg "Reloading $DESC configuration" "$NAME"
 
-		# Check configuration before reload hidocd
+		# Check configuration before reload hindexd
 		#
-		# This is not entirely correct since the on-disk hidocd binary
+		# This is not entirely correct since the on-disk hindexd binary
 		# may differ from the in-memory one, but that's not common.
 		# We prefer to check the configuration and return an error
 		# to the administrator.
-		if ! test_hidocd_config; then
+		if ! test_hindexd_config; then
 			log_end_msg 1 # Configuration error
 			exit 0
 		fi
@@ -181,7 +181,7 @@ case "$1" in
 		;;
 	configtest|testconfig)
 		log_daemon_msg "Testing $DESC configuration"
-		test_hidocd_config
+		test_hindexd_config
 		log_end_msg $?
 		;;
 	status)

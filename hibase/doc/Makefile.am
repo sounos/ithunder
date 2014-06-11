@@ -1,7 +1,9 @@
 #automake 
 EXTRA_DIST = rc.hindexd.ini rc.hidocd.ini rc.himasterd.ini rc.dict.txt \
 			 rc.hidocd rc.hindexd rc.himasterd base64.php  hibase.spec \
-			 rc.hindexd.html rc.hidocd.html rc.himasterd.html hiservice.sh
+			 rc.hindexd.html rc.hidocd.html rc.himasterd.html hiservice.sh \
+			 hidocd.init hindexd.init himasterd.init
+
 
 install: install-ini
 
@@ -15,6 +17,7 @@ sbintodir = $(DESTDIR)$(sbindir)
 
 htmldir = "`echo @prefix@"/var/html"|sed -e 's|/usr/var|/var|g'`"
 htmltodir = $(DESTDIR)$(htmldir)
+isubuntu = "`uname -v|grep Ubuntu`"
 
 install-ini:
 	@echo install *.html to $(htmldir)
@@ -66,28 +69,30 @@ install-ini:
 		$(sysconftodir)/himasterd.ini \
 		$(sysconftodir)/hiqparserd.ini \
 		$(sysconftodir)/hiqdocd.ini
-	if [ "`uname -a|grep Ubuntu`" != "" ];then \
-	@test -f $(initdir)/hindexd \
-		|| cp -p hindexd.init $(initdir)/hindexd
-	@test -f $(initdir)/hidocd \
-		|| cp -p hidocd.init $(initdir)/hidocd
-	@test -f $(initdir)/himasterd \
-		|| cp -p himasterd.init $(initdir)/himasterd
-	@test -f $(initdir)/hiqparserd 	\
-		|| cp -p hindexd.init $(initdir)/hiqparserd
-	@test -f $(initdir)/hiqdocd \
-		|| cp -p hindexd.init $(initdir)/hiqdocd
-	else
-	@test -f $(initdir)/hindexd \
-		|| cp -p rc.hindexd $(initdir)/hindexd
-	@test -f $(initdir)/hidocd \
-		|| cp -p rc.hidocd $(initdir)/hidocd
-	@test -f $(initdir)/himasterd \
-		|| cp -p rc.himasterd $(initdir)/himasterd
-	@test -f $(initdir)/hiqparserd 	\
-		|| cp -p rc.hindexd $(initdir)/hiqparserd
-		@test -f $(initdir)/hiqdocd \
-		|| cp -p rc.hindexd $(initdir)/hiqdocd
+	@echo "install init scripts"
+	@if [ $(isubuntu) != "" ]; \
+	then \
+		test -f $(initdir)/hindexd \
+			|| cp -p hindexd.init $(initdir)/hindexd;\
+		test -f $(initdir)/hidocd \
+			|| cp -p hidocd.init $(initdir)/hidocd;\
+		test -f $(initdir)/himasterd \
+			|| cp -p himasterd.init $(initdir)/himasterd;\
+		test -f $(initdir)/hiqparserd 	\
+			|| cp -p hindexd.init $(initdir)/hiqparserd;\
+		test -f $(initdir)/hiqdocd \
+			|| cp -p hindexd.init $(initdir)/hiqdocd ;\
+	else \
+		test -f $(initdir)/hindexd \
+			|| cp -p rc.hindexd $(initdir)/hindexd;\
+		test -f $(initdir)/hidocd \
+			|| cp -p rc.hidocd $(initdir)/hidocd;\
+		test -f $(initdir)/himasterd \
+			|| cp -p rc.himasterd $(initdir)/himasterd;\
+		test -f $(initdir)/hiqparserd 	\
+			|| cp -p rc.hindexd $(initdir)/hiqparserd;\
+		test -f $(initdir)/hiqdocd \
+			|| cp -p rc.hindexd $(initdir)/hiqdocd;\
 	fi
 	@perl -i -p -e  "s/hindex/hiqparser/g" $(initdir)/hiqparserd
 	@perl -i -p -e  "s/HINDEX/HIQPARSER/g" $(initdir)/hiqparserd
