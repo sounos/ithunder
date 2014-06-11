@@ -66,6 +66,18 @@ install-ini:
 		$(sysconftodir)/himasterd.ini \
 		$(sysconftodir)/hiqparserd.ini \
 		$(sysconftodir)/hiqdocd.ini
+	if [ "`uname -a|grep Ubuntu`" != "" ];then \
+	@test -f $(initdir)/hindexd \
+		|| cp -p hindexd.init $(initdir)/hindexd
+	@test -f $(initdir)/hidocd \
+		|| cp -p hidocd.init $(initdir)/hidocd
+	@test -f $(initdir)/himasterd \
+		|| cp -p himasterd.init $(initdir)/himasterd
+	@test -f $(initdir)/hiqparserd 	\
+		|| cp -p hindexd.init $(initdir)/hiqparserd
+	@test -f $(initdir)/hiqdocd \
+		|| cp -p hindexd.init $(initdir)/hiqdocd
+	else
 	@test -f $(initdir)/hindexd \
 		|| cp -p rc.hindexd $(initdir)/hindexd
 	@test -f $(initdir)/hidocd \
@@ -74,10 +86,11 @@ install-ini:
 		|| cp -p rc.himasterd $(initdir)/himasterd
 	@test -f $(initdir)/hiqparserd 	\
 		|| cp -p rc.hindexd $(initdir)/hiqparserd
+		@test -f $(initdir)/hiqdocd \
+		|| cp -p rc.hindexd $(initdir)/hiqdocd
+	fi
 	@perl -i -p -e  "s/hindex/hiqparser/g" $(initdir)/hiqparserd
 	@perl -i -p -e  "s/HINDEX/HIQPARSER/g" $(initdir)/hiqparserd
-	@test -f $(initdir)/hiqdocd \
-		|| cp -p rc.hindexd $(initdir)/hiqdocd
 	@perl -i -p -e  "s/hindex/hiqdoc/g" $(initdir)/hiqdocd
 	@perl -i -p -e  "s/HINDEX/HIQDOC/g" $(initdir)/hiqdocd
 	@perl -i -p -e "s@/usr/local/sbin@$(prefix)/sbin@g" $(initdir)/hindexd \

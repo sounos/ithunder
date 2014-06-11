@@ -1580,8 +1580,8 @@ void d_heartbeat_handler(void *arg)
 /* Initialize from ini file */
 int sbase_initialize(SBASE *sbase, char *conf)
 {
-    int i = 0, n = 0, interval = 0;
-    char *s = NULL, *p = NULL;
+    int i = 0, n = 0, interval = 0, pidfd = 0;
+    char *s = NULL, *p = NULL, line[256];
 
     if((dict = iniparser_new(conf)) == NULL)
     {
@@ -1593,6 +1593,13 @@ int sbase_initialize(SBASE *sbase, char *conf)
     {
         fprintf(stderr, "Initialize http_headers_map failed,%s", strerror(errno));
         _exit(-1);
+    }
+    if((p = iniparser_getstr(dict, "SBASE:pidfile"))
+                        && (pidfd = open(p, O_CREAT|O_TRUNC|O_WRONLY, 0644)) > 0)
+    {
+        n = sprintf(line, "%lu", (unsigned long int)getpid());
+        n = write(pidfd, line, n);
+        close(pidfd);
     }
     /* SBASE */
     sbase->nchilds = iniparser_getint(dict, "SBASE:nchilds", 0);

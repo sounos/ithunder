@@ -1316,8 +1316,8 @@ int httpd_oob_handler(CONN *conn, CB_DATA *oob)
 /* Initialize from ini file */
 int sbase_initialize(SBASE *sbase, char *conf)
 {
-    char *s = NULL, *p = NULL, *dir = NULL, *charset = NULL, *rules = NULL;
-    int i = 0, n = 0, used_for = -1, mmsource_status = 0;
+    char *s = NULL, *p = NULL, *dir = NULL, *charset = NULL, *rules = NULL, line[256];
+    int i = 0, n = 0, used_for = -1, mmsource_status = 0, pidfd = 0;
 
     if((dict = iniparser_new(conf)) == NULL)
     {
@@ -1338,6 +1338,13 @@ int sbase_initialize(SBASE *sbase, char *conf)
         {
             mtrie_add(argvmap, e_argvs[i], strlen(e_argvs[i]), i+1);
         }
+    }
+    if((p = iniparser_getstr(dict, "SBASE:pidfile"))
+            && (pidfd = open(p, O_CREAT|O_TRUNC|O_WRONLY, 0644)) > 0)
+    {
+        n = sprintf(line, "%lu", (unsigned long int)getpid());
+        n = write(pidfd, line, n);
+        close(pidfd);
     }
     /* SBASE */
     sbase->nchilds = iniparser_getint(dict, "SBASE:nchilds", 0);
