@@ -2,7 +2,7 @@
 EXTRA_DIST = rc.hindexd.ini rc.hidocd.ini rc.himasterd.ini rc.dict.txt \
 			 rc.hidocd rc.hindexd rc.himasterd base64.php  hibase.spec \
 			 rc.hindexd.html rc.hidocd.html rc.himasterd.html hiservice.sh \
-			 hidocd.init hindexd.init himasterd.init
+			 hidocd.init hindexd.init himasterd.init sinit
 
 
 install: install-ini

@@ -1,0 +1,4 @@
+#!/bin/bash
+nod=$1;
+update-rc.d -f $nod start 21 2 3 4 5 . stop 21 0 1 6 .
+update-rc.d $nod enable

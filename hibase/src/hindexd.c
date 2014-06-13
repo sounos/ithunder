@@ -852,6 +852,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
         {
             query->double_order_field = orderby;
         }
+        //DEBUG_LOGGER(logger, "int_from:%d int_to:%d long_from:%d long_to:%d  double_from:%d double_to:%d orderby:%d/%d", int_index_from, int_index_to, long_index_from, long_index_to, double_index_from, double_index_to, orderby, query->double_order_field);
         /* range */
         if((p = range_filter))
         {
