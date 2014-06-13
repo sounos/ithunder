@@ -30,7 +30,8 @@ install-ini:
 	@echo install genservice.sh to $(sbintodir)
 	@test -d $(sbintodir) || mkdir -p $(sbintodir)
 	@cp -p hiservice.sh $(sbintodir)
-	@chmod 755 $(sbintodir)/hiservice.sh
+	@cp -p sinit $(sbintodir)
+	@chmod 755 $(sbintodir)/hiservice.sh $(sbintodir)/sinit
 	@echo "link $(sbintodir)/hindexd to $(sbintodir)/hiqdocd|hiqparserd"
 	@ln -sf $(sbindir)/hindexd $(sbintodir)/hiqdocd
 	@ln -sf $(sbindir)/hindexd $(sbintodir)/hiqparserd
