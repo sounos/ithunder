@@ -1,3 +1,4 @@
+#include <inttypes.h>
 #ifndef _IBASE_H_
 #define _IBASE_H_
 #ifdef __cplusplus
@@ -229,23 +230,23 @@ typedef struct _FXLONG
     int no;
     int bits;
 }FXLONG;
-typedef struct _XINT
+typedef struct _VINT
 {
     int32_t val;
     uint32_t nodeid;
-}XINT;
-typedef struct _XLONG
+}VINT;
+typedef struct _VLONG
 {
     int64_t  val;
     uint32_t nodeid;
     uint32_t bits;
-}XLONG;
-typedef struct _XDOUBLE
+}VLONG;
+typedef struct _VDOUBLE
 {
     double  val;
     uint32_t nodeid;
     uint32_t bits;
-}XDOUBLE;
+}VDOUBLE;
 #define IB_CATBIT_SET   0x01
 #define IB_CATBIT_UNSET 0x02
 #define IB_RANK_SET     0x04

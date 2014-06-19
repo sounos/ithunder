@@ -4,6 +4,7 @@
 #define MMTREE64_NODES_MAX    2000000000
 #define MMTREE64_MUTEX_MAX    256
 #define MMTREE64_ROOT_MAX     10240
+#include <inttypes.h>
 #include "mutex.h"
 typedef struct _MTNODE64
 {

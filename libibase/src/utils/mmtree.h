@@ -1,5 +1,6 @@
 #ifndef _MMTREE_H
 #define _MMTREE_H
+#include <inttypes.h>
 #include "mutex.h"
 #define MMTREE_INCRE_NUM    1000000
 #define MMTREE_NODES_MAX    2000000000

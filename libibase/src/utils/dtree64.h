@@ -4,6 +4,7 @@
 #define DTREE64_NODES_MAX    2000000000
 #define DTREE64_MUTEX_MAX    256
 #define DTREE64_ROOT_MAX     10240
+#include <inttypes.h>
 #include "mutex.h"
 typedef struct _DTNODE64
 {
