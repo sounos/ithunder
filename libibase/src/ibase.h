@@ -74,6 +74,9 @@ extern "C" {
 #define  IB_STATE_NAME           "ibase.state"
 #define  IB_DOCMAP_NAME          "ibase.docmap"
 #define  IB_HEADERS_NAME         "ibase.headers"
+#define  IB_INTIDX_DIR           "int"
+#define  IB_LONGIDX_DIR          "long"
+#define  IB_DOUBLEIDX_DIR        "double"
 #define  IB_INTIDX_NAME          "ibase.int"
 #define  IB_LONGIDX_NAME         "ibase.long"
 #define  IB_DOUBLEIDX_NAME       "ibase.double"
@@ -661,6 +664,9 @@ typedef struct _IBASE
     void *qstrees[IB_STREES_MAX];
     ICHUNK  *qchunks[IB_CHUNKS_MAX];
     void *index; /* index db */
+    void *mmtree; /* int tree */
+    void *mmtree64;/* long tree */
+    void *dtree64;/* double tree */
     void *mmtrie; /* dict */
     void *xmmtrie; /* dict */
     void *docmap; /* globalid to docid map*/
