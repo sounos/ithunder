@@ -331,9 +331,9 @@ int mmtree_new_tree(void *x)
 }
 
 /* total */
-unsigned int mmtree_total(void *x, int rootid)
+uint32_t mmtree_total(void *x, int rootid)
 {
-    unsigned int total = 0;
+    uint32_t total = 0;
 
     if(x && rootid > 0)
     {
@@ -348,9 +348,9 @@ unsigned int mmtree_total(void *x, int rootid)
 }
 
 /* insert new node */
-unsigned int mmtree_insert(void *x, int rootid, int key, int data, int *old)
+uint32_t mmtree_insert(void *x, int rootid, int key, int data, int *old)
 {
-    unsigned int id = 0, nodeid = 0, rid = 0, lid = 0, uid = 0, pid = 0, 
+    uint32_t id = 0, nodeid = 0, rid = 0, lid = 0, uid = 0, pid = 0, 
         gpid = 0, ppid = 0, *prootid = NULL;
     MTNODE *node = NULL;
 
@@ -441,9 +441,9 @@ end:
 }
 
 /* try insert  node */
-unsigned int mmtree_try_insert(void *x, int rootid, int key, int data, int *old)
+uint32_t mmtree_try_insert(void *x, int rootid, int key, int data, int *old)
 {
-    unsigned int id = 0, nodeid = 0, rid = 0, lid = 0, uid = 0, pid = 0, 
+    uint32_t id = 0, nodeid = 0, rid = 0, lid = 0, uid = 0, pid = 0, 
         gpid = 0, ppid = 0, *prootid = NULL;
     MTNODE *node = NULL;
 
@@ -535,9 +535,9 @@ end:
 
 
 /* get node key/data */
-unsigned int mmtree_get(void *x, unsigned int tnodeid, int *key, int *data)
+uint32_t mmtree_get(void *x, uint32_t tnodeid, int *key, int *data)
 {
-    unsigned int id = 0;
+    uint32_t id = 0;
 
     if(x && tnodeid > 0)
     {
@@ -554,9 +554,9 @@ unsigned int mmtree_get(void *x, unsigned int tnodeid, int *key, int *data)
 }
 
 /* find key/data */
-unsigned int mmtree_find(void *x, int rootid, int key, int *data)
+uint32_t mmtree_find(void *x, int rootid, int key, int *data)
 {
-    unsigned int id = 0;
+    uint32_t id = 0;
 
     if(x && rootid > 0)
     {
@@ -590,9 +590,9 @@ unsigned int mmtree_find(void *x, int rootid, int key, int *data)
 }
 
 /* get tree->min key/data */
-unsigned int mmtree_min(void *x, int rootid, int *key, int *data)
+uint32_t mmtree_min(void *x, int rootid, int *key, int *data)
 {
-    unsigned int id = 0;
+    uint32_t id = 0;
 
     if(x && rootid > 0)
     {
@@ -619,7 +619,7 @@ unsigned int mmtree_min(void *x, int rootid, int *key, int *data)
 /* get tree->max key/data */
 unsigned  int mmtree_max(void *x, int rootid, int *key, int *data)
 {
-    unsigned int id = 0, tmp = 0;
+    uint32_t id = 0, tmp = 0;
 
     if(x && rootid > 0)
     {
@@ -644,9 +644,9 @@ unsigned  int mmtree_max(void *x, int rootid, int *key, int *data)
 }
 
 /* get next node key/data */
-unsigned int mmtree_next(void *x, int rootid, unsigned int tnodeid, int *key, int *data)
+uint32_t mmtree_next(void *x, int rootid, uint32_t tnodeid, int *key, int *data)
 {
-    unsigned int id = 0, parentid = 0;
+    uint32_t id = 0, parentid = 0;
 
     if(x && tnodeid > 0)
     {
@@ -694,9 +694,9 @@ end:
 }
 
 /* get prev node key/data */
-unsigned int mmtree_prev(void *x, int rootid, unsigned int tnodeid, int *key, int *data)
+uint32_t mmtree_prev(void *x, int rootid, uint32_t tnodeid, int *key, int *data)
 {
-    unsigned int id = 0, parentid = 0;
+    uint32_t id = 0, parentid = 0;
 
     if(x && tnodeid > 0)
     {
@@ -744,7 +744,7 @@ end:
 }
 
 /* view node */
-void mmtree_view_tnode(void *x, unsigned int tnodeid, FILE *fp)
+void mmtree_view_tnode(void *x, uint32_t tnodeid, FILE *fp)
 {
     if(x)
     {
@@ -777,7 +777,7 @@ void mmtree_view_tree(void *x, int rootid, FILE *fp)
 }
 
 /* set data */
-int mmtree_set_data(void *x, unsigned int tnodeid, int data)
+int mmtree_set_data(void *x, uint32_t tnodeid, int data)
 {
     int old = -1;
 
@@ -795,9 +795,9 @@ int mmtree_set_data(void *x, unsigned int tnodeid, int data)
 }
 
 /* remove node */
-void mmtree_remove(void *x, int rootid, unsigned int tnodeid, int *key, int *data)
+void mmtree_remove(void *x, int rootid, uint32_t tnodeid, int *key, int *data)
 {
-    unsigned int id = 0, pid = 0, parent = 0, child = 0, rid = 0, lid = 0,
+    uint32_t id = 0, pid = 0, parent = 0, child = 0, rid = 0, lid = 0,
         uid = 0, ppid = 0, z = 0, color = 0, *prootid = NULL;
 
     if(x && rootid > 0 && tnodeid > 0)
@@ -907,9 +907,9 @@ color_remove:
 }
 
 /* remove node */
-void mmtree_remove_tnode(void *x, unsigned int tnodeid)
+void mmtree_remove_tnode(void *x, uint32_t tnodeid)
 {
-    unsigned int id = 0;
+    uint32_t id = 0;
 
     if(x)
     {

@@ -5,10 +5,10 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
-#include "mmtree64.h"
+#include "dtree64.h"
 #include "mutex.h"
 #define MMAP_SHARED MAP_SHARED|MAP_LOCKED
-#define MMT(px) ((MMTREE64 *)px)
+#define MMT(px) ((DTREE64 *)px)
 #define MMT_COLOR_BLACK  0
 #define MMT_COLOR_RED    1
 #define MMT_MIN_MAX(x, key, xid)                                                \
@@ -56,8 +56,8 @@ do                                                                              
         if((MMT(x)->start = (char *)mmap(NULL,MMT(x)->size,PROT_READ|PROT_WRITE,\
                     MMAP_SHARED, MMT(x)->fd, 0)) != (void *)-1)                  \
         {                                                                       \
-            MMT(x)->state = (MTSTATE64 *)MMT(x)->start;                           \
-            MMT(x)->map = (MTNODE64 *)(MMT(x)->start + sizeof(MTSTATE64));          \
+            MMT(x)->state = (DTSTATE64 *)MMT(x)->start;                           \
+            MMT(x)->map = (DTNODE64 *)(MMT(x)->start + sizeof(DTSTATE64));          \
         }                                                                       \
     }                                                                           \
 }while(0)
@@ -68,19 +68,19 @@ do                                                                              
     if(x &&  MMT(x)->end <  MMT(x)->size)                                       \
     {                                                                           \
         MMT(x)->old = MMT(x)->end;                                              \
-        MMT(x)->end += (off_t)MMTREE64_INCRE_NUM * (off_t)sizeof(MTNODE64);       \
+        MMT(x)->end += (off_t)DTREE64_INCRE_NUM * (off_t)sizeof(DTNODE64);       \
         if(ftruncate(MMT(x)->fd, MMT(x)->end) == 0)                             \
         {                                                                       \
-            if(MMT(x)->old == sizeof(MTSTATE64))                                  \
+            if(MMT(x)->old == sizeof(DTSTATE64))                                  \
             {                                                                   \
-                memset(MMT(x)->state, 0, sizeof(MTSTATE64));                      \
-                MMT(x)->state->left += MMTREE64_INCRE_NUM - 1;                  \
+                memset(MMT(x)->state, 0, sizeof(DTSTATE64));                      \
+                MMT(x)->state->left += DTREE64_INCRE_NUM - 1;                  \
             }                                                                   \
             else                                                                \
             {                                                                   \
-                MMT(x)->state->left += MMTREE64_INCRE_NUM;                      \
+                MMT(x)->state->left += DTREE64_INCRE_NUM;                      \
             }                                                                   \
-            MMT(x)->state->total += MMTREE64_INCRE_NUM;                         \
+            MMT(x)->state->total += DTREE64_INCRE_NUM;                         \
             memset(MMT(x)->start + MMT(x)->old, 0, MMT(x)->end - MMT(x)->old);  \
         }                                                                       \
         else                                                                    \
@@ -270,53 +270,53 @@ do                                                                              
     }                                                                           \
     if(oid > 0) MMT(x)->map[oid].color = MMT_COLOR_BLACK;                       \
 }while(0)
-void mmtree64_mutex_lock(void *x, int id)
+void dtree64_mutex_lock(void *x, int id)
 {
     if(x)
     {
 #ifdef HAVE_PTHREAD
-        pthread_mutex_lock(&(MMT(x)->mutexs[id%MMTREE64_MUTEX_MAX]));
+        pthread_mutex_lock(&(MMT(x)->mutexs[id%DTREE64_MUTEX_MAX]));
 #endif
     }
     return ;
 }
-void mmtree64_mutex_unlock(void *x, int id)
+void dtree64_mutex_unlock(void *x, int id)
 {
     if(x)
     {
 #ifdef HAVE_PTHREAD
-        pthread_mutex_unlock(&(MMT(x)->mutexs[id%MMTREE64_MUTEX_MAX]));
+        pthread_mutex_unlock(&(MMT(x)->mutexs[id%DTREE64_MUTEX_MAX]));
 #endif
     }
     return ;
 }
 
-/* init mmtree */
-void *mmtree64_init(char *file)
+/* init dtree */
+void *dtree64_init(char *file)
 {
     int i = 0;
     void *x = NULL;
     struct stat  st = {0};
 
-    if((x = (MMTREE64 *)calloc(1, sizeof(MMTREE64))))
+    if((x = (DTREE64 *)calloc(1, sizeof(DTREE64))))
     {
         if((MMT(x)->fd = open(file, O_CREAT|O_RDWR, 0644)) > 0 
                 && fstat(MMT(x)->fd, &st) == 0)
         {
             MUTEX_INIT(MMT(x)->mutex);
             MMT(x)->end = st.st_size;
-            MMT(x)->size = (off_t)sizeof(MTSTATE64) + (off_t)sizeof(MTNODE64) * (off_t)MMTREE64_NODES_MAX;
+            MMT(x)->size = (off_t)sizeof(DTSTATE64) + (off_t)sizeof(DTNODE64) * (off_t)DTREE64_NODES_MAX;
             //mmap
             MMT_MMAP(x);
             //init truncate
             if(st.st_size == 0)
             {
-                MMT(x)->end = (off_t)sizeof(MTSTATE64);
+                MMT(x)->end = (off_t)sizeof(DTSTATE64);
                 MMT_INCRE(x);
             }
             /* initialize mutexs  */
 #ifdef HAVE_PTHREAD
-            for(i = 0; i < MMTREE64_MUTEX_MAX; i++)
+            for(i = 0; i < DTREE64_MUTEX_MAX; i++)
             {
                 pthread_mutex_init(&(MMT(x)->mutexs[i]), NULL);
             }
@@ -333,16 +333,16 @@ void *mmtree64_init(char *file)
 }
 
 /* insert new root */
-int mmtree64_new_tree(void *x)
+int dtree64_new_tree(void *x)
 {
     int id = 0, i = 0;
     if(x)
     {
         MUTEX_LOCK(MMT(x)->mutex);
         if(MMT(x)->state->nroots == 0) MMT(x)->state->nroots = 1;
-        if(MMT(x)->state && MMT(x)->state->nroots < MMTREE64_ROOT_MAX)
+        if(MMT(x)->state && MMT(x)->state->nroots < DTREE64_ROOT_MAX)
         {
-            for(i = 1; i < MMTREE64_ROOT_MAX; i++)
+            for(i = 1; i < DTREE64_ROOT_MAX; i++)
             {
                 if(MMT(x)->state->roots[i].status == 0)
                 {
@@ -359,14 +359,14 @@ int mmtree64_new_tree(void *x)
 }
 
 /* total */
-uint32_t mmtree64_total(void *x, int rootid)
+uint32_t dtree64_total(void *x, int rootid)
 {
     uint32_t total = 0;
 
     if(x && rootid > 0)
     {
         MUTEX_LOCK(MMT(x)->mutex);
-        if(MMT(x)->state && MMT(x)->map && rootid < MMTREE64_ROOT_MAX)
+        if(MMT(x)->state && MMT(x)->map && rootid < DTREE64_ROOT_MAX)
         {
             total =  MMT(x)->state->roots[rootid].total;
         }
@@ -376,13 +376,13 @@ uint32_t mmtree64_total(void *x, int rootid)
 }
 
 //add nodeid to qleft
-void mmtree64_qleft(void *x, int tnodeid)
+void dtree64_qleft(void *x, int tnodeid)
 {
     int z = 0;
     if(x)
     {
         MUTEX_LOCK(MMT(x)->mutex);
-        memset(&(MMT(x)->map[tnodeid]), 0, sizeof(MTNODE64));
+        memset(&(MMT(x)->map[tnodeid]), 0, sizeof(DTNODE64));
         if(MMT(x)->state->qleft == 0)
         {
             MMT(x)->state->qfirst = MMT(x)->state->qlast = tnodeid;
@@ -400,7 +400,7 @@ void mmtree64_qleft(void *x, int tnodeid)
     return ;
 }
 //new node
-uint32_t mmtree64_new_node(void *x, int rootid, int nodeid, int64_t key, int data)
+uint32_t dtree64_new_node(void *x, int rootid, int nodeid, double key, int data)
 {
     uint32_t id = 0;
 
@@ -424,7 +424,7 @@ uint32_t mmtree64_new_node(void *x, int rootid, int nodeid, int64_t key, int dat
         }
         //fprintf(stdout, "%s::%d %d start:%p state:%p map:%p current:%d left:%d total:%d qleft:%d qfirst:%d qlast:%d\n", __FILE__, __LINE__, id, MMT(x)->start, MMT(x)->state, MMT(x)->map, MMT(x)->state->current, MMT(x)->state->left, MMT(x)->state->total, MMT(x)->state->qleft, MMT(x)->state->qfirst, MMT(x)->state->qlast);
         MMT(x)->state->left--;
-        //memset(&(MMT(x)->map[id]), 0, sizeof(MTNODE64));
+        //memset(&(MMT(x)->map[id]), 0, sizeof(DTNODE64));
         MMT(x)->map[id].parent = nodeid;
         MMT(x)->map[id].key = key;
         MMT(x)->map[id].data = data;
@@ -443,16 +443,16 @@ uint32_t mmtree64_new_node(void *x, int rootid, int nodeid, int64_t key, int dat
 }
 
 /* insert new node */
-uint32_t mmtree64_insert(void *x, int rootid, int64_t key, int data, int *old)
+uint32_t dtree64_insert(void *x, int rootid, double key, int data, int *old)
 {
     uint32_t id = 0, nodeid = 0, rid = 0, lid = 0, uid = 0, pid = 0, 
         gpid = 0, ppid = 0, *prootid = NULL;
-    MTNODE64 *node = NULL;
+    DTNODE64 *node = NULL;
 
     if(x && rootid > 0)
     {
-        mmtree64_mutex_lock(x, rootid);
-        if(MMT(x)->state && MMT(x)->map && rootid < MMTREE64_ROOT_MAX
+        dtree64_mutex_lock(x, rootid);
+        if(MMT(x)->state && MMT(x)->map && rootid < DTREE64_ROOT_MAX
                 && MMT(x)->state->roots[rootid].status > 0)
         {
             nodeid = MMT(x)->state->roots[rootid].rootid;
@@ -478,7 +478,7 @@ uint32_t mmtree64_insert(void *x, int rootid, int64_t key, int data, int *old)
                 }
             }
             //new node
-            if(id == 0) id = mmtree64_new_node(x, rootid, nodeid, key, data);
+            if(id == 0) id = dtree64_new_node(x, rootid, nodeid, key, data);
         }
         if((nodeid = id) > 0)
         {
@@ -494,23 +494,23 @@ uint32_t mmtree64_insert(void *x, int rootid, int64_t key, int data, int *old)
             }
         }
 end:
-        mmtree64_mutex_unlock(x, rootid);
+        dtree64_mutex_unlock(x, rootid);
     }
     return id;
 }
 
 
 /* try insert  node */
-uint32_t mmtree64_try_insert(void *x, int rootid, int64_t key, int data, int *old)
+uint32_t dtree64_try_insert(void *x, int rootid, double key, int data, int *old)
 {
     uint32_t id = 0, nodeid = 0, rid = 0, lid = 0, uid = 0, pid = 0, 
         gpid = 0, ppid = 0, *prootid = NULL;
-    MTNODE64 *node = NULL;
+    DTNODE64 *node = NULL;
 
     if(x && rootid > 0)
     {
-        mmtree64_mutex_lock(x, rootid);
-        if(MMT(x)->state && MMT(x)->map && rootid < MMTREE64_ROOT_MAX
+        dtree64_mutex_lock(x, rootid);
+        if(MMT(x)->state && MMT(x)->map && rootid < DTREE64_ROOT_MAX
                 && MMT(x)->state->roots[rootid].status > 0)
         {
             nodeid = MMT(x)->state->roots[rootid].rootid;
@@ -536,7 +536,7 @@ uint32_t mmtree64_try_insert(void *x, int rootid, int64_t key, int data, int *ol
                 }
             }
         }
-        if(id == 0) id = mmtree64_new_node(x, rootid, nodeid, key, data);
+        if(id == 0) id = dtree64_new_node(x, rootid, nodeid, key, data);
         if((nodeid = id) > 0)
         {
             if(MMT(x)->state->roots[rootid].rootid > 0)
@@ -551,14 +551,14 @@ uint32_t mmtree64_try_insert(void *x, int rootid, int64_t key, int data, int *ol
             }
         }
 end:
-        mmtree64_mutex_unlock(x, rootid);
+        dtree64_mutex_unlock(x, rootid);
     }
     return id;
 }
 
 
 /* get node key/data */
-uint32_t mmtree64_get(void *x, uint32_t tnodeid, int64_t *key, int *data)
+uint32_t dtree64_get(void *x, uint32_t tnodeid, double *key, int *data)
 {
     uint32_t id = 0;
 
@@ -577,14 +577,14 @@ uint32_t mmtree64_get(void *x, uint32_t tnodeid, int64_t *key, int *data)
 }
 
 /* find key/data */
-uint32_t mmtree64_find(void *x, int rootid, int64_t key, int *data)
+uint32_t dtree64_find(void *x, int rootid, double key, int *data)
 {
     uint32_t id = 0;
 
     if(x && rootid > 0)
     {
-        mmtree64_mutex_lock(x, rootid);
-        if(MMT(x)->map && MMT(x)->state && rootid < MMTREE64_ROOT_MAX
+        dtree64_mutex_lock(x, rootid);
+        if(MMT(x)->map && MMT(x)->state && rootid < DTREE64_ROOT_MAX
                 && MMT(x)->state->roots[rootid].status > 0)
         {
             //fprintf(stdout, "%s::%d rootid:%d key:%d data:%d total:%d\n", __FILE__, __LINE__, rootid, key, *data, MMT(x)->state->total);
@@ -607,20 +607,20 @@ uint32_t mmtree64_find(void *x, int rootid, int64_t key, int *data)
             }
         }
         //fprintf(stdout, "%s::%d rootid:%d key:%d data:%d\n", __FILE__, __LINE__, rootid, key, *data);
-        mmtree64_mutex_unlock(x, rootid);
+        dtree64_mutex_unlock(x, rootid);
     }
     return id;
 }
 
 /* get tree->min key/data */
-uint32_t mmtree64_min(void *x, int rootid, int64_t *key, int *data)
+uint32_t dtree64_min(void *x, int rootid, double *key, int *data)
 {
     uint32_t id = 0;
 
     if(x && rootid > 0)
     {
-        mmtree64_mutex_lock(x, rootid);
-        if(MMT(x)->map && MMT(x)->state && rootid <  MMTREE64_ROOT_MAX
+        dtree64_mutex_lock(x, rootid);
+        if(MMT(x)->map && MMT(x)->state && rootid <  DTREE64_ROOT_MAX
                 && MMT(x)->state->roots[rootid].status > 0)
         {
             id = MMT(x)->state->roots[rootid].rootid;
@@ -634,20 +634,20 @@ uint32_t mmtree64_min(void *x, int rootid, int64_t *key, int *data)
                 if(data) *data = MMT(x)->map[id].data;
             }
         }
-        mmtree64_mutex_unlock(x, rootid);
+        dtree64_mutex_unlock(x, rootid);
     }
     return id;
 }
 
 /* get tree->max key/data */
-unsigned  int mmtree64_max(void *x, int rootid, int64_t *key, int *data)
+unsigned  int dtree64_max(void *x, int rootid, double *key, int *data)
 {
     uint32_t id = 0, tmp = 0;
 
     if(x && rootid > 0)
     {
-        mmtree64_mutex_lock(x, rootid);
-        if(MMT(x)->map && MMT(x)->state && rootid <  MMTREE64_ROOT_MAX
+        dtree64_mutex_lock(x, rootid);
+        if(MMT(x)->map && MMT(x)->state && rootid <  DTREE64_ROOT_MAX
                 && MMT(x)->state->roots[rootid].status > 0)
         {
             tmp = MMT(x)->state->roots[rootid].rootid;
@@ -661,19 +661,19 @@ unsigned  int mmtree64_max(void *x, int rootid, int64_t *key, int *data)
                 if(data) *data = MMT(x)->map[id].data;
             }
         }
-        mmtree64_mutex_unlock(x, rootid);
+        dtree64_mutex_unlock(x, rootid);
     }
     return id;
 }
 
 /* get next node key/data */
-uint32_t mmtree64_next(void *x, int rootid, uint32_t tnodeid, int64_t *key, int *data)
+uint32_t dtree64_next(void *x, int rootid, uint32_t tnodeid, double *key, int *data)
 {
     uint32_t id = 0, parentid = 0;
 
     if(x && tnodeid > 0 && rootid > 0)
     {
-        mmtree64_mutex_lock(x, rootid);
+        dtree64_mutex_lock(x, rootid);
         if(MMT(x)->map && MMT(x)->state && tnodeid <  MMT(x)->state->total)
         {
             id = tnodeid;
@@ -711,19 +711,19 @@ end:
             }
             //fprintf(stdout, "%s::%d rootid:%d tnodeid:%d id:%d\n",__FILE__, __LINE__, rootid, tnodeid, id);
         }
-        mmtree64_mutex_unlock(x, rootid);
+        dtree64_mutex_unlock(x, rootid);
     }
     return id;
 }
 
 /* get prev node key/data */
-uint32_t mmtree64_prev(void *x, int rootid, uint32_t tnodeid, int64_t *key, int *data)
+uint32_t dtree64_prev(void *x, int rootid, uint32_t tnodeid, double *key, int *data)
 {
     uint32_t id = 0, parentid = 0;
 
     if(x && tnodeid > 0 && rootid > 0)
     {
-        mmtree64_mutex_lock(x, rootid);
+        dtree64_mutex_lock(x, rootid);
         if(MMT(x)->map && MMT(x)->state && tnodeid <  MMT(x)->state->total)
         {
             id = tnodeid;
@@ -761,46 +761,46 @@ end:
             }
             //fprintf(stdout, "%s::%d rootid:%d tnodeid:%d id:%d\n",__FILE__, __LINE__, rootid, tnodeid, id);
         }
-        mmtree64_mutex_unlock(x, rootid);
+        dtree64_mutex_unlock(x, rootid);
     }
     return id;
 }
 
 /* view node */
-void mmtree64_view_tnode(void *x, uint32_t tnodeid, FILE *fp)
+void dtree64_view_tnode(void *x, uint32_t tnodeid, FILE *fp)
 {
     if(x)
     {
         if(MMT(x)->map[tnodeid].left > 0 && MMT(x)->map[tnodeid].left < MMT(x)->state->total)
         {
-            mmtree64_view_tnode(x, MMT(x)->map[tnodeid].left, fp);
+            dtree64_view_tnode(x, MMT(x)->map[tnodeid].left, fp);
         }
         fprintf(fp, "[%d:%lld:%d]\n", tnodeid, (long long)MMT(x)->map[tnodeid].key, MMT(x)->map[tnodeid].data);
         if(MMT(x)->map[tnodeid].right > 0 && MMT(x)->map[tnodeid].right < MMT(x)->state->total)
         {
-            mmtree64_view_tnode(x, MMT(x)->map[tnodeid].right, fp);
+            dtree64_view_tnode(x, MMT(x)->map[tnodeid].right, fp);
         }
     }
     return ;
 }
 
-void mmtree64_view_tree(void *x, int rootid, FILE *fp)
+void dtree64_view_tree(void *x, int rootid, FILE *fp)
 {
     if(x && rootid > 0)
     {
-        mmtree64_mutex_lock(x, rootid);
-        if(MMT(x)->map && MMT(x)->state && rootid < MMTREE64_ROOT_MAX)
+        dtree64_mutex_lock(x, rootid);
+        if(MMT(x)->map && MMT(x)->state && rootid < DTREE64_ROOT_MAX)
         {
             fprintf(stdout, "%s::%d rootid:%d\n", __FILE__, __LINE__, MMT(x)->state->roots[rootid].rootid);
-             mmtree64_view_tnode(x, MMT(x)->state->roots[rootid].rootid, fp);
+             dtree64_view_tnode(x, MMT(x)->state->roots[rootid].rootid, fp);
         }
-        mmtree64_mutex_unlock(x, rootid);
+        dtree64_mutex_unlock(x, rootid);
     }
     return ;
 }
 
 /* set data */
-int mmtree64_set_data(void *x, uint32_t tnodeid, int data)
+int dtree64_set_data(void *x, uint32_t tnodeid, int data)
 {
     int old = -1;
 
@@ -818,14 +818,14 @@ int mmtree64_set_data(void *x, uint32_t tnodeid, int data)
 }
 
 /* remove node */
-void mmtree64_remove(void *x, int rootid, uint32_t tnodeid, int64_t *key, int *data)
+void dtree64_remove(void *x, int rootid, uint32_t tnodeid, double *key, int *data)
 {
     uint32_t id = 0, pid = 0, parent = 0, child = 0, rid = 0, lid = 0,
         uid = 0, ppid = 0, color = 0, *prootid = NULL;
 
     if(x && rootid > 0 && tnodeid > 0)
     {
-        mmtree64_mutex_lock(x, rootid);
+        dtree64_mutex_lock(x, rootid);
         if(MMT(x)->map && MMT(x)->state && tnodeid < MMT(x)->state->total)
         {
             if(key) *key = MMT(x)->map[tnodeid].key;
@@ -908,60 +908,60 @@ color_remove:
                 MMT_REMOVE_COLOR(x, prootid, child, parent, lid, rid, uid, ppid);
             }
             //add to qleft
-            mmtree64_qleft(x, tnodeid);
+            dtree64_qleft(x, tnodeid);
             //fprintf(stdout, "%s::%d %d start:%p state:%p map:%p current:%d left:%d total:%d qleft:%d qfirst:%d qlast:%d\n", __FILE__, __LINE__, id, MMT(x)->start, MMT(x)->state, MMT(x)->map, MMT(x)->state->current, MMT(x)->state->left, MMT(x)->state->total, MMT(x)->state->qleft, MMT(x)->state->qfirst, MMT(x)->state->qlast);
   
         }
-        mmtree64_mutex_unlock(x, rootid);
+        dtree64_mutex_unlock(x, rootid);
     }
     return ;
 }
 
 /* remove node */
-void mmtree64_remove_tnode(void *x, uint32_t tnodeid)
+void dtree64_remove_tnode(void *x, uint32_t tnodeid)
 {
     if(x)
     {
         if(MMT(x)->map[tnodeid].left > 0 && MMT(x)->map[tnodeid].left < MMT(x)->state->total)
         {
-            mmtree64_remove_tnode(x, MMT(x)->map[tnodeid].left);
+            dtree64_remove_tnode(x, MMT(x)->map[tnodeid].left);
         }
         if(MMT(x)->map[tnodeid].right > 0 && MMT(x)->map[tnodeid].right < MMT(x)->state->total)
         {
-            mmtree64_remove_tnode(x, MMT(x)->map[tnodeid].right);
+            dtree64_remove_tnode(x, MMT(x)->map[tnodeid].right);
         }
-        mmtree64_qleft(x, tnodeid);
+        dtree64_qleft(x, tnodeid);
     }
     return ;
 }
 
 /* remove tree */
-void mmtree64_remove_tree(void *x, int rootid)
+void dtree64_remove_tree(void *x, int rootid)
 {
-    if(x && rootid > 0 && rootid < MMTREE64_ROOT_MAX)
+    if(x && rootid > 0 && rootid < DTREE64_ROOT_MAX)
     {
-        mmtree64_mutex_lock(x, rootid);
-        mmtree64_remove_tnode(x, MMT(x)->state->roots[rootid].rootid);
+        dtree64_mutex_lock(x, rootid);
+        dtree64_remove_tnode(x, MMT(x)->state->roots[rootid].rootid);
         MMT(x)->state->roots[rootid].rootid = 0;
         MMT(x)->state->roots[rootid].status = 0;
         //fprintf(stdout, "%s::%d rootid:%d start:%p state:%p map:%p current:%d left:%d total:%d qleft:%d qfirst:%d qlast:%d\n", __FILE__, __LINE__, rootid, MMT(x)->start, MMT(x)->state, MMT(x)->map, MMT(x)->state->current, MMT(x)->state->left, MMT(x)->state->total, MMT(x)->state->qleft, MMT(x)->state->qfirst, MMT(x)->state->qlast);
  
-        mmtree64_mutex_unlock(x, rootid);
+        dtree64_mutex_unlock(x, rootid);
     }
     return ;
 }
 
-//close mmtree
-void mmtree64_close(void *x)
+//close dtree
+void dtree64_close(void *x)
 {
     int i = 0;
     if(x)
     {
-        //fprintf(stdout, "%s::%d start:%p state:%p map:%p current:%d left:%d total:%d qleft:%d qfirst:%d qlast:%d sizeof(MTSTATE64):%d\n", __FILE__, __LINE__, MMT(x)->start, MMT(x)->state, MMT(x)->map, MMT(x)->state->current, MMT(x)->state->left, MMT(x)->state->total, MMT(x)->state->qleft, MMT(x)->state->qfirst, MMT(x)->state->qlast, sizeof(MTSTATE64));
+        //fprintf(stdout, "%s::%d start:%p state:%p map:%p current:%d left:%d total:%d qleft:%d qfirst:%d qlast:%d sizeof(DTSTATE64):%d\n", __FILE__, __LINE__, MMT(x)->start, MMT(x)->state, MMT(x)->map, MMT(x)->state->current, MMT(x)->state->left, MMT(x)->state->total, MMT(x)->state->qleft, MMT(x)->state->qfirst, MMT(x)->state->qlast, sizeof(DTSTATE64));
         MMT_MUNMAP(x);
         MUTEX_DESTROY(MMT(x)->mutex);
 #ifdef HAVE_PTHREAD
-        for(i = 0; i < MMTREE64_MUTEX_MAX; i++)
+        for(i = 0; i < DTREE64_MUTEX_MAX; i++)
         {
             pthread_mutex_destroy(&(MMT(x)->mutexs[i]));
         }
@@ -973,30 +973,30 @@ void mmtree64_close(void *x)
 }
 
 
-#ifdef _DEBUG_MMTREE64
+#ifdef _DEBUG_DTREE64
 #include "md5.h"
 #include "timer.h"
 int main(int argc, char **argv) 
 {
     int i = 0, rootid = 0, id = 0, j = 0, old = 0, data = 0, n = 0, count = 50000000;
     unsigned char digest[MD5_LEN];
-    void *mmtree = NULL;
+    void *dtree = NULL;
     void *timer = NULL;
     char line[1024];
-    int64_t key = 0;
+    double key = 0;
 
-    if((mmtree = mmtree64_init("/tmp/test.mmtree64")))
+    if((dtree = dtree64_init("/tmp/test.dtree64")))
     {
-        rootid = mmtree64_new_tree(mmtree);
+        rootid = dtree64_new_tree(dtree);
         TIMER_INIT(timer);
         for(j = 1; j <= count; j++)
         {
             n = sprintf(line, "http://www.demo.com/%d.html", j);
             md5(line, n, digest);
-            key = *((int64_t *)digest);
+            key = *((double *)digest);
             old = -1;
             data = j;
-            id = mmtree64_insert(mmtree, rootid, key, data, &old);
+            id = dtree64_insert(dtree, rootid, key, data, &old);
             if(old > 0 || id <= 0) 
             {
                 fprintf(stdout, "%d:{id:%d key:%d rootid:%d old:%d}\n", j, id, key, rootid, old);
@@ -1008,10 +1008,10 @@ int main(int argc, char **argv)
         {
             n = sprintf(line, "http://www.demo.com/%d.html", j);
             md5(line, n, digest);
-            key = *((int64_t *)digest);
+            key = *((double *)digest);
             old = -1;
             data = j;
-            id = mmtree64_try_insert(mmtree, rootid, key, data, &old);
+            id = dtree64_try_insert(dtree, rootid, key, data, &old);
             if(old > 0 && old != j) 
             {
                 fprintf(stdout, "%d:{id:%d key:%d rootid:%d old:%d}\n", j, id, key, rootid, old);
@@ -1021,8 +1021,8 @@ int main(int argc, char **argv)
         TIMER_SAMPLE(timer);
         fprintf(stdout, "%s::%d try_insert:%d time:%lld\n", __FILE__,__LINE__, count, PT_LU_USEC(timer));
         TIMER_CLEAN(timer);
-        mmtree64_close(mmtree);
+        dtree64_close(dtree);
     }
 }
-//gcc -o mtree64 mmtree64.c md5.c -D_DEBUG_MMTREE64 -g && ./mtree64
+//gcc -o mtree64 dtree64.c md5.c -D_DEBUG_DTREE64 -g && ./mtree64
 #endif

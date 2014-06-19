@@ -1,15 +1,15 @@
 #ifndef _MMTREE_H
 #define _MMTREE_H
 #include "mutex.h"
-#define MMTREE_INCRE_NUM    10000000
+#define MMTREE_INCRE_NUM    1000000
 #define MMTREE_NODES_MAX    2000000000
 #define MMTREE_ROOT_MAX     10240
 typedef struct _MTNODE
 {
-    unsigned int left;
-    unsigned int right;
-    unsigned int parent;
-    unsigned int color;
+    uint32_t left;
+    uint32_t right;
+    uint32_t parent;
+    uint32_t color;
     int data;
     int key;
 }MTNODE;
@@ -17,23 +17,23 @@ typedef struct _MMROOT
 {
     int status;
     int bits;
-    unsigned int total;
-    unsigned int rootid;
+    uint32_t total;
+    uint32_t rootid;
 }MMROOT;
 typedef struct _MTSTATE
 {
     int kmax;
     int kmin;
-    unsigned int nmax;
-    unsigned int nmin;
-    unsigned int count;
-    unsigned int left;
-    unsigned int current;
-    unsigned int total;
-    unsigned int qleft;
-    unsigned int qfirst;
-    unsigned int qlast;
-    unsigned int nroots;
+    uint32_t nmax;
+    uint32_t nmin;
+    uint32_t count;
+    uint32_t left;
+    uint32_t current;
+    uint32_t total;
+    uint32_t qleft;
+    uint32_t qfirst;
+    uint32_t qlast;
+    uint32_t nroots;
     MMROOT roots[MMTREE_ROOT_MAX];
 }MTSTATE;
 typedef struct _MMTREE
@@ -50,18 +50,18 @@ typedef struct _MMTREE
 }MMTREE;
 void *mmtree_init(char *file);
 int mmtree_new_tree(void *mmtree);
-unsigned int mmtree_total(void *mmtree, int rootid);
-unsigned int mmtree_try_insert(void *mmtree, int rootid, int key, int data, int *old);
-unsigned int mmtree_insert(void *mmtree, int rootid, int key, int data, int *old);
-unsigned int mmtree_get(void *mmtree, unsigned int nodeid, int *key, int *data);
-unsigned int mmtree_find(void *mmtree, int rootid, int key, int *data);
-unsigned int mmtree_min(void *mmtree, int rootid, int *key, int *data);
-unsigned int mmtree_max(void *mmtree, int rootid, int *key, int *data);
-unsigned int mmtree_next(void *mmtree, int rootid, unsigned int nodeid, int *key, int *data);
-unsigned int mmtree_prev(void *mmtree, int rootid, unsigned int nodeid, int *key, int *data);
-int mmtree_set_data(void *mmtree, unsigned int nodeid, int data);
+uint32_t mmtree_total(void *mmtree, int rootid);
+uint32_t mmtree_try_insert(void *mmtree, int rootid, int key, int data, int *old);
+uint32_t mmtree_insert(void *mmtree, int rootid, int key, int data, int *old);
+uint32_t mmtree_get(void *mmtree, uint32_t nodeid, int *key, int *data);
+uint32_t mmtree_find(void *mmtree, int rootid, int key, int *data);
+uint32_t mmtree_min(void *mmtree, int rootid, int *key, int *data);
+uint32_t mmtree_max(void *mmtree, int rootid, int *key, int *data);
+uint32_t mmtree_next(void *mmtree, int rootid, uint32_t nodeid, int *key, int *data);
+uint32_t mmtree_prev(void *mmtree, int rootid, uint32_t nodeid, int *key, int *data);
+int mmtree_set_data(void *mmtree, uint32_t nodeid, int data);
 void mmtree_view_tree(void *mmtree, int rootid, FILE *fp);
-void mmtree_remove(void *mmtree, int rootid, unsigned int nodeid, int *key, int *data);
+void mmtree_remove(void *mmtree, int rootid, uint32_t nodeid, int *key, int *data);
 void mmtree_remove_tree(void *mmtree, int rootid);
 void mmtree_close(void *mmtree);
 #endif

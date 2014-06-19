@@ -16,7 +16,7 @@ extern "C" {
 #define  IB_BITSCAT_MAX         4
 #define  IB_TOPK_NUM            2000
 #define  IB_NTOP_MAX            8192
-#define  IB_FIELDS_MAX          64
+#define  IB_FIELDS_MAX          128
 #define  IB_QUERY_RSORT         0x01
 #define  IB_QUERY_SORT          0x02
 #define  IB_QUERY_PHRASE        0x04
@@ -229,6 +229,23 @@ typedef struct _FXLONG
     int no;
     int bits;
 }FXLONG;
+typedef struct _XINT
+{
+    int32_t val;
+    uint32_t nodeid;
+}XINT;
+typedef struct _XLONG
+{
+    int64_t  val;
+    uint32_t nodeid;
+    uint32_t bits;
+}XLONG;
+typedef struct _XDOUBLE
+{
+    double  val;
+    uint32_t nodeid;
+    uint32_t bits;
+}XDOUBLE;
 #define IB_CATBIT_SET   0x01
 #define IB_CATBIT_UNSET 0x02
 #define IB_RANK_SET     0x04
@@ -510,7 +527,7 @@ typedef struct _IRES
 typedef struct _IBIO
 {
     int fd;
-    int bits;
+    uint32_t rootid;
     char *map;
     off_t size;
     off_t end;
@@ -535,6 +552,7 @@ typedef struct _IBSTATE
     int     double_index_fields_num;
     off_t   ttotal;
     off_t   dtotal;
+    IBIO    fields[IB_FIELDS_MAX];
 }IBSTATE;
 
 #define IB_REQ_QPARSE            1

@@ -16,6 +16,12 @@ utils/db.h \
 utils/db.c \
 utils/xmm.h \
 utils/xmm.c \
+utils/mmtree.h \
+utils/mmtree.c \
+utils/mmtree64.h \
+utils/mmtree64.c \
+utils/dtree64.h \
+utils/dtree64.c \
 utils/mtree64.h \
 utils/mtree64.c \
 utils/zvbcode.c \
