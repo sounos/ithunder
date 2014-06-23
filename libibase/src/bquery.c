@@ -351,11 +351,11 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query)
         nres = 0, min = 0,double_index_to = 0, range_flag = 0, ignore_score = 0, prev = 0, 
         last = -1, no = 0, next = 0, fid = 0, nxrecords = 0, is_field_sort = 0, scale = 0, 
         total = 0, ignore_rank = 0, long_index_from = 0, long_index_to = 0, nx = 0, 
-        kk = 0, prevnext = 0, ii = 0, jj = 0, imax = 0, imin = 0;
+        kk = 0, prevnext = 0, ii = 0, jj = 0, imax = 0, imin = 0, xint = 0;
     double *doubleidx = NULL, score = 0.0, p1 = 0.0, p2 = 0.0, ffrom = 0.0,
-           tf = 1.0, Py = 0.0, Px = 0.0, fto = 0.0;
+           tf = 1.0, Py = 0.0, Px = 0.0, fto = 0.0, xdouble = 0.0;
     int64_t bits = 0, *longidx = NULL, lfrom = 0, lto = 0, base_score = 0, 
-            doc_score = 0, old_score = 0, xdata = 0;
+            doc_score = 0, old_score = 0, xdata = 0, xlong = 0;
     void *timer = NULL, *topmap = NULL, *fmap = NULL;//, *dp = NULL, *olddp = NULL;
     IRECORD *record = NULL, *records = NULL, xrecords[IB_NTOP_MAX];
     IHEADER *headers = NULL; ICHUNK *chunk = NULL;
@@ -502,30 +502,73 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query)
             if(intidx && query->in_int_fieldid > 0 && query->in_int_num > 0)
             {
                 imax = query->in_int_num - 1;imin = 0;
-                ii = (imax + imin) / 2; 
                 if((jj = query->in_int_fieldid) >= int_index_from && jj < int_index_to)
                 {
                     jj -= int_index_from;
                     jj += ibase->state->int_index_fields_num * docid;
-                    do
+                    xint = intidx[jj];
+                    if(xint < query->in_int_list[imin] || xint > query->in_int_list[imax]) goto next;
+                    if(xint != query->in_int_list[imin] && xint != query->in_int_list[imax])
                     {
-                        if(intidx[jj] == query->in_int_list[ii])
+                        while(imax > min)
                         {
-                            break;
+                            ii = (imax + imin) / 2; 
+                            if(ii == min)break;
+                            if(xint == query->in_int_list[ii]) break;
+                            else if(xint > query->in_int_list[ii]) imin = ii;
+                            else imax = ii;
                         }
-                        else if(intidx[jj] < query->in_int_list[ii])
-                        {
-                            imax = ii; 
-                        }
-                        else
-                        {
-                            imin = ii;
-                        }
-                        ii = (imax + imin) / 2;
-                    }while(ii != imin);
-                    if(intidx[jj] != query->in_int_list[ii]) goto next;
+                    }
+                    if(xint != query->in_int_list[ii]) goto next;
                 }
             }
+            if(longidx && query->in_long_fieldid > 0 && query->in_long_num > 0)
+            {
+                imax = query->in_long_num - 1;imin = 0;
+                if((jj = query->in_long_fieldid) >= long_index_from && jj < long_index_to)
+                {
+                    jj -= long_index_from;
+                    jj += ibase->state->long_index_fields_num * docid;
+                    xlong = longidx[jj];
+                    if(xlong < query->in_long_list[imin] || xlong > query->in_long_list[imax]) goto next;
+                    if(xlong != query->in_long_list[imin] && xlong != query->in_long_list[imax])
+                    {
+                        while(imax > min)
+                        {
+                            ii = (imax + imin) / 2; 
+                            if(ii == min)break;
+                            if(xlong == query->in_long_list[ii]) break;
+                            else if(xlong > query->in_long_list[ii]) imin = ii;
+                            else imax = ii;
+                        }
+                    }
+                    if(xlong != query->in_long_list[ii]) goto next;
+                }
+            }
+            if(doubleidx && query->in_double_fieldid > 0 && query->in_double_num > 0)
+            {
+                imax = query->in_double_num - 1;imin = 0;
+                if((jj = query->in_double_fieldid) >= double_index_from && jj < double_index_to)
+                {
+                    jj -= double_index_from;
+                    jj += ibase->state->double_index_fields_num * docid;
+                    xdouble = doubleidx[jj];
+                    if(xdouble < query->in_double_list[imin] || xdouble > query->in_double_list[imax]) goto next;
+                    if(xdouble != query->in_double_list[imin] && xdouble != query->in_double_list[imax])
+                    {
+                        while(imax > min)
+                        {
+                            ii = (imax + imin) / 2; 
+                            if(ii == min)break;
+                            if(xdouble == query->in_double_list[ii]) break;
+                            else if(xdouble > query->in_double_list[ii]) imin = ii;
+                            else imax = ii;
+                        }
+                    }
+                    if(xdouble != query->in_double_list[ii]) goto next;
+                }
+            }
+
             /* int range  filter */
             if(intidx && (query->int_range_count > 0 || query->int_bits_count > 0))
             {
