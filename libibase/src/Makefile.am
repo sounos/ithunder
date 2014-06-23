@@ -16,12 +16,6 @@ utils/db.h \
 utils/db.c \
 utils/xmm.h \
 utils/xmm.c \
-utils/itree.h \
-utils/itree.c \
-utils/ltree.h \
-utils/ltree.c \
-utils/dtree.h \
-utils/dtree.c \
 utils/mtree64.h \
 utils/mtree64.c \
 utils/zvbcode.c \

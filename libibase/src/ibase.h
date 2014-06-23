@@ -495,8 +495,8 @@ typedef struct _IQUERY
     int64_t     catblock_filter;
     int64_t     multicat_filter;
     int32_t     in_int_list[IB_IN_MAX];
-    int64_t     in_long_list[IN_IN_MAX];
-    double      in_double_list[IN_IN_MAX];
+    int64_t     in_long_list[IB_IN_MAX];
+    double      in_double_list[IB_IN_MAX];
 }IQUERY;
 
 /* weight */

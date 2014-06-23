@@ -75,7 +75,6 @@ am_libibase_la_OBJECTS = libibase_la-ibase.lo libibase_la-index.lo \
 	libibase_la-bquery.lo libibase_la-xquery.lo \
 	libibase_la-summary.lo libibase_la-logger.lo \
 	libibase_la-mmtrie.lo libibase_la-db.lo libibase_la-xmm.lo \
-	libibase_la-itree.lo libibase_la-ltree.lo libibase_la-dtree.lo \
 	libibase_la-mtree64.lo libibase_la-zvbcode.lo
 libibase_la_OBJECTS = $(am_libibase_la_OBJECTS)
 libibase_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -228,12 +227,6 @@ utils/db.h \
 utils/db.c \
 utils/xmm.h \
 utils/xmm.c \
-utils/itree.h \
-utils/itree.c \
-utils/ltree.h \
-utils/ltree.c \
-utils/dtree.h \
-utils/dtree.c \
 utils/mtree64.h \
 utils/mtree64.c \
 utils/zvbcode.c \
@@ -318,12 +311,9 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libibase_la-bquery.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libibase_la-db.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libibase_la-dtree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libibase_la-ibase.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libibase_la-index.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libibase_la-itree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libibase_la-logger.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libibase_la-ltree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libibase_la-mmtrie.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libibase_la-mtree64.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libibase_la-summary.Plo@am__quote@
@@ -414,27 +404,6 @@ libibase_la-xmm.lo: utils/xmm.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utils/xmm.c' object='libibase_la-xmm.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libibase_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libibase_la-xmm.lo `test -f 'utils/xmm.c' || echo '$(srcdir)/'`utils/xmm.c
-
-libibase_la-itree.lo: utils/itree.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libibase_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libibase_la-itree.lo -MD -MP -MF $(DEPDIR)/libibase_la-itree.Tpo -c -o libibase_la-itree.lo `test -f 'utils/itree.c' || echo '$(srcdir)/'`utils/itree.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libibase_la-itree.Tpo $(DEPDIR)/libibase_la-itree.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utils/itree.c' object='libibase_la-itree.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libibase_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libibase_la-itree.lo `test -f 'utils/itree.c' || echo '$(srcdir)/'`utils/itree.c
-
-libibase_la-ltree.lo: utils/ltree.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libibase_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libibase_la-ltree.lo -MD -MP -MF $(DEPDIR)/libibase_la-ltree.Tpo -c -o libibase_la-ltree.lo `test -f 'utils/ltree.c' || echo '$(srcdir)/'`utils/ltree.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libibase_la-ltree.Tpo $(DEPDIR)/libibase_la-ltree.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utils/ltree.c' object='libibase_la-ltree.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libibase_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libibase_la-ltree.lo `test -f 'utils/ltree.c' || echo '$(srcdir)/'`utils/ltree.c
-
-libibase_la-dtree.lo: utils/dtree.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libibase_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libibase_la-dtree.lo -MD -MP -MF $(DEPDIR)/libibase_la-dtree.Tpo -c -o libibase_la-dtree.lo `test -f 'utils/dtree.c' || echo '$(srcdir)/'`utils/dtree.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libibase_la-dtree.Tpo $(DEPDIR)/libibase_la-dtree.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utils/dtree.c' object='libibase_la-dtree.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libibase_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libibase_la-dtree.lo `test -f 'utils/dtree.c' || echo '$(srcdir)/'`utils/dtree.c
 
 libibase_la-mtree64.lo: utils/mtree64.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libibase_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libibase_la-mtree64.lo -MD -MP -MF $(DEPDIR)/libibase_la-mtree64.Tpo -c -o libibase_la-mtree64.lo `test -f 'utils/mtree64.c' || echo '$(srcdir)/'`utils/mtree64.c

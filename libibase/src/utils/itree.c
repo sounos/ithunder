@@ -364,14 +364,7 @@ uint32_t itree_insert(void *x, int rootid, int key, int data, int *old)
             while(nodeid > 0 && nodeid < ITR(x)->state->total)
             {
                 node = &(ITR(x)->map[nodeid]);
-                if(key == node->key)
-                {
-                    id = nodeid;
-                    if(old) *old = node->data;
-                    node->data = data;
-                    goto end;
-                }
-                else if(key > node->key)
+                if(key > node->key)
                 {
                     if(node->right == 0) break;
                     nodeid = node->right;
@@ -548,6 +541,42 @@ uint32_t itree_get(void *x, uint32_t tnodeid, int *key, int *data)
             if(data) *data = ITR(x)->map[tnodeid].data;
             id = tnodeid;
         }
+        MUTEX_UNLOCK(ITR(x)->mutex);
+    }
+    return id;
+}
+
+/* range key/data */
+int itree_range(void *x, int rootid, int from, int to)
+{
+    int ret = 0;
+
+    if(x && rootid > 0)
+    {
+        MUTEX_LOCK(ITR(x)->mutex);
+        if(ITR(x)->map && ITR(x)->state && rootid < ITREE_ROOT_MAX
+                && ITR(x)->state->roots[rootid].status > 0)
+        {
+            //fprintf(stdout, "%s::%d rootid:%d key:%d data:%d total:%d\n", __FILE__, __LINE__, rootid, key, *data, ITR(x)->state->total);
+            id = ITR(x)->state->roots[rootid].rootid;
+            while(id > 0 && id < ITR(x)->state->total)
+            {
+                if(key == ITR(x)->map[id].key)
+                {
+                    if(data) *data = ITR(x)->map[id].data;
+                    break;
+                }
+                else if(key > ITR(x)->map[id].key)
+                {
+                    id = ITR(x)->map[id].right;
+                }
+                else
+                {
+                    id = ITR(x)->map[id].left;
+                }
+            }
+        }
+        //fprintf(stdout, "%s::%d rootid:%d key:%d data:%d\n", __FILE__, __LINE__, rootid, key, *data);
         MUTEX_UNLOCK(ITR(x)->mutex);
     }
     return id;
