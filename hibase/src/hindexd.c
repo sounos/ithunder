@@ -812,6 +812,12 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                 if(p == last)break;
             }
         }
+        int_index_from = ibase->state->int_index_from;
+        int_index_to = int_index_from + ibase->state->int_index_fields_num;
+        long_index_from = ibase->state->long_index_from;
+        long_index_to = long_index_from + ibase->state->long_index_fields_num;
+        double_index_from = ibase->state->double_index_from;
+        double_index_to = double_index_from + ibase->state->double_index_fields_num;
         if((p = in))
         {
             while(*p != '\0')
@@ -828,13 +834,12 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                     while((*p >= '0' && *p <= '9') || *p == '.')++p;
                     while(*p == 0x20)++p;
                     if(*p == ',' || *p == ';')++p;
-                    if(*p != '\0')++p;
                     if(field_id >= int_index_from && field_id < int_index_to) 
                     {
                         k = query->in_int_num++;
                         query->in_int_fieldid = field_id;
                         query->in_int_list[k] = atoi(in_ptr);
-                        while(k > 0 && query->in_int_list[k] > query->in_int_list[k-1])
+                        while(k > 0 && query->in_int_list[k] < query->in_int_list[k-1])
                         {
                             xint = query->in_int_list[k-1];
                             query->in_int_list[k-1] = query->in_int_list[k];
@@ -847,7 +852,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                         k = query->in_long_num++;
                         query->in_long_fieldid = field_id;
                         query->in_long_list[k] = atoll(in_ptr);
-                        while(k > 0 && query->in_long_list[k] > query->in_long_list[k-1])
+                        while(k > 0 && query->in_long_list[k] < query->in_long_list[k-1])
                         {
                             xlong = query->in_long_list[k-1];
                             query->in_long_list[k-1] = query->in_long_list[k];
@@ -860,7 +865,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                         k = query->in_double_num++;
                         query->in_double_fieldid = field_id;
                         query->in_double_list[k] = atoll(in_ptr);
-                        while(k > 0 && query->in_double_list[k] > query->in_double_list[k-1])
+                        while(k > 0 && query->in_double_list[k] < query->in_double_list[k-1])
                         {
                             xdouble = query->in_double_list[k-1];
                             query->in_double_list[k-1] = query->in_double_list[k];
@@ -871,8 +876,14 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                 }
                 if(p == last)break;
             }
+            /*
+            for(i = 0; i < query->in_int_num; i++)
+            {
+                fprintf(stdout, "%d:%d\n", i, query->in_int_list[i]);
+            }
+            fprintf(stdout, "%s::%d in:%s in_int_field:%d/%d in_long_field:%d/%d in_double_feild:%d/%d\n", __FILE__, __LINE__, in, query->in_int_fieldid, query->in_int_num, query->in_long_fieldid, query->in_long_num, query->in_double_fieldid, query->in_double_num);
+            */
         }
-
         /* display */
         if((p = display))
         {
@@ -900,13 +911,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
         /* order/order by/range */
         if(order < 0) query->flag |= IB_QUERY_RSORT;
         else query->flag |= IB_QUERY_SORT;
-        int_index_from = ibase->state->int_index_from;
-        int_index_to = int_index_from + ibase->state->int_index_fields_num;
-        long_index_from = ibase->state->long_index_from;
-        long_index_to = long_index_from + ibase->state->long_index_fields_num;
-        double_index_from = ibase->state->double_index_from;
-        double_index_to = double_index_from + ibase->state->double_index_fields_num;
-        if(orderby >= int_index_from && orderby < int_index_to)
+                if(orderby >= int_index_from && orderby < int_index_to)
         {
             query->int_order_field = orderby;
         }
