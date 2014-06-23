@@ -510,16 +510,16 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query)
                     if(xint < query->in_int_list[imin] || xint > query->in_int_list[imax]) goto next;
                     if(xint != query->in_int_list[imin] && xint != query->in_int_list[imax])
                     {
-                        while(imax > min)
+                        while(imax > imin)
                         {
                             ii = (imax + imin) / 2; 
-                            if(ii == min)break;
+                            if(ii == imin)break;
                             if(xint == query->in_int_list[ii]) break;
                             else if(xint > query->in_int_list[ii]) imin = ii;
                             else imax = ii;
                         }
+                        if(xint != query->in_int_list[ii]) goto next;
                     }
-                    if(xint != query->in_int_list[ii]) goto next;
                 }
             }
             if(longidx && query->in_long_fieldid > 0 && query->in_long_num > 0)
@@ -533,16 +533,16 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query)
                     if(xlong < query->in_long_list[imin] || xlong > query->in_long_list[imax]) goto next;
                     if(xlong != query->in_long_list[imin] && xlong != query->in_long_list[imax])
                     {
-                        while(imax > min)
+                        while(imax > imin)
                         {
                             ii = (imax + imin) / 2; 
-                            if(ii == min)break;
+                            if(ii == imin)break;
                             if(xlong == query->in_long_list[ii]) break;
                             else if(xlong > query->in_long_list[ii]) imin = ii;
                             else imax = ii;
                         }
+                        if(xlong != query->in_long_list[ii]) goto next;
                     }
-                    if(xlong != query->in_long_list[ii]) goto next;
                 }
             }
             if(doubleidx && query->in_double_fieldid > 0 && query->in_double_num > 0)
@@ -556,20 +556,19 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query)
                     if(xdouble < query->in_double_list[imin] || xdouble > query->in_double_list[imax]) goto next;
                     if(xdouble != query->in_double_list[imin] && xdouble != query->in_double_list[imax])
                     {
-                        while(imax > min)
+                        while(imax > imin)
                         {
                             ii = (imax + imin) / 2; 
-                            if(ii == min)break;
+                            if(ii == imin)break;
                             if(xdouble == query->in_double_list[ii]) break;
                             else if(xdouble > query->in_double_list[ii]) imin = ii;
                             else imax = ii;
                         }
+                        if(xdouble != query->in_double_list[ii]) goto next;
                     }
-                    if(xdouble != query->in_double_list[ii]) goto next;
                 }
             }
-
-            /* int range  filter */
+            /* long range  filter */
             if(intidx && (query->int_range_count > 0 || query->int_bits_count > 0))
             {
                 for(i = 0; i < query->int_range_count; i++)
