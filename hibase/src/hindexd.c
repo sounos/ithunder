@@ -128,10 +128,12 @@ static char *e_argvs[] =
 #define E_ARGV_KEY          33
     "bitfields",
 #define E_ARGV_BITFIELDS    34
-    "qweight"
+    "qweight",
 #define E_ARGV_QWEIGHT      35
+    "in"
+#define E_ARGV_IN           36
 };
-#define  E_ARGV_NUM         36
+#define  E_ARGV_NUM         37
 int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query);
 /* packet reader for indexd */
 int indexd_packet_reader(CONN *conn, CB_DATA *buffer)
@@ -531,7 +533,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
     char *p = NULL, *query_str = NULL, *not_str = "", *display = NULL, *range_filter = NULL,
          *hitscale = NULL, *slevel_filter = NULL, *catfilter = NULL, *catgroup = NULL, 
          *multicat = NULL, *catblock = NULL, *xup = NULL, *xdown = NULL, *range_from = NULL, 
-         *range_to = NULL, *bitfields = NULL, *last = NULL;
+         *range_to = NULL, *bitfields = NULL, *last = NULL, *in = NULL;
     int ret = -1, n = 0, i = 0, k = 0, id = 0, phrase = 0, booland = 0, fieldsfilter = -1, 
         orderby = 0, order = 0, field_id = 0, int_index_from = 0, int_index_to = 0, 
         long_index_from = 0, long_index_to = 0, double_index_from = 0, double_index_to = 0, 
@@ -655,6 +657,9 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                             break;
                         case E_ARGV_NTOP:
                             query->ntop = atoi(p);
+                            break;
+                        case E_ARGV_IN:
+                            in = p;
                             break;
                         default :
                             break;
@@ -791,6 +796,23 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
         /* bitxcat down */
         if((p = xdown))
 
+        {
+            i = 0;
+            while(*p != '\0') 
+            {
+                last = p;
+                while(*p == 0x20 || *p == '\t' || *p == ',' || *p == ';')++p;
+                if(*p >= '0' && *p <= '9' && (i = atoi(p)) >= 0 && i < IB_CATEGORY_MAX) 
+                {
+                    query->bitxcat_down |= (int64_t)1 << i;
+                    //fprintf(stdout, "xdown:%d\n", i);
+                }
+                while(*p >= '0' && *p <= '9')++p;
+                ++i;
+                if(p == last)break;
+            }
+        }
+        if((p = in))
         {
             i = 0;
             while(*p != '\0') 

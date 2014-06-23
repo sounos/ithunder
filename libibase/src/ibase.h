@@ -10,6 +10,7 @@ extern "C" {
 #ifndef  IB_QUERY_MAX
 #define  IB_QUERY_MAX           32
 #endif
+#define  IB_IN_MAX              256
 #define  IB_SECURITY_OK         0x01
 #define  IB_SECURITY_FORBIDDEN  0xffffffff
 #define  IB_CATEGORY_MAX        64
@@ -17,7 +18,7 @@ extern "C" {
 #define  IB_BITSCAT_MAX         4
 #define  IB_TOPK_NUM            2000
 #define  IB_NTOP_MAX            8192
-#define  IB_FIELDS_MAX          128
+#define  IB_FIELDS_MAX          160
 #define  IB_QUERY_RSORT         0x01
 #define  IB_QUERY_SORT          0x02
 #define  IB_QUERY_PHRASE        0x04
@@ -457,6 +458,12 @@ typedef struct _IQUERY
     short       long_bits_count;
     short       status;
     short       nvqterms;
+    short       in_int_count;
+    short       in_int_fieldid;
+    short       in_long_count;
+    short       in_long_fieldid;
+    short       in_double_count;
+    short       in_double_fieldid;
     short       hitscale[IB_QUERY_MAX]; 
     short       slevel_filter[IB_SLEVEL_MAX]; 
     int         flag;//is_sort/is_rsort/is_phrase/is_relevance/is_clear_cache/is_query_and/is_query_forbidden
@@ -486,6 +493,9 @@ typedef struct _IQUERY
     int64_t     category_filter;
     int64_t     catblock_filter;
     int64_t     multicat_filter;
+    int32_t     in_int_list[IB_IN_MAX];
+    int64_t     in_long_list[IN_IN_MAX];
+    double      in_double_list[IN_IN_MAX];
 }IQUERY;
 
 /* weight */
