@@ -864,7 +864,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                     {
                         k = query->in_double_num++;
                         query->in_double_fieldid = field_id;
-                        query->in_double_list[k] = atoll(in_ptr);
+                        query->in_double_list[k] = atof(in_ptr);
                         while(k > 0 && query->in_double_list[k] < query->in_double_list[k-1])
                         {
                             xdouble = query->in_double_list[k-1];
