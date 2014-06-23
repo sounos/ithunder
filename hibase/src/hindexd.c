@@ -533,7 +533,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
     char *p = NULL, *query_str = NULL, *not_str = "", *display = NULL, *range_filter = NULL,
          *hitscale = NULL, *slevel_filter = NULL, *catfilter = NULL, *catgroup = NULL, 
          *multicat = NULL, *catblock = NULL, *xup = NULL, *xdown = NULL, *range_from = NULL, 
-         *range_to = NULL, *bitfields = NULL, *last = NULL, *in = NULL;
+         *range_to = NULL, *bitfields = NULL, *last = NULL, *in = NULL, *in_ptr = 0;
     int ret = -1, n = 0, i = 0, k = 0, id = 0, phrase = 0, booland = 0, fieldsfilter = -1, 
         orderby = 0, order = 0, field_id = 0, int_index_from = 0, int_index_to = 0, 
         long_index_from = 0, long_index_to = 0, double_index_from = 0, double_index_to = 0, 
@@ -814,21 +814,65 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
         }
         if((p = in))
         {
-            i = 0;
-            while(*p != '\0') 
+            while(*p != '\0')
             {
                 last = p;
-                while(*p == 0x20 || *p == '\t' || *p == ',' || *p == ';')++p;
-                if(*p >= '0' && *p <= '9' && (i = atoi(p)) >= 0 && i < IB_CATEGORY_MAX) 
+                while(*p == 0x20)++p;
+                if(*p != '\0')field_id = atoi(p);
+                while(*p != '[' && *p != '\0')++p;
+                if(*p != '\0')++p;
+                while(*p != '\0' && *p != ']')
                 {
-                    query->bitxcat_down |= (int64_t)1 << i;
-                    //fprintf(stdout, "xdown:%d\n", i);
+                    while(*p == 0x20)++p;
+                    if(*p >= '0' && *p <= '9') in_ptr = p;
+                    while((*p >= '0' && *p <= '9') || *p == '.')++p;
+                    while(*p == 0x20)++p;
+                    if(*p == ',' || *p == ';')++p;
+                    if(*p != '\0')++p;
+                    if(field_id >= int_index_from && field_id < int_index_to) 
+                    {
+                        k = query->in_int_num++;
+                        query->in_int_fieldid = field_id;
+                        query->in_int_list[k] = atoi(in_ptr);
+                        while(k > 0 && query->in_int_list[k] > query->in_int_list[k-1])
+                        {
+                            xint = query->in_int_list[k-1];
+                            query->in_int_list[k-1] = query->in_int_list[k];
+                            query->in_int_list[k] = xint;
+                            --k;
+                        }
+                    }
+                    else if(field_id >= long_index_from && field_id < long_index_to) 
+                    {
+                        k = query->in_long_num++;
+                        query->in_long_fieldid = field_id;
+                        query->in_long_list[k] = atoll(in_ptr);
+                        while(k > 0 && query->in_long_list[k] > query->in_long_list[k-1])
+                        {
+                            xlong = query->in_long_list[k-1];
+                            query->in_long_list[k-1] = query->in_long_list[k];
+                            query->in_long_list[k] = xlong;
+                            --k;
+                        }
+                    }
+                    else if(field_id >= double_index_from && field_id < double_index_to)
+                    {
+                        k = query->in_double_num++;
+                        query->in_double_fieldid = field_id;
+                        query->in_double_list[k] = atoll(in_ptr);
+                        while(k > 0 && query->in_double_list[k] > query->in_double_list[k-1])
+                        {
+                            xdouble = query->in_double_list[k-1];
+                            query->in_double_list[k-1] = query->in_double_list[k];
+                            query->in_double_list[k] = xdouble;
+                            --k;
+                        }
+                    }
                 }
-                while(*p >= '0' && *p <= '9')++p;
-                ++i;
                 if(p == last)break;
             }
         }
+
         /* display */
         if((p = display))
         {
