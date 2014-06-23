@@ -14,7 +14,7 @@ extern "C" {
 #define  IB_SECURITY_OK         0x01
 #define  IB_SECURITY_FORBIDDEN  0xffffffff
 #define  IB_CATEGORY_MAX        64
-#define  IB_SLEVEL_MAX          256
+#define  IB_SLEVEL_MAX          32
 #define  IB_BITSCAT_MAX         4
 #define  IB_TOPK_NUM            2000
 #define  IB_NTOP_MAX            8192
@@ -464,6 +464,7 @@ typedef struct _IQUERY
     short       in_long_fieldid;
     short       in_double_num;
     short       in_double_fieldid;
+    int         bits;
     short       hitscale[IB_QUERY_MAX]; 
     short       slevel_filter[IB_SLEVEL_MAX]; 
     int         flag;//is_sort/is_rsort/is_phrase/is_relevance/is_clear_cache/is_query_and/is_query_forbidden
