@@ -351,7 +351,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query)
         nres = 0, min = 0,double_index_to = 0, range_flag = 0, ignore_score = 0, prev = 0, 
         last = -1, no = 0, next = 0, fid = 0, nxrecords = 0, is_field_sort = 0, scale = 0, 
         total = 0, ignore_rank = 0, long_index_from = 0, long_index_to = 0, nx = 0, 
-        kk = 0, prevnext = 0;
+        kk = 0, prevnext = 0, ii = 0 kk = 0, imax = 0, imin = 0;
     double *doubleidx = NULL, score = 0.0, p1 = 0.0, p2 = 0.0, ffrom = 0.0,
            tf = 1.0, Py = 0.0, Px = 0.0, fto = 0.0;
     int64_t bits = 0, *longidx = NULL, lfrom = 0, lto = 0, base_score = 0, 
@@ -498,6 +498,34 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query)
             if(nquerys > 0 && xnode->nvhits == 0) goto next;
             if(!(query->flag & IB_QUERY_BOOLAND) && nquerys > 0 && ((xnode->nvhits * 100) / nquerys) < scale) goto next;
             ACCESS_LOGGER(ibase->logger, "docid:%d/%lld nvhits:%d nquerys:%d/%d scale:%d int[%d/%d] catgroup:%d", docid, LL(headers[docid].globalid), xnode->nvhits, query->nqterms, nquerys, scale, query->int_range_count, query->int_bits_count, query->catgroup_filter);
+            /* in filter */
+            if(intidx && query->in_int_fieldid > 0 && query->in_int_num > 0)
+            {
+                imax = query->in_int_num - 1;imin = 0;
+                ii = (imax + imin) / 2; 
+                if((kk = query->in_int_fieldid) >= int_index_from && kk < int_index_to)
+                {
+                    kk -= int_index_from;
+                    kk += ibase->state->int_index_fields_num * docid;
+                    do
+                    {
+                        if(intidx[kk] == query->in_int_list[ii])
+                        {
+                            break;
+                        }
+                        else if(intidx[kk] < query->in_int_list[ii])
+                        {
+                            imax = ii; 
+                        }
+                        else
+                        {
+                            imin = ii;
+                        }
+                        ii = (imax + imin) / 2;
+                    }while(ii != imin);
+                    if(intidx[kk] != query->in_int_list[ii]) goto next;
+                }
+            }
             /* int range  filter */
             if(intidx && (query->int_range_count > 0 || query->int_bits_count > 0))
             {

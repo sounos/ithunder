@@ -458,11 +458,11 @@ typedef struct _IQUERY
     short       long_bits_count;
     short       status;
     short       nvqterms;
-    short       in_int_count;
+    short       in_int_num;
     short       in_int_fieldid;
-    short       in_long_count;
+    short       in_long_num;
     short       in_long_fieldid;
-    short       in_double_count;
+    short       in_double_num;
     short       in_double_fieldid;
     short       hitscale[IB_QUERY_MAX]; 
     short       slevel_filter[IB_SLEVEL_MAX]; 
