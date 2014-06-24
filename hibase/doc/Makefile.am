@@ -38,7 +38,8 @@ install-ini:
 	@ln -sf $(sbindir)/hindexd $(sbintodir)/hiqparserd
 	@echo install hindexd.ini hidocd.ini to $(sysconftodir)
 	@test -d $(sysconftodir) || mkdir -p $(sysconftodir)
-	@test -d $(initdir) || ln -sf $(rcdir) $(initdir)
+	@test -d $(initdir) || mkdir -p $(initdir)
+	@test -f $(initdir)/functions  || ln -sf $(rcdir)/functions $(initdir)/functions
 	@test -f $(sysconftodir)/hindexd.ini \
 		|| cp -p rc.hindexd.ini $(sysconftodir)/hindexd.ini
 	@test -f $(sysconftodir)/hiqparserd.ini \
