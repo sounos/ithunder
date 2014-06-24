@@ -10,6 +10,7 @@ install: install-ini
 conftodir = "`echo $(sysconfdir)|sed -e 's|/usr/etc|/etc|'`"
 
 initdir = "$(DESTDIR)$(conftodir)/init.d"
+rcdir = "$(DESTDIR)$(conftodir)/rc.d/init.d"
 
 sysconftodir = "$(DESTDIR)$(conftodir)"
 
@@ -37,7 +38,7 @@ install-ini:
 	@ln -sf $(sbindir)/hindexd $(sbintodir)/hiqparserd
 	@echo install hindexd.ini hidocd.ini to $(sysconftodir)
 	@test -d $(sysconftodir) || mkdir -p $(sysconftodir)
-	@test -d $(initdir) || mkdir -p $(initdir)
+	@test -d $(initdir) || ln -sf $(rcdir) $(initdir)
 	@test -f $(sysconftodir)/hindexd.ini \
 		|| cp -p rc.hindexd.ini $(sysconftodir)/hindexd.ini
 	@test -f $(sysconftodir)/hiqparserd.ini \
