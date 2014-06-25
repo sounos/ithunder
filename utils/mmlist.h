@@ -1,9 +1,9 @@
 #ifndef __MMLIST__H
 #define __MMLIST__H
 #include <inttypes.h>
-#define MM_SLOT_MAX     65536
-#define MM_SLOT_NUM     4096
-#define MM_SLOT2_NUM    2048 /* half of MM_SLOT_NUM */
+#define MM_SLOT_MAX     524288
+#define MM_SLOT_NUM     1024
+#define MM_SLOT2_NUM    512 /* half of MM_SLOT_NUM */
 #define MM_VNODE_INC    1000000
 #define MM_NODES_MAX    4294967296
 typedef struct MMKV
