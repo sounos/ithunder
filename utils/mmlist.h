@@ -42,9 +42,7 @@ typedef struct _MMLIST
     off_t msize;
     off_t vsize;
     off_t vmsize;
-#ifdef HAVE_PTHREAD
     pthread_rwlock_t  rwlock;
-#endif
 }MMLIST;
 MMLIST *mmlist_init(char *file);
 int mmlist_insert(MMLIST *mmlist, int no, int32_t key);
