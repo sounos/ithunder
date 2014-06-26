@@ -54,6 +54,7 @@ MMLIST *mmlist_init(char *file)
        {
            fprintf(stderr, "open %s failed, %s\n", file, strerror(errno));
        }
+       pthread_rwlock_init(&(mlist->rwlock));
 
     }
     return mlist;
@@ -230,10 +231,13 @@ int mmlist_insert(MMLIST *mlist, int no, int32_t key)
                 k = mlist->state->count++; 
                 while(k > pos)
                 {
+                    memcpy(&(mlist->slots[k]), &(mlist->slots[k-1]), sizeof(MMSLOT));
+                    /*
                     mlist->slots[k].min = mlist->slots[k-1].min;
                     mlist->slots[k].max = mlist->slots[k-1].max;
                     mlist->slots[k].nodeid = mlist->slots[k-1].nodeid;
                     mlist->slots[k].count = mlist->slots[k-1].count;
+                    */
                     --k;
                 }
                 //fprintf(stdout, "%s:%d k:%d no:%d count:%d min:%d max:%d key:%d OK\n", __FILE__, __LINE__, k, no, mlist->slots[k].count, mlist->slots[k].min, mlist->slots[k].max, key);
@@ -247,12 +251,15 @@ int mmlist_insert(MMLIST *mlist, int no, int32_t key)
                 kv->val = no;
                 num = 1;
                 k = mlist->state->count++; 
-                while(key <= mlist->slots[k].min)
+                while(k > 0 && key <= mlist->slots[k].min)
                 {
+                    memcpy(&(mlist->slots[k]), &(mlist->slots[k-1]), sizeof(MMSLOT));
+                    /*
                     mlist->slots[k].min = mlist->slots[k-1].min;
                     mlist->slots[k].max = mlist->slots[k-1].max;
                     mlist->slots[k].nodeid = mlist->slots[k-1].nodeid;
                     mlist->slots[k].count = mlist->slots[k-1].count;
+                    */
                     --k;
                 }
             }
@@ -278,10 +285,11 @@ int mmlist_remove(MMLIST *mlist, u_int32_t nodeid)
 }
 
 int mmlist_update(MMLIST *mlist, int no, int32_t nodeid);
-int mmlist_range(MMLIST *mlist, int32_t from, int32_t to);
-int mmlist_range1(MMLIST *mlist, int32_t key) /* from */
+int mmlist_range(MMLIST *mlist, int32_t *list, int32_t from, int32_t to);
+int mmlist_range1(MMLIST *mlist, int32_t *list, int32_t key) /* key = from */
 {
-    int n = 0, min = 0, max = 0, k = 0, x = 0, ret = -1;
+    int n = 0, min = 0, max = 0, i = 0, k = 0, x = 0, ret = 0;
+    MMKV *kvs = NULL;
 
     if(mlist && (n = mlist->state->count) > 0)
     {
@@ -308,7 +316,42 @@ int mmlist_range1(MMLIST *mlist, int32_t key) /* from */
                 else max = x;
             }
         }
-        fprintf(stdout, "%s::%d k:%d\n", __FILE__, __LINE__, k);
+        if(k >= 0 && k < n && (n = mlist->slots[k].count) > 0)
+        {
+            kvs = mlist->map + mlist->slots[k].nodeid;
+            min = 0;
+            max = n - 1; 
+            i = -1;
+            if(key <= kvs[min].key) i = min;
+            else if(key >= kvs[max].key) i = max;
+            else
+            {
+                while(max > min)
+                {
+                    x = (min + max) / 2;
+                    if(x == min)
+                    {
+                        i = x;
+                        break;
+                    }
+                    if(key ==  kvs[x].key)
+                    {
+                        i = x;
+                        break;
+                    }
+                    else if(key > kvs[x].key) min = x;
+                    else max = x;
+                }
+            }
+            if(kvs[i].key != key && key <= kvs[n-1].key) i++;
+            ret = n - i;
+            i = k+1;
+            for(i = k + 1; i <  mlist->state->count; i++)
+            {
+                ret += mlist->slots[i].count;
+            }
+        }
+        fprintf(stdout, "%s::%d k:%d ret:%d\n", __FILE__, __LINE__, k, ret);
     }
     return ret;
 }
@@ -375,9 +418,8 @@ int main()
         /*
         for(i = 0; i < 10000000; i++)
             mmlist_vset(mlist, i, random());
-        */
         srand(time(NULL));
-        for(i = 0; i < 100000000; i++)
+        for(i = 0; i < 100000; i++)
         {
             val = rand();
             mmlist_insert(mlist, i, val);
@@ -386,6 +428,13 @@ int main()
         for(i = 0; i < mlist->state->count; i++)
         {
             fprintf(stdout, "%d:{min:%d max:%d}(%d)\n", i, mlist->slots[i].min, mlist->slots[i].max, mlist->slots[i].count);
+        }
+        */
+        srand(time(NULL));
+        for(i = 0; i < 100000000; i++)
+        {
+            val = rand();
+            mmlist_range1(mlist, val);
         }
         mmlist_close(mlist);
     }
