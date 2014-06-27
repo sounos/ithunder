@@ -48,8 +48,8 @@ MMLIST *mmlist_init(char *file);
 int mmlist_insert(MMLIST *mmlist, int no, int32_t key);
 //int mmlist_remove(MMLIST *mmlist, int no, int32_t nodeid);
 int mmlist_update(MMLIST *mmlist, int no, int32_t nodeid);
-int mmlist_range(MMLIST *mmlist, int32_t *list, int32_t from, int32_t to);
-int mmlist_range1(MMLIST *mmlist, int32_t *list, int32_t from);
-int mmlist_range2(MMLIST *mmlist, int32_t *list, int32_t to);
+int mmlist_range(MMLIST *mmlist, int32_t from, int32_t to, int32_t *list );
+int mmlist_range1(MMLIST *mmlist, int32_t key, int32_t *list);
+int mmlist_range2(MMLIST *mmlist, int32_t key, int32_t *list);
 void mmlist_close(MMLIST *mmlist);
 #endif
