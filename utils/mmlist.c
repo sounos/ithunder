@@ -317,6 +317,46 @@ int mmlist_find_slot(MMLIST *mlist, int32_t key)
     return ret;
 }
 
+int mmlist_find_slot2(MMLIST *mlist, int32_t key)
+{
+    int n = 0, min = 0, max = 0, x = 0, ret = -1;
+    if(mlist && (n = mlist->state->count) > 0)
+    {
+        max = n - 1;
+        min = 0;
+        if(key <= mlist->slots[min].max) ret = min;
+        else if(key >= mlist->slots[max].min) ret = max;
+        else
+        {
+            while(max > min)
+            {
+                x = (min + max) / 2;
+                if(x == min)
+                {
+                    ret = x;
+                    break;
+                }
+                if(key >=  mlist->slots[x].min && key <= mlist->slots[x+1].min)
+                {
+                    ret = x;
+                    break;
+                }
+                else if(key > mlist->slots[x].max) min = x;
+                else max = x;
+            }
+        }
+        if((x = ret)>= 0 && x < n)
+        {
+            while(x < n && key >= mlist->slots[x].min 
+                    && mlist->slots[x].count == MM_SLOT_MAX)
+            {
+                ret = x++;
+            }
+        }
+    }
+    return ret;
+}
+
 int mmlist_find_kv(MMLIST *mlist, int k, int32_t key)
 {
     int n = 0, min = 0, max = 0, x = 0, ret = -1;
@@ -353,8 +393,100 @@ int mmlist_find_kv(MMLIST *mlist, int k, int32_t key)
     return ret;
 }
 
+int mmlist_find_kv2(MMLIST *mlist, int k, int32_t key)
+{
+    int n = 0, min = 0, max = 0, x = 0, ret = -1;
+    MMKV *kvs = NULL;
+
+    if(mlist && k >= 0 && k < mlist->state->count 
+            && (n = mlist->slots[k].count) > 0)
+    {
+        kvs = mlist->map + mlist->slots[k].nodeid;
+        min = 0;
+        max = n - 1; 
+        if(key <= kvs[min].key) ret = min;
+        else if(key >= kvs[max].key) ret = max;
+        else
+        {
+            while(max > min)
+            {
+                x = (min + max) / 2;
+                if(x == min)
+                {
+                    ret = x;
+                    break;
+                }
+                if(key ==  kvs[x].key)
+                {
+                    ret = x;
+                    break;
+                }
+                else if(key > kvs[x].key) min = x;
+                else max = x;
+            }
+            if((x = ret) >= 0 && x < n)
+            {
+                while(x < n && kvs[x].key <= key)
+                {
+                    ret = x++;
+                }
+            }
+        }
+    }
+    return ret;
+}
+
 int mmlist_update(MMLIST *mlist, int no, int32_t nodeid);
-int mmlist_range(MMLIST *mlist, int32_t from, int32_t to, int32_t *list);
+
+int mmlist_range(MMLIST *mlist, int32_t from, int32_t to, int32_t *list)
+{
+    int i = 0, ii = 0, k = 0, kk = 0, j = 0, x = 0, z = 0, ret = 0, n = 0;
+    MMKV *kvs = NULL;
+
+    if(mlist && mlist->state)
+    {
+        k = mmlist_find_slot(mlist, from);
+        kk = mmlist_find_slot2(mlist, to);
+        i = mmlist_find_kv(mlist, k, from);
+        ii = mmlist_find_kv2(mlist, kk, to);
+        if(k == kk)
+        {
+            ret = ii + 1 - i;
+            kvs = mlist->map + mlist->slots[k].nodeid;
+            if(list)
+            {
+                for(x = i; x <= ii; x++) list[z++] = kvs[x].key;
+            }
+        }
+        else
+        {
+            n =  mlist->slots[k].count;
+            ret = n - i;
+            if(list)
+            {
+                kvs = mlist->map + mlist->slots[k].nodeid;
+                for(x = i; x < n; x++) list[z++] = kvs[x].key;
+            }
+            for(j = i+1; j < kk; j++)
+            {
+                ret += mlist->slots[j].count;
+                kvs = mlist->map + mlist->slots[j].nodeid;
+                if(list)
+                {
+                    for(x = 0; x < mlist->slots[j].count; x++) list[z++] = kvs[x].key;
+                }
+            }
+            ret += ii;
+            if(list)
+            {
+                kvs = mlist->map + mlist->slots[kk].nodeid;
+                for(x = 0; x < ii; x++) list[z++] = kvs[x].key;
+            }
+        }
+    }
+    return ret;
+}
+
 int mmlist_range1(MMLIST *mlist, int32_t key, int32_t *list) /* key = from */
 {
     int i = 0, k = 0, x = 0, z = 0, ret = 0, n = 0;
@@ -366,20 +498,18 @@ int mmlist_range1(MMLIST *mlist, int32_t key, int32_t *list) /* key = from */
         {
             kvs = mlist->map + mlist->slots[k].nodeid;
             n =  mlist->slots[k].count;
-            if(kvs[i].key != key && key <= kvs[n-1].key) i++;
             if(list)
             {
                 for(x = i; x < n; x++) list[z++] = kvs[x].key;
             }
             ret = n - i;
-            i = k+1;
             for(i = k + 1; i <  mlist->state->count; i++)
             {
                 ret += mlist->slots[i].count;
                 if(list)
                 {
-                    n = mlist->slots[i].count;
                     kvs = mlist->map + mlist->slots[i].nodeid;
+                    n = mlist->slots[i].count;
                     for(x = 0; x < n; x++) list[z++] = kvs[x].key;
                 }
             }
@@ -390,32 +520,28 @@ int mmlist_range1(MMLIST *mlist, int32_t key, int32_t *list) /* key = from */
 }
 int mmlist_range2(MMLIST *mlist, int32_t key, int32_t *list) /* key = to */
 {
-    int i = 0, k = 0, x = 0, z = 0, ret = 0, n = 0;
+    int i = 0, k = 0, x = 0, j = 0, z = 0, ret = 0, n = 0;
     MMKV *kvs = NULL;
 
     if(mlist && mlist->state && (n = (mlist->state->count)) > 0)
     {
-        while(key >= mlist->slots[i].max)
+        if((k = mmlist_find_slot2(mlist, key)) >= 0 && (i = mmlist_find_kv2(mlist, k, key)) >= 0)
         {
-            ret += mlist->slots[i].count;
-            if(list)
+            for(j = 0; j < k; j++)
             {
-                n = mlist->slots[i].count;
-                kvs = mlist->map + mlist->slots[i].nodeid;
-                for(x = 0; x < n; x++) list[z++] = kvs[x].key;
-            }
-            ++i;
-        }
-        if(i < n && key < mlist->slots[i].max)
-        {
-            kvs = mlist->map + mlist->slots[i].nodeid;
-            for(x = 0; x < mlist->slots[i].count; x++)
-            {
-                if(key <= kvs[x].key)
+                ret += mlist->slots[j].count;
+                if(list)
                 {
-                    ret++;
-                    if(list) list[z++] = kvs[x].key;
+                    for(x = 0; x < mlist->slots[j].count; x++)
+                    {
+                        if(list) list[z++] = kvs[x].key;
+                    }
                 }
+            }
+            ret += i + 1;
+            for(x = 0; x <= mlist->slots[i].count; x++)
+            {
+                if(list) list[z++] = kvs[x].key;
             }
         }
     }
