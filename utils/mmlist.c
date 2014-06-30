@@ -74,10 +74,13 @@ int mmlist_vset(MMLIST *mlist, int no, int32_t val)
         if(size > mlist->vsize)
         {
             n = ftruncate(mlist->vfd, size);
-            memset(((char *)mlist->vmap+mlist->vsize), 0, size - mlist->vsize);
+            //memset(((char *)mlist->vmap+mlist->vsize), 0, size - mlist->vsize);
+            i = mlist->vsize / sizeof(VNODE);
+            n = size / sizeof(VNODE);
+            while(i < n) mlist->vmap[i++].off = -1;
             mlist->vsize = size;
         }
-        mlist->vmap[no].val = val; 
+        //mlist->vmap[no].val = val; 
         ret = 0;
     }
     return ret;
@@ -86,9 +89,9 @@ int mmlist_vset(MMLIST *mlist, int no, int32_t val)
 /* mmlist get val */
 int mmlist_vget(MMLIST *mlist, int no, int32_t *val)
 {
-    int ret = -1;
+    int ret = -1, n = 0;
 
-    if(mlist && mlist->state && no > 0 && no < mlist->vsize)
+    if((n = (mlist->vsize/sizeof(VNODE))) > 0 && no < n)
     {
         if(val) *val = mlist->vmap[no].val; 
         ret = 0;
@@ -160,7 +163,6 @@ int mmlist_insert(MMLIST *mlist, int no, int32_t key)
         if(k >= 0 && k < n && mlist->slots[k].count < MM_SLOT_NUM)
         {
             x = mlist->slots[k].count++;
-            //fprintf(stdout, "%s::%d k:%d key:%d min:%d max:%d count:%d\n", __FILE__, __LINE__, k, key, mlist->slots[k].min, mlist->slots[k].max, x);
             kvs = mlist->map + mlist->slots[k].nodeid;
             while(x > 0 && key < kvs[x-1].key)
             {
@@ -180,9 +182,7 @@ int mmlist_insert(MMLIST *mlist, int no, int32_t key)
             nodeid = mmlist_slot_new(mlist);
             /* slot已满 转移元素到新的slot */
             if(k >= 0 && k < n && mlist->slots[k].count == MM_SLOT_NUM)
-                    //&& key >= mlist->slots[k].min && key < mlist->slots[k].max)
             {
-                //fprintf(stdout, "%s::%d k:%d no:%d count:%d min:%d max:%d key:%d OK\n", __FILE__, __LINE__, k, no, mlist->slots[k].count, mlist->slots[k].min, mlist->slots[k].max, key);
                 kvs = mlist->map + mlist->slots[k].nodeid + MM_SLOT2_NUM;
                 kv = mlist->map + nodeid;
                 num = MM_SLOT2_NUM;
@@ -191,7 +191,6 @@ int mmlist_insert(MMLIST *mlist, int no, int32_t key)
                 {
                     if(key >= kvs->key && key < kvs[i].key && num == MM_SLOT2_NUM) 
                     {
-                        //fprintf(stdout, "%s::%d k:%d no:%d count:%d min:%d max:%d key:%d OK\n", __FILE__, __LINE__, k, no, mlist->slots[k].count, mlist->slots[k].min, mlist->slots[k].max, key);
                         kv->key = key;
                         kv->val = no;
                         ++kv;
@@ -207,7 +206,6 @@ int mmlist_insert(MMLIST *mlist, int no, int32_t key)
                 }
                 if(num == MM_SLOT2_NUM && key >= kvs[i-1].key)
                 {
-                    //fprintf(stdout, "%s::%d k:%d no:%d count:%d min:%d max:%d key:%d OK\n", __FILE__, __LINE__, k, no, mlist->slots[k].count, mlist->slots[k].min, mlist->slots[k].max, key);
                     kv->key = key;
                     kv->val = no;
                     ++kv;
@@ -239,21 +237,14 @@ int mmlist_insert(MMLIST *mlist, int no, int32_t key)
                     mlist->slots[k].min = kvs[0].key;
                     mlist->slots[k].max = kvs[MM_SLOT2_NUM-1].key;
                     mlist->slots[k].count = MM_SLOT2_NUM;
-                    //fprintf(stdout, "%s:%d k:%d no:%d count:%d min:%d max:%d key:%d OK\n", __FILE__, __LINE__, k, no, mlist->slots[k].count, mlist->slots[k].min, mlist->slots[k].max, key);
                 }
                 pos = k+1;
                 k = mlist->state->count++; 
                 while(k > pos)
                 {
                     memcpy(&(mlist->slots[k]), &(mlist->slots[k-1]), sizeof(MMSLOT));
-                    x = mlist->slots[k].nodeid / MM_SLOT_NUM;
+                    x = (mlist->slots[k].nodeid / MM_SLOT_NUM);
                     mlist->roots[x] = k;
-                    /*
-                    mlist->slots[k].min = mlist->slots[k-1].min;
-                    mlist->slots[k].max = mlist->slots[k-1].max;
-                    mlist->slots[k].nodeid = mlist->slots[k-1].nodeid;
-                    mlist->slots[k].count = mlist->slots[k-1].count;
-                    */
                     --k;
                 }
             }
@@ -269,14 +260,8 @@ int mmlist_insert(MMLIST *mlist, int no, int32_t key)
                 while(k > 0 && key <= mlist->slots[k].min)
                 {
                     memcpy(&(mlist->slots[k]), &(mlist->slots[k-1]), sizeof(MMSLOT));
-                    x = mlist->slots[k].nodeid / MM_SLOT_NUM;
+                    x = (mlist->slots[k].nodeid / MM_SLOT_NUM);
                     mlist->roots[x] = k;
-                    /*
-                    mlist->slots[k].min = mlist->slots[k-1].min;
-                    mlist->slots[k].max = mlist->slots[k-1].max;
-                    mlist->slots[k].nodeid = mlist->slots[k-1].nodeid;
-                    mlist->slots[k].count = mlist->slots[k-1].count;
-                    */
                     --k;
                 }
             }
@@ -316,22 +301,22 @@ int mmlist_remove(MMLIST *mlist, int32_t no)
         if(mlist->slots[slotid].count == 1)
         {
             i = slotid;
+            mlist->state->qleft[(mlist->state->nleft++)] = nodeid;
+            mlist->roots[rootid] = -1;
             while(i < mlist->state->count)
             {
                 memcpy(&(mlist->slots[i]), (mlist->slots[i+1]), sizeof(MMSLOT));
                 rootid = (mlist->slots[i].nodeid / MM_SLOT_NUM);
-                mlist->state->roots[rootid] = i;
+                mlist->roots[rootid] = i;
                 ++i;
             }
             --mlist->state->count;
-            mlist->state->qleft[(mlist->state->nleft++)] = nodeid;
         }
         else
         {
-            --mlist->slots[slotid].count;
-            i = --mlist->slots[slotid].count - 1;
+            n = --(mlist->slots[slotid].count);
             mlist->slots[slotid].min = kvs[0].key;
-            mlist->slots[slotid].min = kvs[i].key;
+            mlist->slots[slotid].max = kvs[n - 1].key;
         }
     }
     return ret;
@@ -510,8 +495,6 @@ int mmlist_find_kv2(MMLIST *mlist, int k, int32_t key)
     return ret;
 }
 
-int mmlist_update(MMLIST *mlist, int no, int32_t nodeid);
-
 int mmlist_in(MMLIST *mlist, int32_t key, int32_t *list)
 {
     int i = 0, k = 0, z = 0, ret = 0, n = 0, ii = 0;
@@ -686,6 +669,65 @@ int mmlist_ins(MMLIST *mlist, int32_t *keys, int nkeys, int32_t *list)
     return ret;
 }
 
+int mmlist_get(MMLIST *mlist, int no, int32_t *key)
+{
+    int ret = -1, n = 0;
+
+    if(mlist)
+    {
+        RWLOCK_RDLOCK(&(mlist->rwlock));
+        if((n = (mlist->vsize/sizeof(VNODE))) > 0 && no < n)
+        {
+            key = mlist->vmap[no].val;
+        }
+        RWLOCK_UNLOCK(&(mlist->rwlock));
+    }
+    return ret;
+}
+
+int mmlist_set(MMLIST *mlist, int no, int32_t key)
+{
+    int ret = -1;
+
+    if(mlist)
+    {
+       RWLOCK_WRLOCK(&(mlist->rwlock));
+       mmlist_vset(mlist, no, key);
+       if(mlist->vmap[no].off  < 0)
+       {
+           mmlist_insert(mlist, key, no);
+       }
+       else
+       {
+           if(key != mlist->vmap[no].val)
+           {
+                mmlist_remove(mlist, no);
+                mmlist_insert(mlist, key, no);
+           }
+       }
+       mlist->vmap[no].val = key;
+       RWLOCK_UNLOCK(&(mlist->rwlock));
+    }
+    return ret;
+}
+
+int mmlist_del(MMLIST *mmlist, int no)
+{
+    int ret = -1, n = 0
+
+    if(mlist)
+    {
+        RWLOCK_WRLOCK(&(mlist->rwlock));
+        if((n = (mlist->vsize/sizeof(VNODE))) > 0 && no < n)
+        {
+            mmlist_remove(mlist, no);
+            mlist->vmap[no].off = -1;
+        }
+        RWLOCK_UNLOCK(&(mlist->rwlock));
+    }
+    return ret;
+}
+
 void mmlist_close(MMLIST *mlist)
 {
     off_t size = 0;
@@ -695,6 +737,7 @@ void mmlist_close(MMLIST *mlist)
         if(mlist->fd) close(mlist->fd);
         if(mlist->vmap) munmap(mlist->vmap, mlist->vmsize);
         if(mlist->vfd) close(mlist->vfd);
+        RWLOCK_DESTROY(&(mlist->rwlock));
         free(mlist);
     }
     return ;

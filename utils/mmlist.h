@@ -14,7 +14,7 @@ typedef struct MMKV
 typedef struct _VNODE
 {
     int32_t val; /* 数值 */
-    uint32_t off; /* 节点偏移 */
+    int32_t off; /* 节点偏移 */
 }VNODE;
 typedef struct _MMSLOT
 {
@@ -30,8 +30,6 @@ typedef struct _MMSTATE
     uint32_t roots[MM_SLOT_MAX]; /* 桶和槽的衍射 */
     uint32_t nleft; /* 空闲桶个数 */
     uint32_t count; /* 槽的个数 */
-    uint32_t max; /* 序号最大值 */
-    uint32_t bits;
 }MMSTATE;
 typedef struct _MMLIST
 {
@@ -49,9 +47,8 @@ typedef struct _MMLIST
     pthread_rwlock_t  rwlock;
 }MMLIST;
 MMLIST *mmlist_init(char *file);
-int mmlist_insert(MMLIST *mmlist, int no, int32_t key);
-int mmlist_update(MMLIST *mmlist, int no, int32_t key);
-int mmlist_delete(MMLIST *mmlist, int no);
+int mmlist_set(MMLIST *mmlist, int no, int32_t key);
+int mmlist_del(MMLIST *mmlist, int no);
 /* return number of the hits */
 int mmlist_range(MMLIST *mmlist, int32_t from, int32_t to, int32_t *list);
 int mmlist_rangefrom(MMLIST *mmlist, int32_t key, int32_t *list); /* key = from */
@@ -60,4 +57,7 @@ int mmlist_in(MMLIST *mlist, int32_t key, int32_t *list);
 int mmlist_ins(MMLIST *mmlist, int32_t *keys, int nkeys, int32_t *list);
 /* set list[] if (list != NULL) */
 void mmlist_close(MMLIST *mmlist);
+#define MMLIST_GET(mlist, no) ((MMLIST *)mlist)->vmap[no].val
+#define MMLIST_SET(mlist, no, key) mmlist_set(((MMLIST *)mlist), no, key)
+#define MMLIST_DEL(mlist, no, key) mmlist_del(((MMLIST *)mlist), no)
 #endif
