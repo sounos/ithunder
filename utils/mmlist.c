@@ -36,6 +36,7 @@ MMLIST *mmlist_init(char *file)
                    mlist->state->slots[i].nodeid = -1;
                 }
            }
+           mlist->roots = mlist->state->roots;
            mlist->slots = mlist->state->slots;
            //fprintf(stdout, "size:%lld/%d\n", mlist->size, sizeof(MMSTATE));
        }
@@ -103,11 +104,19 @@ int mmlist_slot_new(MMLIST *mlist)
 
     if(mlist && mlist->state)
     {
-        size = mlist->size + (off_t)sizeof(MMKV) * (off_t)MM_SLOT_NUM; 
-        n = ftruncate(mlist->fd, size);
-        memset(((char *)mlist->state+mlist->size), 0, (size - mlist->size));
-        ret = (mlist->size - (off_t)sizeof(MMSTATE)) / (off_t)sizeof(MMKV);
-        mlist->size = size;
+        if(mlist->state->nleft > 0)
+        {
+            n = --(mlist->state->nleft);
+            ret = mlist->qleft[n];
+        }
+        else
+        {
+            size = mlist->size + (off_t)sizeof(MMKV) * (off_t)MM_SLOT_NUM; 
+            n = ftruncate(mlist->fd, size);
+            memset(((char *)mlist->state+mlist->size), 0, (size - mlist->size));
+            ret = (mlist->size - (off_t)sizeof(MMSTATE)) / (off_t)sizeof(MMKV);
+            mlist->size = size;
+        }
     }
     return ret;
 }
@@ -157,10 +166,12 @@ int mmlist_insert(MMLIST *mlist, int no, int32_t key)
             {
                 kvs[x].key = kvs[x-1].key;
                 kvs[x].val = kvs[x-1].val;
+                mlist->vmap[(kvs[x].val)].off = (mlist->slots[k].nodeid + x)
                 --x;
             }
             kvs[x].key = key;
             kvs[x].val = no;
+            mlist->vmap[no].off = (mlist->slots[k].nodeid + x)
             if(key < mlist->slots[k].min) mlist->slots[k].min = key;
             if(key > mlist->slots[k].max) mlist->slots[k].max = key;
         }
@@ -175,6 +186,7 @@ int mmlist_insert(MMLIST *mlist, int no, int32_t key)
                 kvs = mlist->map + mlist->slots[k].nodeid + MM_SLOT2_NUM;
                 kv = mlist->map + nodeid;
                 num = MM_SLOT2_NUM;
+                x = 0;
                 for(i = 0; i < MM_SLOT2_NUM; i++) 
                 {
                     if(key >= kvs->key && key < kvs[i].key && num == MM_SLOT2_NUM) 
@@ -182,20 +194,26 @@ int mmlist_insert(MMLIST *mlist, int no, int32_t key)
                         //fprintf(stdout, "%s::%d k:%d no:%d count:%d min:%d max:%d key:%d OK\n", __FILE__, __LINE__, k, no, mlist->slots[k].count, mlist->slots[k].min, mlist->slots[k].max, key);
                         kv->key = key;
                         kv->val = no;
-                        kv++;
+                        ++kv;
+                        ++x;
+                        mlist->vmap[no].off = (nodeid + x);
                         num = MM_SLOT2_NUM+1;
                     }
                     kv->key = kvs[i].key;
                     kv->val = kvs[i].val;
-                    kv++;
+                    ++kv;
+                    ++x;
+                    mlist->vmap[(kv->val)].off = (nodeid + x);
                 }
                 if(num == MM_SLOT2_NUM && key >= kvs[i-1].key)
                 {
                     //fprintf(stdout, "%s::%d k:%d no:%d count:%d min:%d max:%d key:%d OK\n", __FILE__, __LINE__, k, no, mlist->slots[k].count, mlist->slots[k].min, mlist->slots[k].max, key);
                     kv->key = key;
                     kv->val = no;
-                    kv++;
+                    ++kv;
+                    ++x;
                     num = MM_SLOT2_NUM+1;
+                    mlist->vmap[(kv->val)].off = (nodeid + x);
                 }
                 if(num == MM_SLOT2_NUM)
                 {
@@ -205,10 +223,12 @@ int mmlist_insert(MMLIST *mlist, int no, int32_t key)
                     {
                         kvs[i].key = kvs[i-1].key;
                         kvs[i].val = kvs[i-1].val;
+                        mlist->vmap[(kvs[i].val)].off = (mlist->slots[k].nodeid + i);
                         --i;
                     }
                     kvs[i].key = key;
                     kvs[i].val = no;
+                    mlist->vmap[no].off = (mlist->slots[k].nodeid + i);
                     mlist->slots[k].min = kvs[0].key;
                     mlist->slots[k].max = kvs[MM_SLOT2_NUM].key;
                     mlist->slots[k].count = MM_SLOT2_NUM + 1;
@@ -226,6 +246,8 @@ int mmlist_insert(MMLIST *mlist, int no, int32_t key)
                 while(k > pos)
                 {
                     memcpy(&(mlist->slots[k]), &(mlist->slots[k-1]), sizeof(MMSLOT));
+                    x = mlist->slots[k].nodeid / MM_SLOT_NUM;
+                    mlist->roots[x] = k;
                     /*
                     mlist->slots[k].min = mlist->slots[k-1].min;
                     mlist->slots[k].max = mlist->slots[k-1].max;
@@ -241,11 +263,14 @@ int mmlist_insert(MMLIST *mlist, int no, int32_t key)
                 kv = mlist->map + nodeid;
                 kv->key = key;
                 kv->val = no;
+                mlist->vmap[no].off = nodeid;
                 num = 1;
                 k = mlist->state->count++; 
                 while(k > 0 && key <= mlist->slots[k].min)
                 {
                     memcpy(&(mlist->slots[k]), &(mlist->slots[k-1]), sizeof(MMSLOT));
+                    x = mlist->slots[k].nodeid / MM_SLOT_NUM;
+                    mlist->roots[x] = k;
                     /*
                     mlist->slots[k].min = mlist->slots[k-1].min;
                     mlist->slots[k].max = mlist->slots[k-1].max;
@@ -261,6 +286,52 @@ int mmlist_insert(MMLIST *mlist, int no, int32_t key)
             mlist->slots[k].nodeid = nodeid;
             mlist->slots[k].count = num;
             //fprintf(stdout, "%s::%d k:%d min:%d max:%d num:%d/%d\n", __FILE__, __LINE__, k, mlist->slots[k].min, mlist->slots[k].max, num, mlist->state->count);
+        }
+    }
+    return ret;
+}
+
+int mmlist_remove(MMLIST *mlist, int32_t no)
+{
+    uint32_t nodeid = 0, rootid = 0, slotid = 0;
+    int ret = -1, i = 0, x = 0;
+    VNODE *vmap = NULL;
+    MMKV *kvs = NULL;
+
+    if(mlist && mlist->state && mlist->vmap 
+            && no > 0 && no < mlist->state->max
+            && (nodeid = mlist->vmap[no].off) >= 0)
+    {
+        rootid = (nodeid / MM_SLOT_NUM);
+        slotid = mlist->roots[rootid];
+        i = nodeid % MM_SLOT_NUM;
+        kvs = mlist->map + mlist->slots[slotid].nodeid;    
+        while(i < mlist->slots[slotid].count)
+        {
+            memcpy(&(kvs[i]), &(kvs[i+1]), sizeof(MMKV));
+            x = kvs[i].val;
+            mlist->vmap[x].off = i;
+            ++i;
+        }
+        if(mlist->slots[slotid].count == 1)
+        {
+            i = slotid;
+            while(i < mlist->state->count)
+            {
+                memcpy(&(mlist->slots[i]), (mlist->slots[i+1]), sizeof(MMSLOT));
+                rootid = (mlist->slots[i].nodeid / MM_SLOT_NUM);
+                mlist->state->roots[rootid] = i;
+                ++i;
+            }
+            --mlist->state->count;
+            mlist->state->qleft[(mlist->state->nleft++)] = nodeid;
+        }
+        else
+        {
+            --mlist->slots[slotid].count;
+            i = --mlist->slots[slotid].count - 1;
+            mlist->slots[slotid].min = kvs[0].key;
+            mlist->slots[slotid].min = kvs[i].key;
         }
     }
     return ret;

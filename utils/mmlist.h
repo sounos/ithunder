@@ -8,27 +8,30 @@
 #define MM_NODES_MAX    4294967296
 typedef struct MMKV
 {
-    int32_t key;
-    int32_t val;
+    int32_t key; /* 数值 */
+    uint32_t val; /* 文档序号 */
 }MMKV;
 typedef struct _VNODE
 {
-    int32_t val;
-    ushort  slot;
-    ushort  off;
+    int32_t val; /* 数值 */
+    uint32_t off; /* 节点偏移 */
 }VNODE;
 typedef struct _MMSLOT
 {
-    int32_t min;
-    int32_t max;
-    uint32_t nodeid;
-    int count;
+    int32_t min; /* 当前桶的最小值 */
+    int32_t max; /* 当前桶的最大值 */
+    uint32_t nodeid; /* 桶偏移地址 */
+    int count; /* 桶元素个数 */
 }MMSLOT;
 typedef struct _MMSTATE
 {
-    MMSLOT slots[MM_SLOT_MAX];
-    int count;
-    uint32_t left;
+    MMSLOT slots[MM_SLOT_MAX]; /* 槽 */
+    uint32_t qleft[MM_SLOT_MAX]; /* 空闲的桶 */
+    uint32_t roots[MM_SLOT_MAX]; /* 桶和槽的衍射 */
+    uint32_t nleft; /* 空闲桶个数 */
+    uint32_t count; /* 槽的个数 */
+    uint32_t max; /* 序号最大值 */
+    uint32_t bits;
 }MMSTATE;
 typedef struct _MMLIST
 {
@@ -36,6 +39,7 @@ typedef struct _MMLIST
     MMKV   *map;
     VNODE *vmap;
     MMSLOT *slots;
+    uint32_t *roots;
     int fd;
     int vfd;
     off_t size;
