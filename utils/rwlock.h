@@ -9,9 +9,8 @@
 #else
 #define RWLOCK_INIT(x)
 #define RWLOCK_RDLOCK(x)
-#define RWLOCK_RDUNLOCK(x)
 #define RWLOCK_WRLOCK(x)
-#define RWLOCK_WRUNLOCK(x)
+#define RWLOCK_UNLOCK(x)
 #define RWLOCK_DESTROY(x)
 #endif
 #endif

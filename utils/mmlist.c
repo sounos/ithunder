@@ -67,7 +67,7 @@ int mmlist_vset(MMLIST *mlist, int no, int32_t val)
 {
     off_t size = (off_t)((no / MM_VNODE_INC) + ((no%MM_VNODE_INC) != 0)) 
             * (off_t)MM_VNODE_INC * (off_t) sizeof(VNODE);
-    int ret = -1, n = 0;
+    int ret = -1, n = 0, i = 0;
 
     if(mlist && mlist->state && no > 0 && no < MM_NODES_MAX)
     {
@@ -110,7 +110,7 @@ int mmlist_slot_new(MMLIST *mlist)
         if(mlist->state->nleft > 0)
         {
             n = --(mlist->state->nleft);
-            ret = mlist->qleft[n];
+            ret = mlist->state->qleft[n];
         }
         else
         {
@@ -168,12 +168,12 @@ int mmlist_insert(MMLIST *mlist, int no, int32_t key)
             {
                 kvs[x].key = kvs[x-1].key;
                 kvs[x].val = kvs[x-1].val;
-                mlist->vmap[(kvs[x].val)].off = (mlist->slots[k].nodeid + x)
+                mlist->vmap[(kvs[x].val)].off = (mlist->slots[k].nodeid + x);
                 --x;
             }
             kvs[x].key = key;
             kvs[x].val = no;
-            mlist->vmap[no].off = (mlist->slots[k].nodeid + x)
+            mlist->vmap[no].off = (mlist->slots[k].nodeid + x);
             if(key < mlist->slots[k].min) mlist->slots[k].min = key;
             if(key > mlist->slots[k].max) mlist->slots[k].max = key;
         }
@@ -279,12 +279,12 @@ int mmlist_insert(MMLIST *mlist, int no, int32_t key)
 int mmlist_remove(MMLIST *mlist, int32_t no)
 {
     uint32_t nodeid = 0, rootid = 0, slotid = 0;
-    int ret = -1, i = 0, x = 0;
+    int ret = -1, i = 0, x = 0, n = 0;
     VNODE *vmap = NULL;
     MMKV *kvs = NULL;
 
     if(mlist && mlist->state && mlist->vmap 
-            && no > 0 && no < mlist->state->max
+            && (n = mlist->vsize/sizeof(VNODE)) > 0 && no > 0 && no < n
             && (nodeid = mlist->vmap[no].off) >= 0)
     {
         rootid = (nodeid / MM_SLOT_NUM);
@@ -305,7 +305,7 @@ int mmlist_remove(MMLIST *mlist, int32_t no)
             mlist->roots[rootid] = -1;
             while(i < mlist->state->count)
             {
-                memcpy(&(mlist->slots[i]), (mlist->slots[i+1]), sizeof(MMSLOT));
+                memcpy(&(mlist->slots[i]), &(mlist->slots[i+1]), sizeof(MMSLOT));
                 rootid = (mlist->slots[i].nodeid / MM_SLOT_NUM);
                 mlist->roots[rootid] = i;
                 ++i;
@@ -678,7 +678,7 @@ int mmlist_get(MMLIST *mlist, int no, int32_t *key)
         RWLOCK_RDLOCK(&(mlist->rwlock));
         if((n = (mlist->vsize/sizeof(VNODE))) > 0 && no < n)
         {
-            key = mlist->vmap[no].val;
+            if(key) *key = mlist->vmap[no].val;
         }
         RWLOCK_UNLOCK(&(mlist->rwlock));
     }
@@ -711,9 +711,9 @@ int mmlist_set(MMLIST *mlist, int no, int32_t key)
     return ret;
 }
 
-int mmlist_del(MMLIST *mmlist, int no)
+int mmlist_del(MMLIST *mlist, int no)
 {
-    int ret = -1, n = 0
+    int ret = -1, n = 0;
 
     if(mlist)
     {
@@ -746,7 +746,7 @@ void mmlist_close(MMLIST *mlist)
 #ifdef MMLIST_TEST
 #include "timer.h"
 #define MASK  120000
-//gcc -o imap mmlist.c -DMMLIST_TEST && ./imap
+//gcc -o imap mmlist.c -DMMLIST_TEST -DTEST_INS -DHAVE_PTHREAD -lpthread && ./imap
 int main()
 {
     MMLIST *mlist = NULL;
