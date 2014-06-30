@@ -69,9 +69,9 @@ int mmlist_vset(MMLIST *mlist, int no, int32_t val)
             * (off_t)MM_VNODE_INC * (off_t) sizeof(VNODE);
     int ret = -1, n = 0, i = 0;
 
-    if(mlist && mlist->state && no > 0 && no < MM_NODES_MAX)
+    if(mlist && mlist->state && no >= 0 && no < MM_NODES_MAX)
     {
-        if(size > mlist->vsize)
+        if(size >= mlist->vsize)
         {
             n = ftruncate(mlist->vfd, size);
             //memset(((char *)mlist->vmap+mlist->vsize), 0, size - mlist->vsize);
@@ -284,7 +284,7 @@ int mmlist_remove(MMLIST *mlist, int32_t no)
     MMKV *kvs = NULL;
 
     if(mlist && mlist->state && mlist->vmap 
-            && (n = mlist->vsize/sizeof(VNODE)) > 0 && no > 0 && no < n
+            && (n = mlist->vsize/sizeof(VNODE)) > 0 && no >= 0 && no < n
             && (nodeid = mlist->vmap[no].off) >= 0)
     {
         rootid = (nodeid / MM_SLOT_NUM);
@@ -772,15 +772,15 @@ int main()
             inputs[i] = rand()%MASK;
         }
         TIMER_RESET(timer);
-        for(i = 0; i < 40000000; i++)
+        for(i = 1; i < 40000000; i++)
         {
            j = (rand()%n);
            val = inputs[j];
            stat[val]++;
-           mmlist_insert(mlist, i, val);
+           mmlist_set(mlist, i, val);
         }
         TIMER_SAMPLE(timer);
-        fprintf(stdout, "insert() 40000000 data, time used:%lld\n", PT_LU_USEC(timer));
+        fprintf(stdout, "set() 40000000 data, time used:%lld\n", PT_LU_USEC(timer));
         TIMER_RESET(timer);
         for(i = 0; i < n; i++)
         {
@@ -818,13 +818,13 @@ int main()
 #ifdef TEST_RANGE
         srand(time(NULL));
         TIMER_RESET(timer);
-        for(i = 0; i < 40000000; i++)
+        for(i = 1; i < 40000000; i++)
         {
             val = 1356969600 + (rand()%31536000);
-            mmlist_insert(mlist, i, val);
+            mmlist_set(mlist, i, val);
         }
         TIMER_SAMPLE(timer);
-        fprintf(stdout, "insert() 40000000 timestamps,  time used:%lld\n", PT_LU_USEC(timer));
+        fprintf(stdout, "set() 40000000 timestamps,  time used:%lld\n", PT_LU_USEC(timer));
         srand(time(NULL));
         TIMER_RESET(timer);
         all = 0;
