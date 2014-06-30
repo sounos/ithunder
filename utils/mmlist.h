@@ -46,10 +46,14 @@ typedef struct _MMLIST
 }MMLIST;
 MMLIST *mmlist_init(char *file);
 int mmlist_insert(MMLIST *mmlist, int no, int32_t key);
-//int mmlist_remove(MMLIST *mmlist, int no, int32_t nodeid);
-int mmlist_update(MMLIST *mmlist, int no, int32_t nodeid);
-int mmlist_range(MMLIST *mmlist, int32_t from, int32_t to, int32_t *list );
-int mmlist_range1(MMLIST *mmlist, int32_t key, int32_t *list);
-int mmlist_range2(MMLIST *mmlist, int32_t key, int32_t *list);
+int mmlist_update(MMLIST *mmlist, int no, int32_t key);
+int mmlist_delete(MMLIST *mmlist, int no);
+/* return number of the hits */
+int mmlist_range(MMLIST *mmlist, int32_t from, int32_t to, int32_t *list);
+int mmlist_rangefrom(MMLIST *mmlist, int32_t key, int32_t *list); /* key = from */
+int mmlist_rangeto(MMLIST *mmlist, int32_t key, int32_t *list); /* key = to */
+int mmlist_in(MMLIST *mlist, int32_t key, int32_t *list);
+int mmlist_ins(MMLIST *mmlist, int32_t *keys, int nkeys, int32_t *list);
+/* set list[] if (list != NULL) */
 void mmlist_close(MMLIST *mmlist);
 #endif

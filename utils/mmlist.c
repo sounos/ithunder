@@ -28,13 +28,13 @@ MMLIST *mmlist_init(char *file)
            mlist->size = st.st_size;
            if(st.st_size < sizeof(MMSTATE))
            {
-               ftruncate(mlist->fd, sizeof(MMSTATE));
-               memset(mlist->state, 0, sizeof(MMSTATE));
-               mlist->size += sizeof(MMSTATE);
-               for(i = 0; i < MM_SLOT_MAX; i++)
-               {
+                i = ftruncate(mlist->fd, sizeof(MMSTATE));
+                memset(mlist->state, 0, sizeof(MMSTATE));
+                mlist->size += sizeof(MMSTATE);
+                for(i = 0; i < MM_SLOT_MAX; i++)
+                {
                    mlist->state->slots[i].nodeid = -1;
-               }
+                }
            }
            mlist->slots = mlist->state->slots;
            //fprintf(stdout, "size:%lld/%d\n", mlist->size, sizeof(MMSTATE));
@@ -66,13 +66,13 @@ int mmlist_vset(MMLIST *mlist, int no, int32_t val)
 {
     off_t size = (off_t)((no / MM_VNODE_INC) + ((no%MM_VNODE_INC) != 0)) 
             * (off_t)MM_VNODE_INC * (off_t) sizeof(VNODE);
-    int ret = -1;
+    int ret = -1, n = 0;
 
     if(mlist && mlist->state && no > 0 && no < MM_NODES_MAX)
     {
         if(size > mlist->vsize)
         {
-            ftruncate(mlist->vfd, size);
+            n = ftruncate(mlist->vfd, size);
             memset(((char *)mlist->vmap+mlist->vsize), 0, size - mlist->vsize);
             mlist->vsize = size;
         }
@@ -99,12 +99,12 @@ int mmlist_vget(MMLIST *mlist, int no, int32_t *val)
 int mmlist_slot_new(MMLIST *mlist)
 {
     off_t size = 0;
-    int ret = -1;
+    int ret = -1, n = 0;
 
     if(mlist && mlist->state)
     {
         size = mlist->size + (off_t)sizeof(MMKV) * (off_t)MM_SLOT_NUM; 
-        ftruncate(mlist->fd, size);
+        n = ftruncate(mlist->fd, size);
         memset(((char *)mlist->state+mlist->size), 0, (size - mlist->size));
         ret = (mlist->size - (off_t)sizeof(MMSTATE)) / (off_t)sizeof(MMKV);
         mlist->size = size;
@@ -134,13 +134,11 @@ int mmlist_insert(MMLIST *mlist, int no, int32_t key)
                     x = (min + max) / 2;
                     if(x == min)
                     {
-                        //fprintf(stdout, "%s::%d x:%d min:%d max:%d key:%d count:%d\n", __FILE__, __LINE__, x, mlist->slots[x].min, mlist->slots[x].max, key, n);
                         k = x;
                         break;
                     }
                     if(key >=  mlist->slots[x].min && key <= mlist->slots[x+1].min)
                     {
-                        //fprintf(stdout, "%s::%d x:%d min:%d max:%d num:%d key:%d total:%d\n", __FILE__, __LINE__, x, mlist->slots[x].min, mlist->slots[x].max, mlist->slots[x].count, key, n);
                         k = x;
                         break;
                     }
@@ -168,7 +166,6 @@ int mmlist_insert(MMLIST *mlist, int no, int32_t key)
         }
         else
         {
-            //fprintf(stdout, "%s::%d k:%d key:%d\n", __FILE__, __LINE__, k, key);
             nodeid = mmlist_slot_new(mlist);
             /* slot已满 转移元素到新的slot */
             if(k >= 0 && k < n && mlist->slots[k].count == MM_SLOT_NUM)
@@ -215,13 +212,9 @@ int mmlist_insert(MMLIST *mlist, int no, int32_t key)
                     mlist->slots[k].min = kvs[0].key;
                     mlist->slots[k].max = kvs[MM_SLOT2_NUM].key;
                     mlist->slots[k].count = MM_SLOT2_NUM + 1;
-                    //fprintf(stdout, "%s::%d k:%d no:%d count:%d min:%d max:%d key:%d OK\n", __FILE__, __LINE__, k, no, mlist->slots[k].count, mlist->slots[k].min, mlist->slots[k].max, key);
-                    //pos = k;
-                    //fprintf(stdout, "%s:%d no:%d new-slot:%d k:%d count:%d OK\n", __FILE__, __LINE__, no, nodeid, k, mlist->slots[k].count);
                 }
                 else
                 {
-                    //pos = k+1;
                     kvs = mlist->map + mlist->slots[k].nodeid;
                     mlist->slots[k].min = kvs[0].key;
                     mlist->slots[k].max = kvs[MM_SLOT2_NUM-1].key;
@@ -241,8 +234,6 @@ int mmlist_insert(MMLIST *mlist, int no, int32_t key)
                     */
                     --k;
                 }
-                //fprintf(stdout, "%s:%d k:%d no:%d count:%d min:%d max:%d key:%d OK\n", __FILE__, __LINE__, k, no, mlist->slots[k].count, mlist->slots[k].min, mlist->slots[k].max, key);
-                //fprintf(stdout, "%s:%d no:%d new-slot:%d k:%d count:%d OK\n", __FILE__, __LINE__, no, nodeid, k, mlist->slots[k].count);
             }
             else
             {
@@ -275,15 +266,14 @@ int mmlist_insert(MMLIST *mlist, int no, int32_t key)
     return ret;
 }
 
-int mmlist_remove(MMLIST *mlist, u_int32_t nodeid)
+int mmlist_delete(MMLIST *mlist, int32_t no)
 {
-    MMKV *kv = NULL;
 
     if(mlist && mlist->state && mlist->map)
     {
-        kv = mlist->map + nodeid;
     }
 }
+
 
 int mmlist_find_slot(MMLIST *mlist, int32_t key)
 {
@@ -311,6 +301,13 @@ int mmlist_find_slot(MMLIST *mlist, int32_t key)
                 }
                 else if(key > mlist->slots[x].max) min = x;
                 else max = x;
+            }
+        }
+        if((x = ret)>= 0 && x < n)
+        {
+            while(x >= 0 && key <= mlist->slots[x].max)
+            {
+                ret = x--;
             }
         }
     }
@@ -347,8 +344,7 @@ int mmlist_find_slot2(MMLIST *mlist, int32_t key)
         }
         if((x = ret)>= 0 && x < n)
         {
-            while(x < n && key >= mlist->slots[x].min 
-                    && mlist->slots[x].count == MM_SLOT_MAX)
+            while(x < n && key >= mlist->slots[x].min) 
             {
                 ret = x++;
             }
@@ -369,43 +365,6 @@ int mmlist_find_kv(MMLIST *mlist, int k, int32_t key)
         min = 0;
         max = n - 1; 
         if(key <= kvs[min].key) ret = min;
-        else if(key >= kvs[max].key) ret = max;
-        else
-        {
-            while(max > min)
-            {
-                x = (min + max) / 2;
-                if(x == min)
-                {
-                    ret = x;
-                    break;
-                }
-                if(key ==  kvs[x].key)
-                {
-                    ret = x;
-                    break;
-                }
-                else if(key > kvs[x].key) min = x;
-                else max = x;
-            }
-        }
-    }
-    return ret;
-}
-
-int mmlist_find_kv2(MMLIST *mlist, int k, int32_t key)
-{
-    int n = 0, min = 0, max = 0, x = 0, ret = -1;
-    MMKV *kvs = NULL;
-
-    if(mlist && k >= 0 && k < mlist->state->count 
-            && (n = mlist->slots[k].count) > 0)
-    {
-        kvs = mlist->map + mlist->slots[k].nodeid;
-        min = 0;
-        max = n - 1; 
-        if(key <= kvs[min].key) ret = min;
-        else if(key >= kvs[max].key) ret = max;
         else
         {
             while(max > min)
@@ -426,7 +385,51 @@ int mmlist_find_kv2(MMLIST *mlist, int k, int32_t key)
             }
             if((x = ret) >= 0 && x < n)
             {
-                while(x < n && kvs[x].key <= key)
+                while(x >= 0 && key == kvs[x].key)
+                {
+                    ret = x--;
+                }
+            }
+
+        }
+        //fprintf(stdout, "find_kv(%d) min:%d max:%d count:%d ret:%d\n", key, mlist->slots[k].min, mlist->slots[k].max, mlist->slots[k].count, ret);
+    }
+    return ret;
+}
+
+int mmlist_find_kv2(MMLIST *mlist, int k, int32_t key)
+{
+    int n = 0, min = 0, max = 0, x = 0, ret = -1;
+    MMKV *kvs = NULL;
+
+    if(mlist && k >= 0 && k < mlist->state->count 
+            && (n = mlist->slots[k].count) > 0)
+    {
+        kvs = mlist->map + mlist->slots[k].nodeid;
+        min = 0;
+        max = n - 1; 
+        if(key <= kvs[max].key) ret = max;
+        else
+        {
+            while(max > min)
+            {
+                x = (min + max) / 2;
+                if(x == min)
+                {
+                    ret = x;
+                    break;
+                }
+                if(key ==  kvs[x].key)
+                {
+                    ret = x;
+                    break;
+                }
+                else if(key > kvs[x].key) min = x;
+                else max = x;
+            }
+            if((x = ret) >= 0 && x < n)
+            {
+                while(x < n && key == kvs[x].key)
                 {
                     ret = x++;
                 }
@@ -437,6 +440,45 @@ int mmlist_find_kv2(MMLIST *mlist, int k, int32_t key)
 }
 
 int mmlist_update(MMLIST *mlist, int no, int32_t nodeid);
+
+int mmlist_in(MMLIST *mlist, int32_t key, int32_t *list)
+{
+    int i = 0, k = 0, z = 0, ret = 0, n = 0, ii = 0;
+    MMKV *kvs = NULL;
+
+    if(mlist && mlist->state && (n = mlist->state->count) > 0)
+    {
+        k = mmlist_find_slot(mlist, key);
+        i = mmlist_find_kv(mlist, k, key);
+        ii = mmlist_find_kv2(mlist, k, key);
+        do
+        {
+            kvs = mlist->map + mlist->slots[k].nodeid;
+            if(key == kvs[i].key && i < mlist->slots[k].count)
+            {
+                if(key == mlist->slots[k].max)
+                {
+                    ret += mlist->slots[k].count - i;
+                    if(list)
+                    {
+                        while(i < mlist->slots[k].count) list[z++] = kvs[i++].key;
+                    }
+                }
+                else
+                {
+                    while(i < mlist->slots[k].count && key == kvs[i].key)
+                    {
+                        if(list)list[z++] = kvs[i].key;
+                        ++ret;
+                        ++i;
+                    }
+                }
+            }
+            i=0;
+        }while(++k < n && mlist->slots[k].min == key);
+    }
+    return ret;
+}
 
 int mmlist_range(MMLIST *mlist, int32_t from, int32_t to, int32_t *list)
 {
@@ -452,9 +494,9 @@ int mmlist_range(MMLIST *mlist, int32_t from, int32_t to, int32_t *list)
         if(k == kk)
         {
             ret = ii + 1 - i;
-            kvs = mlist->map + mlist->slots[k].nodeid;
             if(list)
             {
+                kvs = mlist->map + mlist->slots[k].nodeid;
                 for(x = i; x <= ii; x++) list[z++] = kvs[x].key;
             }
         }
@@ -470,9 +512,9 @@ int mmlist_range(MMLIST *mlist, int32_t from, int32_t to, int32_t *list)
             for(j = i+1; j < kk; j++)
             {
                 ret += mlist->slots[j].count;
-                kvs = mlist->map + mlist->slots[j].nodeid;
                 if(list)
                 {
+                    kvs = mlist->map + mlist->slots[j].nodeid;
                     for(x = 0; x < mlist->slots[j].count; x++) list[z++] = kvs[x].key;
                 }
             }
@@ -487,7 +529,7 @@ int mmlist_range(MMLIST *mlist, int32_t from, int32_t to, int32_t *list)
     return ret;
 }
 
-int mmlist_range1(MMLIST *mlist, int32_t key, int32_t *list) /* key = from */
+int mmlist_rangefrom(MMLIST *mlist, int32_t key, int32_t *list) /* key = from */
 {
     int i = 0, k = 0, x = 0, z = 0, ret = 0, n = 0;
     MMKV *kvs = NULL;
@@ -518,34 +560,58 @@ int mmlist_range1(MMLIST *mlist, int32_t key, int32_t *list) /* key = from */
     //fprintf(stdout, "%s::%d k:%d ret:%d/%d\n", __FILE__, __LINE__, k, ret, z);
     return ret;
 }
-int mmlist_range2(MMLIST *mlist, int32_t key, int32_t *list) /* key = to */
+
+int mmlist_rangeto(MMLIST *mlist, int32_t key, int32_t *list) /* key = to */
 {
     int i = 0, k = 0, x = 0, j = 0, z = 0, ret = 0, n = 0;
     MMKV *kvs = NULL;
 
     if(mlist && mlist->state && (n = (mlist->state->count)) > 0)
     {
-        if((k = mmlist_find_slot2(mlist, key)) >= 0 && (i = mmlist_find_kv2(mlist, k, key)) >= 0)
+        if((k = mmlist_find_slot2(mlist, key)) >= 0 && k < n 
+                && (i = mmlist_find_kv2(mlist, k, key)) >= 0)
         {
             for(j = 0; j < k; j++)
             {
                 ret += mlist->slots[j].count;
                 if(list)
                 {
+                    kvs = mlist->map + mlist->slots[j].nodeid;
                     for(x = 0; x < mlist->slots[j].count; x++)
                     {
-                        if(list) list[z++] = kvs[x].key;
+                        list[z++] = kvs[x].key;
                     }
                 }
             }
             ret += i + 1;
-            for(x = 0; x <= mlist->slots[i].count; x++)
+            if(list)
             {
-                if(list) list[z++] = kvs[x].key;
+                kvs = mlist->map + mlist->slots[k].nodeid;
+                for(x = 0; x <= i; x++)
+                {
+                    list[z++] = kvs[x].key;
+                }
             }
         }
     }
     //fprintf(stdout, "%s::%d k:%d ret:%d/%d\n", __FILE__, __LINE__, k, ret, z);
+    return ret;
+}
+
+int mmlist_ins(MMLIST *mlist, int32_t *keys, int nkeys, int32_t *list)
+{
+    int ret = 0, i = 0, n = 0;
+    int32_t *plist = list;
+
+    if(mlist && mlist->state && keys && nkeys > 0)
+    {
+       for(i = 0; i < nkeys; i++) 
+       {
+            n = mmlist_in(mlist, keys[i], plist);
+            if(list) plist += n;
+            ret += n;
+       }
+    }
     return ret;
 }
 
@@ -564,51 +630,134 @@ void mmlist_close(MMLIST *mlist)
 }
 
 #ifdef MMLIST_TEST
+#include "timer.h"
+#define MASK  120000
 //gcc -o imap mmlist.c -DMMLIST_TEST && ./imap
 int main()
 {
     MMLIST *mlist = NULL;
-    int i = 0, n = 0;
-    int32_t val = 0, res[200000];
+    int i = 0, j = 0, n = 0, total = 0, stat[MASK], stat2[MASK];
+    int32_t val = 0, from = 0, to = 0, *res = NULL;
+    int32_t inputs[256];
+    int64_t all = 0;
+    time_t stime = 0, etime = 0;
+    void *timer = NULL;
 
     if((mlist = mmlist_init("/tmp/1.idx")))
     {
-        /*
-        for(i = 0; i < 10000000; i++)
-            mmlist_vset(mlist, i, random());
-            */
+        res = (int32_t *)calloc(60000000, sizeof(int32_t));
+        TIMER_INIT(timer);
+#ifdef TEST_INS
+        //fprintf(stdout, "sizeof(stat):%d\n", sizeof(stat));
+        memset(stat, 0, sizeof(stat));
+        memset(stat2, 0, sizeof(stat2));
         srand(time(NULL));
-        for(i = 0; i < 200000; i++)
+        n = 256;
+        for(i = 0; i < n; i++)
         {
-            val = 1356969600 + (rand()%31536000);
-            mmlist_insert(mlist, i, val);
-            //fprintf(stdout, "%s::%d val(%d:%d)\n", __FILE__, __LINE__, i, val);
+            inputs[i] = rand()%MASK;
         }
-        /*
-        */
-        /*
-        */
+        TIMER_RESET(timer);
+        for(i = 0; i < 40000000; i++)
+        {
+           j = (rand()%n);
+           val = inputs[j];
+           stat[val]++;
+           mmlist_insert(mlist, i, val);
+        }
+        TIMER_SAMPLE(timer);
+        fprintf(stdout, "insert() 40000000 data, time used:%lld\n", PT_LU_USEC(timer));
+        TIMER_RESET(timer);
+        for(i = 0; i < n; i++)
+        {
+            val = inputs[i];
+            stat2[val] = mmlist_in(mlist, val, res);
+        }
+        TIMER_SAMPLE(timer);
+        fprintf(stdout, "in() time used:%lld\n", PT_LU_USEC(timer));
+        TIMER_RESET(timer);
+        total = mmlist_ins(mlist, inputs, n, NULL);
+        TIMER_SAMPLE(timer);
+        fprintf(stdout, "ins(keys, NULL) total:%d time used:%lld\n", total, PT_LU_USEC(timer));
+        TIMER_RESET(timer);
+        total = mmlist_ins(mlist, inputs, n, res);
+        TIMER_SAMPLE(timer);
+        fprintf(stdout, "ins(keys, res:%p) total:%d time used:%lld\n", res, total, PT_LU_USEC(timer));
+        for(i = 0; i < n; i++)
+        {
+            j = inputs[i];
+            fprintf(stdout, "%d:%d/%d\n", j, stat[j], stat2[j]);
+        }
+#ifdef OUT_ALL
+        for(i = 0; i < total; i++)
+        {
+            fprintf(stdout, "%d:%d\n", i, res[i]);
+        }
+#endif
+#endif
         /*
         for(i = 0; i < mlist->state->count; i++)
         {
             fprintf(stdout, "%d:{min:%d max:%d}(%d)\n", i, mlist->slots[i].min, mlist->slots[i].max, mlist->slots[i].count);
         }
         */
-        /*
+#ifdef TEST_RANGE
         srand(time(NULL));
-        for(i = 0; i < 100000; i++)
+        TIMER_RESET(timer);
+        for(i = 0; i < 40000000; i++)
         {
             val = 1356969600 + (rand()%31536000);
-            mmlist_range1(mlist, NULL, val);
+            mmlist_insert(mlist, i, val);
         }
-        */
-        val = 1356969600 + (rand()%31536000);
-        n = mmlist_range2(mlist, val, res);
-        for(i = 0; i < n; i++)
+        TIMER_SAMPLE(timer);
+        fprintf(stdout, "insert() 40000000 timestamps,  time used:%lld\n", PT_LU_USEC(timer));
+        srand(time(NULL));
+        TIMER_RESET(timer);
+        all = 0;
+        for(i = 0; i < 1000; i++)
         {
-            fprintf(stdout, "%d\n", res[i]);
+            val = 1356969600 + (rand()%31536000);
+            all += mmlist_rangefrom(mlist, val, res);
         }
+        TIMER_SAMPLE(timer);
+        fprintf(stdout, "rangefrom() 1000 times total:%lld, time used:%lld\n", (long long int)all, PT_LU_USEC(timer));
+        srand(time(NULL));
+        TIMER_RESET(timer);
+        all = 0;
+        for(i = 0; i < 1000; i++)
+        {
+            val = 1356969600 + (rand()%31536000);
+            all += mmlist_rangeto(mlist, val, res);
+        }
+        TIMER_SAMPLE(timer);
+        fprintf(stdout, "rangeto() 1000 times total:%lld, time used:%lld\n", (long long int)all, PT_LU_USEC(timer));
+        srand(time(NULL));
+        TIMER_RESET(timer);
+        all = 0;
+        for(i = 0; i < 1000; i++)
+        {
+            from = 1356969600 + (rand()%31536000);
+            to = from + rand()%31536000;
+            all += mmlist_range(mlist, from, to, res);
+        }
+        TIMER_SAMPLE(timer);
+        fprintf(stdout, "range(%p) 1000 times total:%lld, time used:%lld\n", res, (long long int)all, PT_LU_USEC(timer));
+        srand(time(NULL));
+        TIMER_RESET(timer);
+        all = 0;
+        for(i = 0; i < 1000; i++)
+        {
+            from = 1356969600 + (rand()%31536000);
+            to = from + rand()%31536000;
+            all += mmlist_range(mlist, from, to, NULL);
+        }
+        TIMER_SAMPLE(timer);
+        fprintf(stdout, "range(null) 1000 times total:%lld, time used:%lld\n", (long long int)all, PT_LU_USEC(timer));
+
+#endif
         mmlist_close(mlist);
+        TIMER_CLEAN(timer);
+        free(res);
     }
 }
 #endif
