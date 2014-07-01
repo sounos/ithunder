@@ -10,6 +10,14 @@ extern "C" {
 #ifndef  IB_QUERY_MAX
 #define  IB_QUERY_MAX           32
 #endif
+#define  IB_INT_OFF             32
+#define  IB_INT_TO              64
+#define  IB_LONG_OFF            64
+#define  IB_LONG_TO             96
+#define  IB_DOUBLE_OFF          96
+#define  IB_DOUBLE_TO           128
+#define  IB_DIS_OFF             128
+#define  IB_DIS_TO              160
 #define  IB_IN_MAX              256
 #define  IB_SECURITY_OK         0x01
 #define  IB_SECURITY_FORBIDDEN  0xffffffff
@@ -548,6 +556,12 @@ typedef struct _IBIO
     off_t end;
     off_t old;
 }IBIO;
+typedef struct _MFIELD
+{
+    int bits;
+    int status;
+    void *mm;
+}MFIELD;
 /* state */
 typedef struct _IBSTATE
 {
@@ -567,7 +581,7 @@ typedef struct _IBSTATE
     int     double_index_fields_num;
     off_t   ttotal;
     off_t   dtotal;
-    IBIO    fields[IB_FIELDS_MAX];
+    MFIELD  fields[IB_FIELDS_MAX];
 }IBSTATE;
 
 #define IB_REQ_QPARSE            1

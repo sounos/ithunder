@@ -14,6 +14,8 @@ utils/mmtrie.c \
 utils/mmtrie.h \
 utils/db.h \
 utils/db.c \
+utils/imap.h \
+utils/imap.c \
 utils/xmm.h \
 utils/xmm.c \
 utils/mtree64.h \

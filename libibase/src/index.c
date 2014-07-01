@@ -15,6 +15,9 @@
 #include "logger.h"
 #include "xmm.h"
 #include "db.h"
+#include "imap.h"
+#include "lmap.h"
+#include "dmap.h"
 #define PIHEADER(ibase, docid) &(((IHEADER *)(ibase->headersio.map))[docid])
 #ifndef LLI
 #define LLI(x) ((long long int) x)
@@ -99,19 +102,6 @@ do                                                                              
         ((TERMSTATE *)(ibase->termstateio.map))[termid].total++;                            \
     }                                                                                       \
 }while(0)
-/*
-int ibase_set_int_index(IBASE *ibase, DOCHEADER *docheader)
-{
-    int ret = -1, n = 0, *idx = NULL, *list = NULL;
-
-    if(ibase && docheader && (n = (int)(docheader->intblock_size/sizeof(int))) > 0)
-    {
-        list =  
-        docheader->intindex_from, n
-    }
-    return ret;
-}
-*/
 /* check index state */
 int ibase_check_index_state(IBASE *ibase, DOCHEADER *docheader)
 {

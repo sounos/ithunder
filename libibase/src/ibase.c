@@ -267,9 +267,11 @@ int ibase_set_basedir(IBASE *ibase, char *dir, int used_for, int mmsource_status
             db_set_block_incre_mode(ibase->index, DB_BLOCK_INCRE_DOUBLE);
         }
         /* check int/long/double index*/
+        /*
         ibase_check_int_index(ibase);
         ibase_check_long_index(ibase);
         ibase_check_double_index(ibase);
+        */
         TIMER_SAMPLE(timer);
         DEBUG_LOGGER(ibase->logger, "resume ibase time used:%lld", PT_USEC_U(timer));
         TIMER_CLEAN(timer);
