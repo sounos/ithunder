@@ -65,13 +65,13 @@ MMLIST *mmlist_init(char *file)
 /* mmlist set val */
 int mmlist_vset(MMLIST *mlist, int no, int32_t val)
 {
-    off_t size = (off_t)((no / MM_VNODE_INC) + ((no%MM_VNODE_INC) != 0)) 
+    off_t size = (off_t)((no / MM_VNODE_INC) + 1) 
             * (off_t)MM_VNODE_INC * (off_t) sizeof(VNODE);
     int ret = -1, n = 0, i = 0;
 
     if(mlist && mlist->state && no >= 0 && no < MM_NODES_MAX)
     {
-        if(size >= mlist->vsize)
+        if(size > mlist->vsize)
         {
             n = ftruncate(mlist->vfd, size);
             //memset(((char *)mlist->vmap+mlist->vsize), 0, size - mlist->vsize);
@@ -695,14 +695,14 @@ int mmlist_set(MMLIST *mlist, int no, int32_t key)
        mmlist_vset(mlist, no, key);
        if(mlist->vmap[no].off  < 0)
        {
-           mmlist_insert(mlist, key, no);
+           mmlist_insert(mlist, no, key);
        }
        else
        {
            if(key != mlist->vmap[no].val)
            {
                 mmlist_remove(mlist, no);
-                mmlist_insert(mlist, key, no);
+                mmlist_insert(mlist, no, key);
            }
        }
        mlist->vmap[no].val = key;
@@ -800,7 +800,8 @@ int main()
         for(i = 0; i < n; i++)
         {
             j = inputs[i];
-            fprintf(stdout, "%d:%d/%d\n", j, stat[j], stat2[j]);
+            if(stat[j] != stat2[j])
+                fprintf(stdout, "%d:%d/%d\n", j, stat[j], stat2[j]);
         }
 #ifdef OUT_ALL
         for(i = 0; i < total; i++)
