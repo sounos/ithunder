@@ -322,15 +322,6 @@ int mmlist_remove(MMLIST *mlist, int32_t no)
     return ret;
 }
 
-int mmlist_delete(MMLIST *mlist, int32_t no)
-{
-
-    if(mlist && mlist->state && mlist->map)
-    {
-    }
-}
-
-
 int mmlist_find_slot(MMLIST *mlist, int32_t key)
 {
     int n = 0, min = 0, max = 0, x = 0, ret = -1;
@@ -752,7 +743,7 @@ int main()
     MMLIST *mlist = NULL;
     int i = 0, j = 0, n = 0, total = 0, stat[MASK], stat2[MASK];
     int32_t val = 0, from = 0, to = 0, *res = NULL;
-    int32_t inputs[256];
+    int32_t inputs[256], last[256];
     int64_t all = 0;
     time_t stime = 0, etime = 0;
     void *timer = NULL;
@@ -778,9 +769,17 @@ int main()
            val = inputs[j];
            stat[val]++;
            mmlist_set(mlist, i, val);
+           last[j] = i;
         }
         TIMER_SAMPLE(timer);
         fprintf(stdout, "set() 40000000 data, time used:%lld\n", PT_LU_USEC(timer));
+        TIMER_RESET(timer);
+        for(i = 0; i < n; i++)
+        {
+            mmlist_del(mlist, last[i]);
+        }
+        TIMER_SAMPLE(timer);
+        fprintf(stdout, "del() time used:%lld\n", PT_LU_USEC(timer));
         TIMER_RESET(timer);
         for(i = 0; i < n; i++)
         {
