@@ -280,7 +280,6 @@ int imap_remove(IMAP *imap, int32_t no)
 {
     uint32_t nodeid = 0, rootid = 0, slotid = 0;
     int ret = -1, i = 0, x = 0, n = 0;
-    IMMV *vmap = NULL;
     IMMKV *kvs = NULL;
 
     if(imap && imap->state && imap->vmap 
@@ -493,7 +492,7 @@ int imap_in(IMAP *imap, int32_t key, int32_t *list)
 
     if(imap && imap->state && (n = imap->state->count) > 0)
     {
-        RWLOCK_RDLOCK(&(dmap->rwlock));
+        RWLOCK_RDLOCK(&(imap->rwlock));
         k = imap_find_slot(imap, key);
         i = imap_find_kv(imap, k, key);
         ii = imap_find_kv2(imap, k, key);
@@ -522,7 +521,7 @@ int imap_in(IMAP *imap, int32_t key, int32_t *list)
             }
             i=0;
         }while(++k < n && imap->slots[k].min == key);
-        RWLOCK_UNLOCK(&(dmap->rwlock));
+        RWLOCK_UNLOCK(&(imap->rwlock));
     }
     return ret;
 }
@@ -534,7 +533,7 @@ int imap_range(IMAP *imap, int32_t from, int32_t to, int32_t *list)
 
     if(imap && imap->state)
     {
-        RWLOCK_RDLOCK(&(dmap->rwlock));
+        RWLOCK_RDLOCK(&(imap->rwlock));
         k = imap_find_slot(imap, from);
         kk = imap_find_slot2(imap, to);
         i = imap_find_kv(imap, k, from);
@@ -573,7 +572,7 @@ int imap_range(IMAP *imap, int32_t from, int32_t to, int32_t *list)
                 for(x = 0; x < ii; x++) list[z++] = kvs[x].key;
             }
         }
-        RWLOCK_UNLOCK(&(dmap->rwlock));
+        RWLOCK_UNLOCK(&(imap->rwlock));
     }
     return ret;
 }
@@ -585,7 +584,7 @@ int imap_rangefrom(IMAP *imap, int32_t key, int32_t *list) /* key = from */
 
     if(imap && imap->state)
     {
-        RWLOCK_RDLOCK(&(dmap->rwlock));
+        RWLOCK_RDLOCK(&(imap->rwlock));
         if((k = imap_find_slot(imap, key)) >= 0 && (i = imap_find_kv(imap, k, key)) >= 0)
         {
             kvs = imap->map + imap->slots[k].nodeid;
@@ -606,7 +605,7 @@ int imap_rangefrom(IMAP *imap, int32_t key, int32_t *list) /* key = from */
                 }
             }
         }
-        RWLOCK_UNLOCK(&(dmap->rwlock));
+        RWLOCK_UNLOCK(&(imap->rwlock));
     }
     //fprintf(stdout, "%s::%d k:%d ret:%d/%d\n", __FILE__, __LINE__, k, ret, z);
     return ret;
@@ -619,7 +618,7 @@ int imap_rangeto(IMAP *imap, int32_t key, int32_t *list) /* key = to */
 
     if(imap && imap->state && (n = (imap->state->count)) > 0)
     {
-        RWLOCK_RDLOCK(&(dmap->rwlock));
+        RWLOCK_RDLOCK(&(imap->rwlock));
         if((k = imap_find_slot2(imap, key)) >= 0 && k < n 
                 && (i = imap_find_kv2(imap, k, key)) >= 0)
         {
@@ -645,7 +644,7 @@ int imap_rangeto(IMAP *imap, int32_t key, int32_t *list) /* key = to */
                 }
             }
         }
-        RWLOCK_UNLOCK(&(dmap->rwlock));
+        RWLOCK_UNLOCK(&(imap->rwlock));
     }
     //fprintf(stdout, "%s::%d k:%d ret:%d/%d\n", __FILE__, __LINE__, k, ret, z);
     return ret;
