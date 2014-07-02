@@ -356,7 +356,8 @@ int ibase_check_int_index(IBASE *ibase)
 /* ibasee  set numeric index /int/double fields */
 int ibase_set_int_index(IBASE *ibase, int int_index_from, int int_fields_num)
 {
-    int i = 0;
+    int i = 0, n = 0;
+
     if(ibase && ibase->state)
     {
         if(ibase->state->int_index_fields_num != int_fields_num
@@ -368,7 +369,8 @@ int ibase_set_int_index(IBASE *ibase, int int_index_from, int int_fields_num)
         }
         if(ibase->state->int_index_fields_num == 0)
         {
-            for(i = IB_INT_OFF; i < int_fields_num; i++)
+            n = IB_INT_OFF + int_fields_num;
+            for(i = IB_INT_OFF; i < n; i++)
             {
                 ibase_check_int_idx(ibase, i);
             }
@@ -434,7 +436,8 @@ int ibase_check_long_index(IBASE *ibase)
 /* ibasee  set long index  fields */
 int ibase_set_long_index(IBASE *ibase, int long_index_from, int long_fields_num)
 {
-    int i = 0;
+    int i = 0, n = 0;
+
     if(ibase && ibase->state)
     {
         if(ibase->state->long_index_fields_num != long_fields_num
@@ -446,12 +449,13 @@ int ibase_set_long_index(IBASE *ibase, int long_index_from, int long_fields_num)
         }
         if(ibase->state->long_index_fields_num == 0)
         {
-            ibase->state->long_index_from = long_index_from;
-            ibase->state->long_index_fields_num = long_fields_num;
-            for(i = IB_LONG_OFF; i < long_fields_num; i++)
+            n = IB_LONG_OFF + long_fields_num;
+            for(i = IB_LONG_OFF; i < n; i++)
             {
                 ibase_check_long_idx(ibase, i);
             }
+            ibase->state->long_index_from = long_index_from;
+            ibase->state->long_index_fields_num = long_fields_num;
         }
         //ibase_check_long_index(ibase);
         return 0;
@@ -512,7 +516,7 @@ int ibase_check_double_index(IBASE *ibase)
 /* ibasee  set numeric index /int/double fields */
 int ibase_set_double_index(IBASE *ibase, int double_index_from, int double_fields_num)
 {
-    int i = 0;
+    int i = 0, n = 0;
     if(ibase && ibase->state)
     {
         if(ibase->state->double_index_fields_num != double_fields_num
@@ -524,7 +528,8 @@ int ibase_set_double_index(IBASE *ibase, int double_index_from, int double_field
         }
         if(ibase->state->double_index_fields_num == 0)
         {
-            for(i = IB_DOUBLE_OFF; i < double_fields_num; i++)
+            n = IB_DOUBLE_OFF + double_fields_num;
+            for(i = IB_DOUBLE_OFF; i < n; i++)
             {
                 ibase_check_double_idx(ibase, i);
             }
