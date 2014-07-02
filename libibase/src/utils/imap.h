@@ -7,6 +7,7 @@
 #define IMM_SLOT2_NUM    512 /* half of IMM_SLOT_NUM */
 #define IMM_IMMV_INC    1000000
 #define IMM_NODES_MAX    4294967296
+#pragma pack(push, 4)
 #ifndef U32_T
 #define U32_T
 typedef uint32_t u32_t;
@@ -65,4 +66,5 @@ void imap_close(IMAP *imap);
 #define IMAP_GET(x, no) ((IMAP *)x)->vmap[no].val
 #define IMAP_SET(x, no, key) imap_set(((IMAP *)x), no, key)
 #define IMAP_DEL(x, no, key) imap_del(((IMAP *)x), no)
+#pragma pack(pop)
 #endif
