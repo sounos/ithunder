@@ -83,7 +83,7 @@ extern "C" {
 #define  IB_STATE_NAME           "ibase.state"
 #define  IB_DOCMAP_NAME          "ibase.docmap"
 #define  IB_HEADERS_NAME         "ibase.headers"
-#define  IB_XIDX_DIR             "xidx"
+#define  IB_IDX_DIR              "idx"
 #define  IB_INTIDX_NAME          "ibase.int"
 #define  IB_LONGIDX_NAME         "ibase.long"
 #define  IB_DOUBLEIDX_NAME       "ibase.double"

@@ -103,7 +103,7 @@ do                                                                              
     }                                                                                       \
 }while(0)
 /* check index state */
-int ibase_check_index_state(IBASE *ibase, DOCHEADER *docheader)
+int ibase_check_index_statex(IBASE *ibase, DOCHEADER *docheader)
 {
     int ret = -1, i = 0, n = 0;
     if(ibase && docheader)
@@ -150,7 +150,7 @@ int ibase_check_index_state(IBASE *ibase, DOCHEADER *docheader)
     return ret;
 }
 /* check index state */
-int ibase_check_index_state2(IBASE *ibase, DOCHEADER *docheader)
+int ibase_check_index_state(IBASE *ibase, DOCHEADER *docheader)
 {
     int ret = -1, n = 0;
     if(ibase && docheader)
@@ -188,9 +188,9 @@ int ibase_check_index_state2(IBASE *ibase, DOCHEADER *docheader)
 int ibase_index(IBASE *ibase, int docid, IBDATA *block)
 {
     char *term = NULL, buf[IB_BUF_SIZE], *data = NULL, *p = NULL, 
-         *pp = NULL, *end = NULL, *prevnext = NULL;
+         *pp = NULL, *prevnext = NULL;
     int i = 0, termid = 0, n = 0, ndocid = 0, ret = -1, ndata = 0, 
-        x = 0, *intlist = NULL, *np = NULL;
+        *intlist = NULL, *np = NULL;
     DOCHEADER *docheader = NULL;
     int64_t *longlist = NULL;
     double *doublelist = NULL;
@@ -228,7 +228,7 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
             }
         }
         /* index */
-        end = block->data + block->ndata;
+        //end = block->data + block->ndata;
         termlist = (STERM *)(block->data + sizeof(DOCHEADER) 
                 + docheader->nfields * sizeof(XFIELD));
         term = block->data + docheader->textblock_off;
@@ -295,22 +295,37 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
         if(ibase->state->used_for == IB_USED_FOR_INDEXD)
         {
             /* index int */
-            if(ibase->state->int_index_fields_num > 0 
+            if((n = ibase->state->int_index_fields_num) > 0 
                     && (intlist = (int *)(block->data + docheader->intblock_off)))
             {
-                SET_INT_INDEX(ibase, docid, intlist, x);
+                n += IB_INT_OFF;
+                for(i = IB_INT_OFF; i < n; i++)
+                {
+                    IMAP_SET(ibase->state->mfields[i], docid, intlist[i]);
+                }
+                //SET_INT_INDEX(ibase, docid, intlist, x);
             }
             /* index long */
-            if(ibase->state->long_index_fields_num > 0 
+            if((n = ibase->state->long_index_fields_num) > 0 
                     && (longlist = (int64_t *)(block->data + docheader->longblock_off)))
             {
-                SET_LONG_INDEX(ibase, docid, longlist, x);
+                n += IB_LONG_OFF;
+                for(i = IB_LONG_OFF; i < n; i++)
+                {
+                    LMAP_SET(ibase->state->mfields[i], docid, longlist[i]);
+                }
+                //SET_LONG_INDEX(ibase, docid, longlist, x);
             }
             /* index double */
-            if(ibase->state->double_index_fields_num > 0 
+            if((n = ibase->state->double_index_fields_num) > 0 
                     && (doublelist = (double *)(block->data + docheader->doubleblock_off)))
             {
-                SET_DOUBLE_INDEX(ibase, docid, doublelist, x);
+                n += IB_DOUBLE_OFF;
+                for(i = IB_DOUBLE_OFF; i < n; i++)
+                {
+                    LMAP_SET(ibase->state->mfields[i], docid, doublelist[i]);
+                }
+                //SET_DOUBLE_INDEX(ibase, docid, doublelist, x);
             }
         }
         if(ibase->state->used_for != IB_USED_FOR_QPARSERD)
@@ -326,7 +341,7 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
 /* updated index */
 int ibase_update_index(IBASE *ibase, int docid, IBDATA *block)
 {
-    int ret = -1, x = 0, *intlist = NULL;
+    int ret = -1,  i = 0, n = 0, *intlist = NULL;
     DOCHEADER *docheader = NULL;
     //TERMSTATE *termstate = NULL;
     double *doublelist = NULL;
@@ -363,26 +378,41 @@ int ibase_update_index(IBASE *ibase, int docid, IBDATA *block)
                 if(ibase->state->used_for == IB_USED_FOR_INDEXD)
                 {
                     /* index int */
-                    if(ibase->state->int_index_fields_num > 0 
+                    if((n = ibase->state->int_index_fields_num) > 0 
                             && (intlist = (int *)(block->data + docheader->intblock_off)))
                     {
-                        SET_INT_INDEX(ibase, docid, intlist, x);
+                        n += IB_INT_OFF;
+                        for(i = IB_INT_OFF; i < n; i++)
+                        {
+                            IMAP_SET(ibase->state->mfields[i], docid, intlist[i]);
+                        }
+                        //SET_INT_INDEX(ibase, docid, intlist, x);
                     }
                     /* index long */
-                    if(ibase->state->long_index_fields_num > 0 
+                    if((n = ibase->state->long_index_fields_num) > 0 
                             && (longlist = (int64_t *)(block->data + docheader->longblock_off)))
                     {
-                        SET_LONG_INDEX(ibase, docid, longlist, x);
+                        n += IB_LONG_OFF;
+                        for(i = IB_LONG_OFF; i < n; i++)
+                        {
+                            LMAP_SET(ibase->state->mfields[i], docid, longlist[i]);
+                        }
+                        //SET_LONG_INDEX(ibase, docid, longlist, x);
                     }
                     /* index double */
-                    if(ibase->state->double_index_fields_num > 0 
+                    if((n = ibase->state->double_index_fields_num) > 0 
                             && (doublelist = (double *)(block->data + docheader->doubleblock_off)))
                     {
-                        SET_DOUBLE_INDEX(ibase, docid, doublelist, x);
+                        n += IB_DOUBLE_OFF;
+                        for(i = IB_DOUBLE_OFF; i < n; i++)
+                        {
+                            LMAP_SET(ibase->state->mfields[i], docid, doublelist[i]);
+                        }
+                        //SET_DOUBLE_INDEX(ibase, docid, doublelist, x);
                     }
-                }
+                }   
             }
-        }   
+        }
         if(ibase->state->used_for != IB_USED_FOR_QPARSERD)
         {
             docheader->size = docheader->prevnext_off;
