@@ -83,9 +83,7 @@ extern "C" {
 #define  IB_STATE_NAME           "ibase.state"
 #define  IB_DOCMAP_NAME          "ibase.docmap"
 #define  IB_HEADERS_NAME         "ibase.headers"
-#define  IB_INTIDX_DIR           "int"
-#define  IB_LONGIDX_DIR          "long"
-#define  IB_DOUBLEIDX_DIR        "double"
+#define  IB_XIDX_DIR             "xidx"
 #define  IB_INTIDX_NAME          "ibase.int"
 #define  IB_LONGIDX_NAME         "ibase.long"
 #define  IB_DOUBLEIDX_NAME       "ibase.double"
@@ -556,12 +554,6 @@ typedef struct _IBIO
     off_t end;
     off_t old;
 }IBIO;
-typedef struct _MFIELD
-{
-    int bits;
-    int status;
-    void *mm;
-}MFIELD;
 /* state */
 typedef struct _IBSTATE
 {
@@ -581,7 +573,7 @@ typedef struct _IBSTATE
     int     double_index_fields_num;
     off_t   ttotal;
     off_t   dtotal;
-    MFIELD  fields[IB_FIELDS_MAX];
+    void    *mfields[IB_FIELDS_MAX];
 }IBSTATE;
 
 #define IB_REQ_QPARSE            1
@@ -740,11 +732,14 @@ int ibase_set_dict(IBASE *ibase, char *dict_charset, char *dictfile, char *rules
 /* set int index */
 int ibase_set_int_index(IBASE *ibase, int index_from, int index_fields_count);
 /* check int index */
+void ibase_check_int_idx(IBASE *ibase, int no);
 int ibase_check_int_index(IBASE *ibase);
 /* set long index */
 int ibase_set_long_index(IBASE *ibase, int index_from, int index_fields_count);
+void ibase_check_long_idx(IBASE *ibase, int no);
 /* check long index */
 int ibase_check_long_index(IBASE *ibase);
+void ibase_check_double_idx(IBASE *ibase, int no);
 /* set double index */
 int ibase_set_double_index(IBASE *ibase, int index_from, int index_fields_count);
 /* check double index */

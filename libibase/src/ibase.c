@@ -19,6 +19,7 @@
 #include "mtree64.h"
 #include "db.h"
 #include "xmm.h"
+#include "imap.h"
 #define UCHR(p) ((unsigned char *)p)
 #define ISSIGN(p) (*p == '@' || *p == '.' || *p == '-' || *p == '_')
 #define ISNUM(p) ((*p >= '0' && *p <= '9'))
@@ -135,9 +136,9 @@ int ibase_set_basedir(IBASE *ibase, char *dir, int used_for, int mmsource_status
 {
     char path[IB_PATH_MAX];
     struct stat st = {0};
+    int ret = -1, i = 0;
     void *timer = NULL;
     off_t size = 0;
-    int ret = -1;
 
     if(ibase)
     {
@@ -266,6 +267,26 @@ int ibase_set_basedir(IBASE *ibase, char *dir, int used_for, int mmsource_status
             ibase->index = db_init(path, 1);
             db_set_block_incre_mode(ibase->index, DB_BLOCK_INCRE_DOUBLE);
         }
+        sprintf(path, "%s/%s/", dir, IB_XIDX_DIR);
+        ibase_mkdir(path);
+        for(i = IB_INT_OFF; i < IB_INT_TO; i++)
+        {
+            if(ibase->state->mfields[i])
+            {
+                sprintf(path, "%s/%s/%d.int", dir, IB_XIDX_DIR, i);
+                ibase->state->mfields[i] = imap_init(path);
+            }
+        }
+        /*
+        for(i = IB_LONG_OFF; i < IB_LONG_TO; i++)
+        {
+            if(ibase->state->mfields[i])
+            {
+                n = sprintf(path, "%s/%d.long", IB_XIDX_DIR, i);
+                ibase->state->mfields[i] = imap_init(path);
+            }
+        }
+        */
         /* check int/long/double index*/
         /*
         ibase_check_int_index(ibase);
@@ -278,6 +299,18 @@ int ibase_set_basedir(IBASE *ibase, char *dir, int used_for, int mmsource_status
         ret = 0;
     }
     return ret;
+}
+
+void ibase_check_int_idx(IBASE *ibase, int no)
+{
+    char path[IB_PATH_MAX];
+
+    if(ibase && no >= IB_INT_OFF && no < IB_INT_TO && !(ibase->state->mfields[no]))
+    {
+        sprintf(path, "%s/%s/%d.int", ibase->basedir, IB_XIDX_DIR, no);
+        ibase->state->mfields[no] = imap_init(path);
+    }
+    return ;
 }
 
 /* check int index  */
@@ -339,6 +372,18 @@ int ibase_set_int_index(IBASE *ibase, int int_index_from, int int_fields_num)
         return 0;
     }
     return -1;
+}
+
+void ibase_check_long_idx(IBASE *ibase, int no)
+{
+    char path[IB_PATH_MAX];
+
+    if(ibase && no >= IB_LONG_OFF && no < IB_LONG_TO && !(ibase->state->mfields[no]))
+    {
+        sprintf(path, "%s/%s/%d.long", ibase->basedir, IB_XIDX_DIR, no);
+        ibase->state->mfields[no] = lmap_init(path);
+    }
+    return ;
 }
 
 /* check long index  */
@@ -403,7 +448,19 @@ int ibase_set_long_index(IBASE *ibase, int long_index_from, int long_fields_num)
     return -1;
 }
 
-        /* double index  */
+void ibase_check_double_idx(IBASE *ibase, int no)
+{
+    char path[IB_PATH_MAX];
+
+    if(ibase && no >= IB_LONG_OFF && no < IB_LONG_TO && !(ibase->state->mfields[no]))
+    {
+        sprintf(path, "%s/%s/%d.double", ibase->basedir, IB_XIDX_DIR, no);
+        ibase->state->mfields[no] = dmap_init(path);
+    }
+    return ;
+}
+
+/* double index  */
 int ibase_check_double_index(IBASE *ibase)
 {
     char path[IB_PATH_MAX];

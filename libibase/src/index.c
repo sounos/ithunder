@@ -103,6 +103,53 @@ do                                                                              
 /* check index state */
 int ibase_check_index_state(IBASE *ibase, DOCHEADER *docheader)
 {
+    int ret = -1, i = 0, n = 0;
+    if(ibase && docheader)
+    {
+        if(ibase->state->int_index_fields_num == 0 
+                && (n = (int)(docheader->intblock_size/sizeof(int))) > 0)
+        {
+            WARN_LOGGER(ibase->logger, "set_int_index(from:%d,num:%d) globalid:%lld", docheader->intindex_from, n, IBLL(docheader->globalid));
+            n += IB_INT_OFF;
+            for(i = IB_INT_OFF; i < n; i++)
+            {
+                ibase_check_int_idx(ibase, i);
+            }
+        }
+        if(ibase->state->long_index_fields_num == 0 
+                && (n = (int)(docheader->longblock_size/sizeof(int64_t))) > 0)
+        {
+            n += IB_LONG_OFF;
+            for(i = IB_LONG_OFF; i < n; i++)
+            {
+                ibase_check_long_idx(ibase, i);
+            }
+            WARN_LOGGER(ibase->logger, "set_long_index(from:%d,num:%d) globalid:%lld", docheader->longindex_from, n, IBLL(docheader->globalid));
+        }
+        if(ibase->state->double_index_fields_num == 0 
+                && (n = (int)(docheader->doubleblock_size/sizeof(double))) > 0)
+        {
+            n += IB_DOUBLE_OFF;
+            for(i = IB_DOUBLE_OFF; i < n; i++)
+            {
+                ibase_check_double_idx(ibase, i);
+            }
+            WARN_LOGGER(ibase->logger, "set_double_index(from:%d,num:%d) docid:%lld", docheader->doubleindex_from, n, IBLL(docheader->globalid));
+
+        }
+        if((docheader->intblock_size/sizeof(int)) != ibase->state->int_index_fields_num
+                || (docheader->longblock_size/sizeof(int64_t)) != ibase->state->long_index_fields_num
+                || (docheader->doubleblock_size/sizeof(double)) != ibase->state->double_index_fields_num)
+        {
+            FATAL_LOGGER(ibase->logger, "Invalid document globalid:%lld int/long/double index num:%d/%d/%d old_index_int/long/double:%d/%d/%d", IBLL(docheader->globalid), (int)(docheader->intblock_size/sizeof(int)), (int)(docheader->longblock_size/sizeof(int64_t)), (int)(docheader->doubleblock_size/sizeof(double)), ibase->state->int_index_fields_num, ibase->state->long_index_fields_num, ibase->state->double_index_fields_num);
+        }
+        else ret = 0;
+    }
+    return ret;
+}
+/* check index state */
+int ibase_check_index_state2(IBASE *ibase, DOCHEADER *docheader)
+{
     int ret = -1, n = 0;
     if(ibase && docheader)
     {
