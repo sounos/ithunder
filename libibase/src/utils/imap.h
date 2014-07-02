@@ -37,6 +37,7 @@ typedef struct _IMMSTATE
     u32_t nleft; /* 空闲桶个数 */
     u32_t count; /* 槽的个数 */
 }IMMSTATE;
+#pragma pack(pop)
 typedef struct _IMAP
 {
     IMMSTATE *state;
@@ -66,5 +67,4 @@ void imap_close(IMAP *imap);
 #define IMAP_GET(x, no) ((IMAP *)x)->vmap[no].val
 #define IMAP_SET(x, no, key) imap_set(((IMAP *)x), no, key)
 #define IMAP_DEL(x, no, key) imap_del(((IMAP *)x), no)
-#pragma pack(pop)
 #endif

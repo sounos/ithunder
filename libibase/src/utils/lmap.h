@@ -37,6 +37,7 @@ typedef struct _LMMSTATE
     u32_t nleft; /* 空闲桶个数 */
     u32_t count; /* 槽的个数 */
 }LMMSTATE;
+#pragma pack(pop)
 typedef struct _LMAP
 {
     LMMSTATE *state;
@@ -66,5 +67,4 @@ void lmap_close(LMAP *lmap);
 #define LMAP_GET(x, no) ((LMAP *)x)->vmap[no].val
 #define LMAP_SET(x, no, key) lmap_set(((LMAP *)x), no, key)
 #define LMAP_DEL(x, no, key) lmap_del(((LMAP *)x), no)
-#pragma pack(pop)
 #endif
