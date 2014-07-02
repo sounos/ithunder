@@ -20,6 +20,8 @@
 #include "db.h"
 #include "xmm.h"
 #include "imap.h"
+#include "lmap.h"
+#include "dmap.h"
 #define UCHR(p) ((unsigned char *)p)
 #define ISSIGN(p) (*p == '@' || *p == '.' || *p == '-' || *p == '_')
 #define ISNUM(p) ((*p >= '0' && *p <= '9'))

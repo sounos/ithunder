@@ -16,6 +16,10 @@ utils/db.h \
 utils/db.c \
 utils/imap.h \
 utils/imap.c \
+utils/lmap.h \
+utils/lmap.c \
+utils/dmap.h \
+utils/dmap.c \
 utils/xmm.h \
 utils/xmm.c \
 utils/mtree64.h \

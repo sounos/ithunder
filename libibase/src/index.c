@@ -16,6 +16,8 @@
 #include "xmm.h"
 #include "db.h"
 #include "imap.h"
+#include "lmap.h"
+#include "dmap.h"
 #define PIHEADER(ibase, docid) &(((IHEADER *)(ibase->headersio.map))[docid])
 #ifndef LLI
 #define LLI(x) ((long long int) x)
