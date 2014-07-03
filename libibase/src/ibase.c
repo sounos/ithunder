@@ -283,7 +283,7 @@ int ibase_set_basedir(IBASE *ibase, char *dir, int used_for, int mmsource_status
         {
             if(ibase->state->mfields[i])
             {
-                sprintf(path, "%s/%d.long", IB_IDX_DIR, i);
+                sprintf(path, "%s/%s/%d.long", dir, IB_IDX_DIR, i);
                 ibase->state->mfields[i] = lmap_init(path);
             }
         }
@@ -291,8 +291,8 @@ int ibase_set_basedir(IBASE *ibase, char *dir, int used_for, int mmsource_status
         {
             if(ibase->state->mfields[i])
             {
-                sprintf(path, "%s/%d.double", IB_IDX_DIR, i);
-                ibase->state->mfields[i] = lmap_init(path);
+                sprintf(path, "%s/%s/%d.double", dir, IB_IDX_DIR, i);
+                ibase->state->mfields[i] = dmap_init(path);
             }
         }
         /* check int/long/double index*/
@@ -1720,18 +1720,21 @@ void ibase_clean(IBASE *ibase)
             munmap(ibase->termstateio.map, ibase->termstateio.size);
         }
         if(ibase->termstateio.fd > 0)close(ibase->termstateio.fd);
-        /* int index */
+        /*
         if(ibase->intidxio.map)
         {
             munmap(ibase->intidxio.map, ibase->intidxio.size);
         }
         if(ibase->intidxio.fd > 0)close(ibase->intidxio.fd);
-        /* double index */
         if(ibase->doubleidxio.map)
         {
             munmap(ibase->doubleidxio.map, ibase->doubleidxio.size);
         }
         if(ibase->doubleidxio.fd > 0)close(ibase->doubleidxio.fd);
+        */
+        for(i = IB_INT_OFF; i < IB_INT_TO; i++){if(ibase->state->mfields[i]) imap_close(ibase->state->mfields[i]);}
+        for(i = IB_LONG_OFF; i < IB_LONG_TO; i++){if(ibase->state->mfields[i]) lmap_close(ibase->state->mfields[i]);}
+        for(i = IB_DOUBLE_OFF; i < IB_DOUBLE_TO; i++){if(ibase->state->mfields[i]) dmap_close(ibase->state->mfields[i]);}
         for(i = 0; i < ibase->nqblocks; i++){xmm_free(ibase->qblocks[i], IB_DOCUMENT_MAX);}
         for(i = 0; i < ibase->nqiblocks; i++){xmm_free(ibase->qiblocks[i], sizeof(IBLOCK));}
         for(i = 0; i < ibase->nqiterms; i++){xmm_free(ibase->qiterms[i], sizeof(ITERM) * IB_QUERY_MAX);}
