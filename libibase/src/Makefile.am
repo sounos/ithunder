@@ -4,7 +4,7 @@ libibase_la_SOURCES = ibase.c \
 ibase.h \
 index.c \
 bquery.c \
-xquery.c \
+query.c \
 summary.c \
 utils/logger.h \
 utils/logger.c \

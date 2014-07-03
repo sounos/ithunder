@@ -122,7 +122,7 @@ am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includedir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
 libibase_la_LIBADD =
 am_libibase_la_OBJECTS = libibase_la-ibase.lo libibase_la-index.lo \
-	libibase_la-bquery.lo libibase_la-xquery.lo \
+	libibase_la-bquery.lo libibase_la-query.lo \
 	libibase_la-summary.lo libibase_la-logger.lo \
 	libibase_la-mmtrie.lo libibase_la-db.lo libibase_la-imap.lo \
 	libibase_la-lmap.lo libibase_la-dmap.lo libibase_la-xmm.lo \
@@ -317,7 +317,7 @@ libibase_la_SOURCES = ibase.c \
 ibase.h \
 index.c \
 bquery.c \
-xquery.c \
+query.c \
 summary.c \
 utils/logger.h \
 utils/logger.c \
@@ -433,9 +433,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libibase_la-logger.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libibase_la-mmtrie.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libibase_la-mtree64.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libibase_la-query.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libibase_la-summary.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libibase_la-xmm.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libibase_la-xquery.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libibase_la-zvbcode.Plo@am__quote@
 
 .c.o:
@@ -480,12 +480,12 @@ libibase_la-bquery.lo: bquery.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libibase_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libibase_la-bquery.lo `test -f 'bquery.c' || echo '$(srcdir)/'`bquery.c
 
-libibase_la-xquery.lo: xquery.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libibase_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libibase_la-xquery.lo -MD -MP -MF $(DEPDIR)/libibase_la-xquery.Tpo -c -o libibase_la-xquery.lo `test -f 'xquery.c' || echo '$(srcdir)/'`xquery.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libibase_la-xquery.Tpo $(DEPDIR)/libibase_la-xquery.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='xquery.c' object='libibase_la-xquery.lo' libtool=yes @AMDEPBACKSLASH@
+libibase_la-query.lo: query.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libibase_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libibase_la-query.lo -MD -MP -MF $(DEPDIR)/libibase_la-query.Tpo -c -o libibase_la-query.lo `test -f 'query.c' || echo '$(srcdir)/'`query.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libibase_la-query.Tpo $(DEPDIR)/libibase_la-query.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='query.c' object='libibase_la-query.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libibase_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libibase_la-xquery.lo `test -f 'xquery.c' || echo '$(srcdir)/'`xquery.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libibase_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libibase_la-query.lo `test -f 'query.c' || echo '$(srcdir)/'`query.c
 
 libibase_la-summary.lo: summary.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libibase_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libibase_la-summary.lo -MD -MP -MF $(DEPDIR)/libibase_la-summary.Tpo -c -o libibase_la-summary.lo `test -f 'summary.c' || echo '$(srcdir)/'`summary.c
