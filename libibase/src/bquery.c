@@ -501,7 +501,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query)
             if(!(query->flag & IB_QUERY_BOOLAND) && nquerys > 0 && ((xnode->nvhits * 100) / nquerys) < scale) goto next;
             ACCESS_LOGGER(ibase->logger, "docid:%d/%lld nvhits:%d nquerys:%d/%d scale:%d int[%d/%d] catgroup:%d", docid, LL(headers[docid].globalid), xnode->nvhits, query->nqterms, nquerys, scale, query->int_range_count, query->int_bits_count, query->catgroup_filter);
             /* in filter */
-            if(query->in_int_fieldid > 0 && query->in_int_num > 0)
+            if(nqterms > 0 && query->in_int_fieldid > 0 && query->in_int_num > 0)
             {
                 imax = query->in_int_num - 1;imin = 0;
                 if((jj = query->in_int_fieldid) >= int_index_from && jj < int_index_to
@@ -523,7 +523,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query)
                     }
                 }
             }
-            if(query->in_long_fieldid > 0 && query->in_long_num > 0)
+            if(nqterms > 0 && query->in_long_fieldid > 0 && query->in_long_num > 0)
             {
                 imax = query->in_long_num - 1;imin = 0;
                 if((jj = query->in_long_fieldid) >= long_index_from && jj < long_index_to
@@ -545,7 +545,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query)
                     }
                 }
             }
-            if(query->in_double_fieldid > 0 && query->in_double_num > 0)
+            if(nqterms > 0 && query->in_double_fieldid > 0 && query->in_double_num > 0)
             {
                 imax = query->in_double_num - 1;imin = 0;
                 if((jj = query->in_double_fieldid) >= double_index_from && jj < double_index_to
