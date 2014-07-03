@@ -411,21 +411,21 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query)
         if(nquerys > 0) scale = query->hitscale[nquerys-1];
         if((fid = query->int_order_field) >= int_index_from && fid < int_index_to)
         {
-            is_field_sort = IB_SORT_BY_INT;
             fid -= int_index_from;
             fid += IB_INT_OFF;
+            if(ibase->state->mfields[fid]) is_field_sort = IB_SORT_BY_INT;
         }
         else if((fid = query->long_order_field) >= long_index_from && fid < long_index_to)
         {
-            is_field_sort = IB_SORT_BY_LONG;
             fid -= long_index_from;
             fid += IB_LONG_OFF;
+            if(ibase->state->mfields[fid]) is_field_sort = IB_SORT_BY_LONG;
         }
         else if((fid = query->double_order_field) >= double_index_from && fid < double_index_to)
         {
-            is_field_sort = IB_SORT_BY_DOUBLE;
             fid -= double_index_from;
             fid += IB_DOUBLE_OFF;
+            if(ibase->state->mfields[fid]) is_field_sort = IB_SORT_BY_DOUBLE;
         }
         TIMER_INIT(timer);
         //read index 
@@ -578,7 +578,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query)
                         ifrom = query->int_range_list[i].from;
                         ito = query->int_range_list[i].to;
                         k -= int_index_from;
-                        k += IB_LONG_OFF;
+                        k += IB_INT_OFF;
                         xint = IMAP_GET(ibase->state->mfields[k], docid);
                         if((range_flag & IB_RANGE_FROM) && xint < ifrom) goto next;
                         if((range_flag & IB_RANGE_TO) && xint > ito) goto next;
@@ -591,7 +591,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query)
                             && k < int_index_to && query->int_bits_list[i].bits != 0) 
                     {
                         k -= int_index_from;
-                        k += IB_LONG_OFF;
+                        k += IB_INT_OFF;
                         xint = IMAP_GET(ibase->state->mfields[k], docid);
                         if((query->int_bits_list[i].flag & IB_BITFIELDS_FILTER))
                         {
@@ -800,11 +800,11 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query)
             ACCESS_LOGGER(ibase->logger, "docid:%d/%lld base_score:%lld rank:%f base_rank:%lld doc_score:%lld", docid, IBLL(headers[docid].globalid), IBLL(base_score), headers[docid].rank, IBLL(query->base_rank), IBLL(doc_score));
             if(is_field_sort)
             {
+                //WARN_LOGGER(ibase->logger, "docid:%d/%lld base_score:%lld rank:%f base_rank:%lld doc_score:%lld fid:%d", docid, IBLL(headers[docid].globalid), IBLL(base_score), headers[docid].rank, IBLL(query->base_rank), IBLL(doc_score), fid);
                 if(is_field_sort == IB_SORT_BY_INT)
                 {
                     //i = fid + ibase->state->int_index_fields_num * docid;
-                    doc_score = IB_INT2LONG_SCORE(IMAP_GET(ibase->state->mfields[fid], docid)) 
-                        + (int64_t)(doc_score >> 16);
+                    doc_score = IB_INT2LONG_SCORE(IMAP_GET(ibase->state->mfields[fid], docid)) + (int64_t)(doc_score >> 16);
                 }
                 else if(is_field_sort == IB_SORT_BY_LONG)
                 {

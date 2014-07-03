@@ -189,7 +189,7 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
 {
     char *term = NULL, buf[IB_BUF_SIZE], *data = NULL, *p = NULL, 
          *pp = NULL, *prevnext = NULL;
-    int i = 0, termid = 0, n = 0, ndocid = 0, ret = -1, ndata = 0, 
+    int i = 0, termid = 0, n = 0, k = 0, ndocid = 0, ret = -1, ndata = 0, 
         *intlist = NULL, *np = NULL;
     DOCHEADER *docheader = NULL;
     int64_t *longlist = NULL;
@@ -299,9 +299,11 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
                     && (intlist = (int *)(block->data + docheader->intblock_off)))
             {
                 n += IB_INT_OFF;
+                k = 0;
                 for(i = IB_INT_OFF; i < n; i++)
                 {
-                    IMAP_SET(ibase->state->mfields[i], docid, intlist[i]);
+                    IMAP_SET(ibase->state->mfields[i], docid, intlist[k]);
+                    k++;
                 }
                 //SET_INT_INDEX(ibase, docid, intlist, x);
             }
@@ -310,9 +312,11 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
                     && (longlist = (int64_t *)(block->data + docheader->longblock_off)))
             {
                 n += IB_LONG_OFF;
+                k = 0;
                 for(i = IB_LONG_OFF; i < n; i++)
                 {
-                    LMAP_SET(ibase->state->mfields[i], docid, longlist[i]);
+                    LMAP_SET(ibase->state->mfields[i], docid, longlist[k]);
+                    k++;
                 }
                 //SET_LONG_INDEX(ibase, docid, longlist, x);
             }
@@ -321,9 +325,11 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
                     && (doublelist = (double *)(block->data + docheader->doubleblock_off)))
             {
                 n += IB_DOUBLE_OFF;
+                k = 0;
                 for(i = IB_DOUBLE_OFF; i < n; i++)
                 {
-                    LMAP_SET(ibase->state->mfields[i], docid, doublelist[i]);
+                    DMAP_SET(ibase->state->mfields[i], docid, doublelist[k]);
+                    k++;
                 }
                 //SET_DOUBLE_INDEX(ibase, docid, doublelist, x);
             }
@@ -341,7 +347,7 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
 /* updated index */
 int ibase_update_index(IBASE *ibase, int docid, IBDATA *block)
 {
-    int ret = -1,  i = 0, n = 0, *intlist = NULL;
+    int ret = -1,  i = 0, k = 0, n = 0, *intlist = NULL;
     DOCHEADER *docheader = NULL;
     //TERMSTATE *termstate = NULL;
     double *doublelist = NULL;
@@ -382,9 +388,11 @@ int ibase_update_index(IBASE *ibase, int docid, IBDATA *block)
                             && (intlist = (int *)(block->data + docheader->intblock_off)))
                     {
                         n += IB_INT_OFF;
+                        k = 0;
                         for(i = IB_INT_OFF; i < n; i++)
                         {
-                            IMAP_SET(ibase->state->mfields[i], docid, intlist[i]);
+                            IMAP_SET(ibase->state->mfields[i], docid, intlist[k]);
+                            k++;
                         }
                         //SET_INT_INDEX(ibase, docid, intlist, x);
                     }
@@ -393,9 +401,11 @@ int ibase_update_index(IBASE *ibase, int docid, IBDATA *block)
                             && (longlist = (int64_t *)(block->data + docheader->longblock_off)))
                     {
                         n += IB_LONG_OFF;
+                        k = 0;
                         for(i = IB_LONG_OFF; i < n; i++)
                         {
-                            LMAP_SET(ibase->state->mfields[i], docid, longlist[i]);
+                            LMAP_SET(ibase->state->mfields[i], docid, longlist[k]);
+                            k++;
                         }
                         //SET_LONG_INDEX(ibase, docid, longlist, x);
                     }
@@ -404,9 +414,11 @@ int ibase_update_index(IBASE *ibase, int docid, IBDATA *block)
                             && (doublelist = (double *)(block->data + docheader->doubleblock_off)))
                     {
                         n += IB_DOUBLE_OFF;
+                        k = 0;
                         for(i = IB_DOUBLE_OFF; i < n; i++)
                         {
-                            LMAP_SET(ibase->state->mfields[i], docid, doublelist[i]);
+                            DMAP_SET(ibase->state->mfields[i], docid, doublelist[k]);
+                            k++;
                         }
                         //SET_DOUBLE_INDEX(ibase, docid, doublelist, x);
                     }

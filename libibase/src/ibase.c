@@ -279,16 +279,22 @@ int ibase_set_basedir(IBASE *ibase, char *dir, int used_for, int mmsource_status
                 ibase->state->mfields[i] = imap_init(path);
             }
         }
-        /*
         for(i = IB_LONG_OFF; i < IB_LONG_TO; i++)
         {
             if(ibase->state->mfields[i])
             {
-                n = sprintf(path, "%s/%d.long", IB_IDX_DIR, i);
-                ibase->state->mfields[i] = imap_init(path);
+                sprintf(path, "%s/%d.long", IB_IDX_DIR, i);
+                ibase->state->mfields[i] = lmap_init(path);
             }
         }
-        */
+        for(i = IB_DOUBLE_OFF; i < IB_DOUBLE_TO; i++)
+        {
+            if(ibase->state->mfields[i])
+            {
+                sprintf(path, "%s/%d.double", IB_IDX_DIR, i);
+                ibase->state->mfields[i] = lmap_init(path);
+            }
+        }
         /* check int/long/double index*/
         /*
         ibase_check_int_index(ibase);
@@ -467,7 +473,7 @@ void ibase_check_double_idx(IBASE *ibase, int no)
 {
     char path[IB_PATH_MAX];
 
-    if(ibase && no >= IB_LONG_OFF && no < IB_LONG_TO && !(ibase->state->mfields[no]))
+    if(ibase && no >= IB_DOUBLE_OFF && no < IB_DOUBLE_TO && !(ibase->state->mfields[no]))
     {
         sprintf(path, "%s/%s/%d.double", ibase->basedir, IB_IDX_DIR, no);
         ibase->state->mfields[no] = dmap_init(path);
