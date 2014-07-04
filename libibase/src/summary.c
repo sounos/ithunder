@@ -209,14 +209,11 @@ char *ibase_summary(IBASE *ibase, int docid, IDISPLAY *displaylist, IHITS *hits,
         char *content, int content_end, char *start_tag, char *end_tag, char *out)
 {
     int i = 0, j = 0, no = 0, x = 0, k = 0, n = 0, *np = NULL, fid = 0, xpos = 0, pos = 0, 
-    field_start = 0, field_end = 0, score = 0;
-    //int_field_from = 0, int_field_to = 0, long_field_from = 0, long_field_to = 0, double_field_from = 0, double_field_to = 0, *intidx = NULL, content_end = 0;
+    field_start = 0, field_end = 0;
     char *start = NULL, *end = NULL, *p = NULL, *ps = NULL, *pp = NULL, 
          *epp = NULL, *base =  NULL, *pps = NULL;
     int64_t key = 0, data = 0, *pkey = &key, *pdata = &data;
     WBLOCK  wblocks[IB_FIELDS_MAX];
-    //double *doubleidx = NULL;
-    //int64_t *longidx = NULL;
     IBLOCK  *iblock =  NULL;
 
     if(ibase && displaylist && map && mtop && docheader && fields && termlist && content)
@@ -317,7 +314,6 @@ char *ibase_summary(IBASE *ibase, int docid, IDISPLAY *displaylist, IHITS *hits,
                         if((MTREE64_POP_MAX(mtop, pkey, pdata)) == 0 && j < IB_PHRASE_LIMIT)
                         {
                             iblock = (IBLOCK *)((long)data);
-                            score = (int )key;
                             // mark highlight 
                             pps = pp;
                             base = content + field_start;
@@ -362,7 +358,7 @@ int ibase_read_summary(IBASE *ibase, IQSET *qset, IRECORD *records, char *summar
     int id_time = 0, io_time = 0, p_time = 0, map_time = 0, sum_time = 0;
     size_t nzdata = 0, ndata = 0;
     DOCHEADER *docheader = NULL;
-    IDISPLAY *displaylist = NULL;
+    //IDISPLAY *displaylist = NULL;
     STERM *termlist = NULL;
     XFIELD *fields = NULL;
     IRES *res = NULL;
@@ -371,7 +367,7 @@ int ibase_read_summary(IBASE *ibase, IQSET *qset, IRECORD *records, char *summar
     if(ibase && qset && qset->count > 0 && records && summary)
     {
         res = &(qset->res);
-        displaylist = qset->displaylist;
+        //displaylist = qset->displaylist;
         hitsmap = ibase_pop_stree(ibase);
         map = ibase_pop_stree(ibase);
         mtop = ibase_pop_stree(ibase);

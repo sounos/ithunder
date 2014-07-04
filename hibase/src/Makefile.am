@@ -1,6 +1,6 @@
 #automake 
 sbin_PROGRAMS = himasterd hindexd hidocd 
-himasterd_SOURCES = himasterd.c utils/http.c utils/http.h iniparser.c iniparser.h \
+himasterd_SOURCES = himasterd.c utils/http.c utils/http.h iniparser.c iniparser.h utils/rwlock.h\
 	base64masterdhtml.h mmdb.h mmdb.c utils/mmtrie.h utils/mmtrie.c utils/db.c utils/db.h \
 	utils/logger.h utils/logger.c utils/mutex.h utils/timer.h utils/mtrie.h utils/mtrie.c \
 	utils/stime.h utils/stime.c utils/base64.h utils/base64.c utils/md5.h utils/md5.c \
@@ -18,7 +18,7 @@ hidocd_SOURCES = hidocd.c utils/http.c utils/http.h iniparser.c iniparser.h util
 utils/logger.h utils/logger.c utils/mutex.h utils/timer.h html/charcode.h html/html.c html/html.h \
 html/htmltags.h hidoc.h hidoc.c utils/zvbcode.c utils/zvbcode.h utils/mtrie.c   utils/mtrie.h \
 utils/mtree.h utils/mtree.c utils/iqueue.h utils/iqueue.c utils/stime.h utils/stime.c \
-utils/base64.h utils/base64.c  base64docdhtml.h utils/mmtrie.h utils/mmtrie.c \
+utils/base64.h utils/base64.c  base64docdhtml.h utils/mmtrie.h utils/mmtrie.c utils/rwlock.h \
 utils/mmqueue.h utils/mmqueue.c utils/db.h utils/db.c utils/xmm.h utils/xmm.c \
 utils/mmtree64.h utils/mmtree64.c 
 

@@ -374,6 +374,7 @@ typedef struct _IDISPLAY
 #define IB_DOUBLE_INDEX_MAX     32
 #define IB_RANGE_FROM           0x01
 #define IB_RANGE_TO             0x02
+#define IB_RANGE_IN             0x04
 /* int range */
 typedef struct  _IRANGE
 {
@@ -798,6 +799,7 @@ int ibase_set_log_level(IBASE *ibase, int level);
 //ICHUNK *ibase_mquery(IBASE *ibase, IQUERY *query);
 /* query with binary list merging */
 ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query);
+ICHUNK *ibase_query(IBASE *ibase, IQUERY *query);
 /* mtree merging */
 ICHUNK *ibase_xquery(IBASE *ibase, IQUERY *query);
 /* push iterm */

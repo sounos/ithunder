@@ -8,7 +8,7 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include "db.h"
-#include "mutex.h"
+#include "rwlock.h"
 #include "mmtrie.h"
 #include "logger.h"
 #include "xmm.h"
@@ -32,7 +32,7 @@ do                                                                              
 #ifndef LL
 #define LL(xll) ((long long int)xll)
 #endif
-static XXMM db_xblock_list[] = {{4096,1024},{8192,1024},{16384,1024},{32768,1024},{65536,1024},{131072,1024},{262144,1024},{524288,512},{1048576,256},{2097152,64},{4194304,32},{8388608,16},{16777216,8},{33554432,4}};
+static XXMM db_xblock_list[] = {{4096,1024},{8192,1024},{16384,1024},{32768,1024},{65536,1024},{131072,1024},{262144,1024},{524288,512},{1048576,256},{2097152,64},{4194304,32},{8388608,16},{16777216,8},{33554432,4},{67108864,2}};
 int db_mkdir(char *path)
 {
     struct stat st;
@@ -76,10 +76,10 @@ DB *db_init(char *dbdir, int mode)
 
     if(dbdir && (db = (DB *)xmm_mnew(sizeof(DB))))
     {
-        MUTEX_INIT(db->mutex_lnk);
-        MUTEX_INIT(db->mutex_dbx);
-        MUTEX_INIT(db->mutex_mblock);
-        MUTEX_INIT(db->mutex);
+        RWLOCK_INIT(db->mutex_lnk);
+        RWLOCK_INIT(db->mutex_dbx);
+        RWLOCK_INIT(db->mutex_mblock);
+        RWLOCK_INIT(db->mutex);
         strcpy(db->basedir, dbdir);
         /* initialize kmap */
         sprintf(path, "%s/%s", dbdir, "db.kmap");    
@@ -183,7 +183,7 @@ DB *db_init(char *dbdir, int mode)
         {
             sprintf(path, "%s/base/%d/%d.db", dbdir, i/DB_DIR_FILES, i);    
             db_mkdir(path);
-            MUTEX_INIT(db->dbsio[i].mutex);
+            RWLOCK_INIT(db->dbsio[i].mutex);
             if((db->dbsio[i].fd = open(path, O_CREAT|O_RDWR, 0644)) > 0 
                     && fstat(db->dbsio[i].fd, &st) == 0)
             {
@@ -215,22 +215,26 @@ DB *db_init(char *dbdir, int mode)
             }
         }
         /* initialize mutexs  */
-#ifdef HAVE_PTHREAD
         for(i = 0; i < DB_MUTEX_MAX; i++)
         {
-            pthread_mutex_init(&(db->mutexs[i]), NULL);
+            RWLOCK_INIT(db->mutexs[i]);
         }
-#endif
     }
     return db;
 }
-void db_mutex_lock(DB *db, int id)
+void db_mutex_wrlock(DB *db, int id)
 {
     if(db)
     {
-#ifdef HAVE_PTHREAD
-        pthread_mutex_lock(&(db->mutexs[id%DB_MUTEX_MAX]));
-#endif
+        RWLOCK_WRLOCK(db->mutexs[id%DB_MUTEX_MAX]);
+    }
+    return ;
+}
+void db_mutex_rdlock(DB *db, int id)
+{
+    if(db)
+    {
+        RWLOCK_RDLOCK(db->mutexs[id%DB_MUTEX_MAX]);
     }
     return ;
 }
@@ -238,9 +242,7 @@ void db_mutex_unlock(DB *db, int id)
 {
     if(db)
     {
-#ifdef HAVE_PTHREAD
-        pthread_mutex_unlock(&(db->mutexs[id%DB_MUTEX_MAX]));
-#endif
+        RWLOCK_UNLOCK(db->mutexs[id%DB_MUTEX_MAX]);
     }
     return ;
 }
@@ -251,14 +253,14 @@ int db_pread(DB *db, int index, void *data, int ndata, off_t offset)
 
     if(db && index >= 0 && data && ndata > 0 && offset >= 0 && offset < DB_MFILE_SIZE)
     {
-        MUTEX_LOCK(db->dbsio[index].mutex);
+        RWLOCK_RDLOCK(db->dbsio[index].mutex);
         if(lseek(db->dbsio[index].fd, offset, SEEK_SET) == offset)
             n = read(db->dbsio[index].fd, data, ndata);
         else
         {
             FATAL_LOGGER(db->logger, "lseek to dbsio[%d/%d] offset:%lld failed, %s", index, db->state->last_id, LL(offset), strerror(errno));
         }
-        MUTEX_UNLOCK(db->dbsio[index].mutex);
+        RWLOCK_UNLOCK(db->dbsio[index].mutex);
     }
     return n;
 }
@@ -269,14 +271,14 @@ int db_pwrite(DB *db, int index, void *data, int ndata, off_t offset)
 
     if(db && index >= 0 && data && ndata > 0 && offset >= 0 && offset < DB_MFILE_SIZE)
     {
-        MUTEX_LOCK(db->dbsio[index].mutex);
+        RWLOCK_WRLOCK(db->dbsio[index].mutex);
         if(lseek(db->dbsio[index].fd, offset, SEEK_SET) == offset)
             n = write(db->dbsio[index].fd, data, ndata);
         else
         {
             FATAL_LOGGER(db->logger, "lseek to dbsio[%d/%d] offset:%lld failed, %s", index, db->state->last_id, LL(offset), strerror(errno));
         }
-        MUTEX_UNLOCK(db->dbsio[index].mutex);
+        RWLOCK_UNLOCK(db->dbsio[index].mutex);
     }
     return n;
 }
@@ -312,7 +314,7 @@ void db_push_mblock(DB *db, char *mblock, int block_index)
 
     if(db && mblock && block_index >= 0 && block_index < DB_XBLOCKS_MAX)
     {
-        MUTEX_LOCK(db->mutex_mblock);
+        RWLOCK_WRLOCK(db->mutex_mblock);
         if(db->xblocks[block_index].nmblocks < db_xblock_list[block_index].blocks_max)
         {
             x = db->xblocks[block_index].nmblocks++;
@@ -325,7 +327,7 @@ void db_push_mblock(DB *db, char *mblock, int block_index)
             xmm_free(mblock, db_xblock_list[block_index].block_size);
             --(db->xblocks[block_index].total);
         }
-        MUTEX_UNLOCK(db->mutex_mblock);
+        RWLOCK_UNLOCK(db->mutex_mblock);
     }
     return ;
 }
@@ -337,7 +339,7 @@ char *db_pop_mblock(DB *db, int block_index)
 
     if(db && block_index >= 0 && block_index < DB_XBLOCKS_MAX)
     {
-        MUTEX_LOCK(db->mutex_mblock);
+        RWLOCK_WRLOCK(db->mutex_mblock);
         if(db->xblocks[block_index].nmblocks > 0)
         {
             x = --(db->xblocks[block_index].nmblocks);
@@ -354,7 +356,7 @@ char *db_pop_mblock(DB *db, int block_index)
                 WARN_LOGGER(db->logger, "new-xblock[%d]{%d}->total:%d", block_index, db_xblock_list[block_index].block_size, db->xblocks[block_index].total);
             }
         }
-        MUTEX_UNLOCK(db->mutex_mblock);
+        RWLOCK_UNLOCK(db->mutex_mblock);
     }
     return mblock;
 }
@@ -427,7 +429,7 @@ int db_push_block(DB *db, int index, int blockid, int block_size)
     if(db && blockid >= 0 && (x = DB_BLOCKS_COUNT(block_size)) > 0 && db->status == 0
             && x < DB_LNK_MAX && index >= 0 && index < DB_MFILE_MAX)
     {
-        MUTEX_LOCK(db->mutex_lnk);
+        RWLOCK_WRLOCK(db->mutex_lnk);
         if((links = (XLNK *)(db->lnkio.map)))
         {
             if(links[x].count > 0)
@@ -457,7 +459,7 @@ int db_push_block(DB *db, int index, int blockid, int block_size)
             ++(links[x].count);
             ret = 0;
         }
-        MUTEX_UNLOCK(db->mutex_lnk);
+        RWLOCK_UNLOCK(db->mutex_lnk);
     }
     return ret;
 }
@@ -471,7 +473,7 @@ int db_pop_block(DB *db, int blocks_count, XLNK *lnk)
 
     if(db && (x = blocks_count) > 0 && lnk)
     {
-        MUTEX_LOCK(db->mutex_lnk);
+        RWLOCK_WRLOCK(db->mutex_lnk);
         if((links = (XLNK *)(db->lnkio.map)) && links[x].count > 0 
                 && (index = links[x].index) >= 0 && index < DB_MFILE_MAX
                 && db->dbsio[index].fd > 0) 
@@ -521,7 +523,7 @@ int db_pop_block(DB *db, int blocks_count, XLNK *lnk)
                         && (db->dbsio[x].fd = open(path, O_CREAT|O_RDWR, 0644)) > 0
                         && ftruncate(db->dbsio[x].fd, DB_MFILE_SIZE) == 0)
                 {
-                    MUTEX_INIT(db->dbsio[x].mutex);
+                    RWLOCK_INIT(db->dbsio[x].mutex);
                     db->dbsio[x].end = db->dbsio[x].size = DB_MFILE_SIZE;
                     DB_CHECK_MMAP(db, x);
                     lnk->count = blocks_count;
@@ -545,7 +547,7 @@ int db_pop_block(DB *db, int blocks_count, XLNK *lnk)
                 ret = 0;
             }
         }
-        MUTEX_UNLOCK(db->mutex_lnk);
+        RWLOCK_UNLOCK(db->mutex_lnk);
         if(block_id >= 0)
         {
             ACCESS_LOGGER(db->logger, "push_block() blockid:%d index:%d block_size:%d", block_id, db_id, block_size);
@@ -598,10 +600,10 @@ int db__set__data(DB *db, int id, char *data, int ndata)
 
     if(db && id >= 0 && data && ndata > 0 && db->status == 0 && (dbx = (DBX *)(db->dbxio.map)))
     {
-        MUTEX_LOCK(db->mutex_dbx);
+        RWLOCK_WRLOCK(db->mutex_dbx);
         CHECK_DBXIO(db, id);
-        MUTEX_UNLOCK(db->mutex_dbx);
-        db_mutex_lock(db, id);
+        RWLOCK_UNLOCK(db->mutex_dbx);
+        db_mutex_wrlock(db, id);
         if(dbx[id].block_size < ndata)
         {
             if(dbx[id].block_size > 0)
@@ -753,10 +755,10 @@ int db__add__data(DB *db, int id, char *data, int ndata)
 
     if(db && id >= 0 && data && ndata > 0 && (dbx = (DBX *)(db->dbxio.map)))
     {
-        MUTEX_LOCK(db->mutex_dbx);
+        RWLOCK_WRLOCK(db->mutex_dbx);
         CHECK_DBXIO(db, id);
-        MUTEX_UNLOCK(db->mutex_dbx);
-        db_mutex_lock(db, id);
+        RWLOCK_UNLOCK(db->mutex_dbx);
+        db_mutex_wrlock(db, id);
         nold = dbx[id].ndata;
         //check block_size 
         if((size = (dbx[id].ndata + ndata)) > dbx[id].block_size)
@@ -977,7 +979,7 @@ int db_xget_data(DB *db, char *key, int nkey, char **data, int *ndata)
         *ndata = 0;
         if((id = mmtrie_get(MMTR(db->kmap), key, nkey)) > 0)
         {
-            db_mutex_lock(db, id);
+            db_mutex_rdlock(db, id);
             if((dbx = (DBX *)db->dbxio.map) && (n = dbx[id].ndata) > 0
                 && dbx[id].block_size > 0 && (*data = (db_new_data(db, n)))) 
             {
@@ -1017,7 +1019,7 @@ int db_get_data(DB *db, int id, char **data)
 
     if(db && id >= 0 && id <= db->state->db_id_max)
     {
-        db_mutex_lock(db, id);
+        db_mutex_rdlock(db, id);
         if((dbx = (DBX *)(db->dbxio.map)) && (n = dbx[id].ndata) > 0 
                 && dbx[id].block_size > 0 && (*data = db_new_data(db, n)))
         {
@@ -1040,7 +1042,7 @@ int db_xread_data(DB *db, char *key, int nkey, char *data)
     {
         if((id = mmtrie_get(MMTR(db->kmap), key, nkey)) > 0) 
         {
-            db_mutex_lock(db, id);
+            db_mutex_rdlock(db, id);
             ret = db__read__data(db, id, data);
             db_mutex_unlock(db, id);
         }
@@ -1089,7 +1091,7 @@ int db_xpread_data(DB *db, char *key, int nkey, char *data, int len, int off)
     {
         if((id = mmtrie_get(MMTR(db->kmap), key, nkey)) > 0)
         {
-            db_mutex_lock(db, id);
+            db_mutex_rdlock(db, id);
             ret = db__pread__data(db, id, data, len, off);
             db_mutex_unlock(db, id);
         }
@@ -1104,7 +1106,7 @@ int db_read_data(DB *db, int id, char *data)
 
     if(db && id >= 0 && data && id <= db->state->db_id_max)
     {
-        db_mutex_lock(db, id);
+        db_mutex_rdlock(db, id);
         ret = db__read__data(db, id, data);
         db_mutex_unlock(db, id);
     }
@@ -1118,7 +1120,7 @@ int db_pread_data(DB *db, int id, char *data, int len, int off)
 
     if(db && id >= 0 && data && id <= db->state->db_id_max)
     {
-        db_mutex_lock(db, id);
+        db_mutex_rdlock(db, id);
         ret = db__pread__data(db, id, data, len, off);
         db_mutex_unlock(db, id);
     }
@@ -1138,7 +1140,7 @@ int db_del_data(DB *db, int id)
         {
             ACCESS_LOGGER(db->logger, "push_block() dbxid:%d blockid:%d index:%d block_size:%d",id, dbx[id].blockid, dbx[id].index, dbx[id].block_size);
             db_push_block(db, dbx[id].index, dbx[id].blockid, dbx[id].block_size);
-            db_mutex_lock(db, id);
+            db_mutex_wrlock(db, id);
             dbx[id].block_size = 0;
             dbx[id].blockid = 0;
             dbx[id].ndata = 0;
@@ -1163,7 +1165,7 @@ int db_xdel_data(DB *db, char *key, int nkey)
         {
             ACCESS_LOGGER(db->logger, "push_block() dbxid:%d blockid:%d index:%d block_size:%d",id, dbx[id].blockid, dbx[id].index, dbx[id].block_size);
             db_push_block(db, dbx[id].index, dbx[id].blockid, dbx[id].block_size);
-            db_mutex_lock(db, id);
+            db_mutex_wrlock(db, id);
             dbx[id].block_size = 0;
             dbx[id].blockid = 0;
             dbx[id].ndata = 0;
@@ -1184,10 +1186,10 @@ void db_destroy(DB *db)
     if(db)
     {
         db->status = -1;
-        MUTEX_LOCK(db->mutex);
-        MUTEX_LOCK(db->mutex_dbx);
-        MUTEX_LOCK(db->mutex_lnk);
-        MUTEX_LOCK(db->mutex_mblock);
+        RWLOCK_WRLOCK(db->mutex);
+        RWLOCK_WRLOCK(db->mutex_dbx);
+        RWLOCK_WRLOCK(db->mutex_lnk);
+        RWLOCK_WRLOCK(db->mutex_mblock);
         mmtrie_destroy(db->kmap);
         /* dbx */
         if(db->dbxio.map) 
@@ -1219,7 +1221,7 @@ void db_destroy(DB *db)
                 db->dbsio[i].map = NULL;
                 db->dbsio[i].end = 0;
             }
-            MUTEX_DESTROY(db->dbsio[i].mutex);
+            RWLOCK_DESTROY(db->dbsio[i].mutex);
             if(db->dbsio[i].fd > 0)
             {
                 close(db->dbsio[i].fd);
@@ -1245,7 +1247,7 @@ void db_destroy(DB *db)
         sprintf(path, "%s/base/0/0.db", db->basedir);    
         if((db->dbsio[0].fd = open(path, O_CREAT|O_RDWR, 0644)) > 0)
         {
-            MUTEX_INIT(db->dbsio[0].mutex);
+            RWLOCK_INIT(db->dbsio[0].mutex);
             db->dbsio[0].size = DB_MFILE_SIZE;
             if(ftruncate(db->dbsio[0].fd, db->dbsio[0].size) != 0)
             {
@@ -1264,10 +1266,10 @@ void db_destroy(DB *db)
         db->state->last_id = 0;
         db->state->last_off = 0;
         db->state->db_id_max = 0;
-        MUTEX_UNLOCK(db->mutex);
-        MUTEX_UNLOCK(db->mutex_lnk);
-        MUTEX_UNLOCK(db->mutex_dbx);
-        MUTEX_UNLOCK(db->mutex_mblock);
+        RWLOCK_UNLOCK(db->mutex);
+        RWLOCK_UNLOCK(db->mutex_lnk);
+        RWLOCK_UNLOCK(db->mutex_dbx);
+        RWLOCK_UNLOCK(db->mutex_mblock);
     }
     return ;
 }
@@ -1282,7 +1284,7 @@ void db_clean(DB *db)
         {
             if(db->dbsio[i].map)munmap(db->dbsio[i].map, db->dbsio[i].end);
             if(db->dbsio[i].fd)close(db->dbsio[i].fd);
-            MUTEX_DESTROY(db->dbsio[i].mutex);
+            RWLOCK_DESTROY(db->dbsio[i].mutex);
         }
         if(db->dbxio.map)munmap(db->dbxio.map, db->dbxio.size);
         if(db->dbxio.fd)close(db->dbxio.fd);
@@ -1301,17 +1303,15 @@ void db_clean(DB *db)
             }
         }
         if(MMTR(db->kmap))mmtrie_clean(MMTR(db->kmap));
-#ifdef HAVE_PTHREAD
-            for(i = 0; i < DB_MUTEX_MAX; i++)
-            {
-                pthread_mutex_destroy(&(db->mutexs[i]));
-            }
-#endif
+        for(i = 0; i < DB_MUTEX_MAX; i++)
+        {
+            RWLOCK_DESTROY(db->mutexs[i]);
+        }
         LOGGER_CLEAN(db->logger);
-        MUTEX_DESTROY(db->mutex_lnk);
-        MUTEX_DESTROY(db->mutex_dbx);
-        MUTEX_DESTROY(db->mutex_mblock);
-        MUTEX_DESTROY(db->mutex);
+        RWLOCK_DESTROY(db->mutex_lnk);
+        RWLOCK_DESTROY(db->mutex_dbx);
+        RWLOCK_DESTROY(db->mutex_mblock);
+        RWLOCK_DESTROY(db->mutex);
         xmm_free(db, sizeof(DB));
     }
     return ;

@@ -57,7 +57,7 @@ LMAP *lmap_init(char *file)
        {
            fprintf(stderr, "open %s failed, %s\n", file, strerror(errno));
        }
-       RWLOCK_INIT(&(lmap->rwlock));
+       RWLOCK_INIT(lmap->rwlock);
     }
     return lmap;
 }
@@ -492,7 +492,7 @@ int lmap_in(LMAP *lmap, int64_t key, u32_t *list)
 
     if(lmap && lmap->state && (n = lmap->state->count) > 0)
     {
-        RWLOCK_RDLOCK(&(lmap->rwlock));
+        RWLOCK_RDLOCK(lmap->rwlock);
         k = lmap_find_slot(lmap, key);
         i = lmap_find_kv(lmap, k, key);
         do
@@ -520,7 +520,7 @@ int lmap_in(LMAP *lmap, int64_t key, u32_t *list)
             }
             i=0;
         }while(++k < n && lmap->slots[k].min == key);
-        RWLOCK_UNLOCK(&(lmap->rwlock));
+        RWLOCK_UNLOCK(lmap->rwlock);
     }
     return ret;
 }
@@ -532,7 +532,7 @@ int lmap_range(LMAP *lmap, int64_t from, int64_t to, u32_t *list)
 
     if(lmap && lmap->state)
     {
-        RWLOCK_RDLOCK(&(lmap->rwlock));
+        RWLOCK_RDLOCK(lmap->rwlock);
         k = lmap_find_slot(lmap, from);
         kk = lmap_find_slot2(lmap, to);
         i = lmap_find_kv(lmap, k, from);
@@ -571,7 +571,7 @@ int lmap_range(LMAP *lmap, int64_t from, int64_t to, u32_t *list)
                 for(x = 0; x < ii; x++) list[z++] = kvs[x].val;
             }
         }
-        RWLOCK_UNLOCK(&(lmap->rwlock));
+        RWLOCK_UNLOCK(lmap->rwlock);
     }
     return ret;
 }
@@ -583,7 +583,7 @@ int lmap_rangefrom(LMAP *lmap, int64_t key, u32_t *list) /* key = from */
 
     if(lmap && lmap->state)
     {
-        RWLOCK_RDLOCK(&(lmap->rwlock));
+        RWLOCK_RDLOCK(lmap->rwlock);
         if((k = lmap_find_slot(lmap, key)) >= 0 && (i = lmap_find_kv(lmap, k, key)) >= 0)
         {
             kvs = lmap->map + lmap->slots[k].nodeid;
@@ -604,7 +604,7 @@ int lmap_rangefrom(LMAP *lmap, int64_t key, u32_t *list) /* key = from */
                 }
             }
         }
-        RWLOCK_UNLOCK(&(lmap->rwlock));
+        RWLOCK_UNLOCK(lmap->rwlock);
     }
     //fprintf(stdout, "%s::%d k:%d ret:%d/%d\n", __FILE__, __LINE__, k, ret, z);
     return ret;
@@ -617,7 +617,7 @@ int lmap_rangeto(LMAP *lmap, int64_t key, u32_t *list) /* key = to */
 
     if(lmap && lmap->state && (n = (lmap->state->count)) > 0)
     {
-        RWLOCK_RDLOCK(&(lmap->rwlock));
+        RWLOCK_RDLOCK(lmap->rwlock);
         if((k = lmap_find_slot2(lmap, key)) >= 0 && k < n 
                 && (i = lmap_find_kv2(lmap, k, key)) >= 0)
         {
@@ -643,7 +643,7 @@ int lmap_rangeto(LMAP *lmap, int64_t key, u32_t *list) /* key = to */
                 }
             }
         }
-        RWLOCK_UNLOCK(&(lmap->rwlock));
+        RWLOCK_UNLOCK(lmap->rwlock);
     }
     //fprintf(stdout, "%s::%d k:%d ret:%d/%d\n", __FILE__, __LINE__, k, ret, z);
     return ret;
@@ -672,12 +672,12 @@ int lmap_get(LMAP *lmap, u32_t no, u32_t *val)
 
     if(lmap)
     {
-        RWLOCK_RDLOCK(&(lmap->rwlock));
+        RWLOCK_RDLOCK(lmap->rwlock);
         if((n = (lmap->vsize/sizeof(LMMV))) > 0 && no < n)
         {
             if(val) *val = lmap->vmap[no].val;
         }
-        RWLOCK_UNLOCK(&(lmap->rwlock));
+        RWLOCK_UNLOCK(lmap->rwlock);
     }
     return ret;
 }
@@ -688,7 +688,7 @@ int lmap_set(LMAP *lmap, u32_t no, int64_t key)
 
     if(lmap)
     {
-       RWLOCK_WRLOCK(&(lmap->rwlock));
+       RWLOCK_WRLOCK(lmap->rwlock);
        lmap_vset(lmap, no, key);
        if(lmap->vmap[no].off  < 0)
        {
@@ -704,7 +704,7 @@ int lmap_set(LMAP *lmap, u32_t no, int64_t key)
        }
        ret = 0;
        lmap->vmap[no].val = key;
-       RWLOCK_UNLOCK(&(lmap->rwlock));
+       RWLOCK_UNLOCK(lmap->rwlock);
     }
     return ret;
 }
@@ -715,14 +715,14 @@ int lmap_del(LMAP *lmap, u32_t no)
 
     if(lmap)
     {
-        RWLOCK_WRLOCK(&(lmap->rwlock));
+        RWLOCK_WRLOCK(lmap->rwlock);
         if((n = (lmap->vsize/sizeof(LMMV))) > 0 && no < n)
         {
             lmap_remove(lmap, no);
             lmap->vmap[no].off = -1;
             ret = 0;
         }
-        RWLOCK_UNLOCK(&(lmap->rwlock));
+        RWLOCK_UNLOCK(lmap->rwlock);
     }
     return ret;
 }
@@ -735,7 +735,7 @@ void lmap_close(LMAP *lmap)
         if(lmap->fd) close(lmap->fd);
         if(lmap->vmap) munmap(lmap->vmap, lmap->vmsize);
         if(lmap->vfd) close(lmap->vfd);
-        RWLOCK_DESTROY(&(lmap->rwlock));
+        RWLOCK_DESTROY(lmap->rwlock);
         free(lmap);
     }
     return ;

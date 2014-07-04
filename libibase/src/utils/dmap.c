@@ -57,7 +57,7 @@ DMAP *dmap_init(char *file)
        {
            fprintf(stderr, "open %s failed, %s\n", file, strerror(errno));
        }
-       RWLOCK_INIT(&(dmap->rwlock));
+       RWLOCK_INIT(dmap->rwlock);
     }
     return dmap;
 }
@@ -492,7 +492,7 @@ int dmap_in(DMAP *dmap, double key, u32_t *list)
 
     if(dmap && dmap->state && (n = dmap->state->count) > 0)
     {
-        RWLOCK_RDLOCK(&(dmap->rwlock));
+        RWLOCK_RDLOCK(dmap->rwlock);
         k = dmap_find_slot(dmap, key);
         i = dmap_find_kv(dmap, k, key);
         do
@@ -520,7 +520,7 @@ int dmap_in(DMAP *dmap, double key, u32_t *list)
             }
             i=0;
         }while(++k < n && dmap->slots[k].min == key);
-        RWLOCK_UNLOCK(&(dmap->rwlock));
+        RWLOCK_UNLOCK(dmap->rwlock);
     }
     return ret;
 }
@@ -532,7 +532,7 @@ int dmap_range(DMAP *dmap, double from, double to, u32_t *list)
 
     if(dmap && dmap->state)
     {
-        RWLOCK_RDLOCK(&(dmap->rwlock));
+        RWLOCK_RDLOCK(dmap->rwlock);
         k = dmap_find_slot(dmap, from);
         kk = dmap_find_slot2(dmap, to);
         i = dmap_find_kv(dmap, k, from);
@@ -571,7 +571,7 @@ int dmap_range(DMAP *dmap, double from, double to, u32_t *list)
                 for(x = 0; x < ii; x++) list[z++] = kvs[x].val;
             }
         }
-        RWLOCK_UNLOCK(&(dmap->rwlock));
+        RWLOCK_UNLOCK(dmap->rwlock);
     }
     return ret;
 }
@@ -583,7 +583,7 @@ int dmap_rangefrom(DMAP *dmap, double key, u32_t *list) /* key = from */
 
     if(dmap && dmap->state)
     {
-        RWLOCK_RDLOCK(&(dmap->rwlock));
+        RWLOCK_RDLOCK(dmap->rwlock);
         if((k = dmap_find_slot(dmap, key)) >= 0 && (i = dmap_find_kv(dmap, k, key)) >= 0)
         {
             kvs = dmap->map + dmap->slots[k].nodeid;
@@ -604,7 +604,7 @@ int dmap_rangefrom(DMAP *dmap, double key, u32_t *list) /* key = from */
                 }
             }
         }
-        RWLOCK_UNLOCK(&(dmap->rwlock));
+        RWLOCK_UNLOCK(dmap->rwlock);
     }
     //fprintf(stdout, "%s::%d k:%d ret:%d/%d\n", __FILE__, __LINE__, k, ret, z);
     return ret;
@@ -617,7 +617,7 @@ int dmap_rangeto(DMAP *dmap, double key, u32_t *list) /* key = to */
 
     if(dmap && dmap->state && (n = (dmap->state->count)) > 0)
     {
-        RWLOCK_RDLOCK(&(dmap->rwlock));
+        RWLOCK_RDLOCK(dmap->rwlock);
         if((k = dmap_find_slot2(dmap, key)) >= 0 && k < n 
                 && (i = dmap_find_kv2(dmap, k, key)) >= 0)
         {
@@ -643,7 +643,7 @@ int dmap_rangeto(DMAP *dmap, double key, u32_t *list) /* key = to */
                 }
             }
         }
-        RWLOCK_UNLOCK(&(dmap->rwlock));
+        RWLOCK_UNLOCK(dmap->rwlock);
     }
     //fprintf(stdout, "%s::%d k:%d ret:%d/%d\n", __FILE__, __LINE__, k, ret, z);
     return ret;
@@ -672,12 +672,12 @@ int dmap_get(DMAP *dmap, u32_t no, u32_t *val)
 
     if(dmap)
     {
-        RWLOCK_RDLOCK(&(dmap->rwlock));
+        RWLOCK_RDLOCK(dmap->rwlock);
         if((n = (dmap->vsize/sizeof(DMMV))) > 0 && no < n)
         {
             if(val) *val = dmap->vmap[no].val;
         }
-        RWLOCK_UNLOCK(&(dmap->rwlock));
+        RWLOCK_UNLOCK(dmap->rwlock);
     }
     return ret;
 }
@@ -688,7 +688,7 @@ int dmap_set(DMAP *dmap, u32_t no, double key)
 
     if(dmap)
     {
-       RWLOCK_WRLOCK(&(dmap->rwlock));
+       RWLOCK_WRLOCK(dmap->rwlock);
        dmap_vset(dmap, no, key);
        if(dmap->vmap[no].off  < 0)
        {
@@ -704,7 +704,7 @@ int dmap_set(DMAP *dmap, u32_t no, double key)
        }
        ret = 0;
        dmap->vmap[no].val = key;
-       RWLOCK_UNLOCK(&(dmap->rwlock));
+       RWLOCK_UNLOCK(dmap->rwlock);
     }
     return ret;
 }
@@ -715,14 +715,14 @@ int dmap_del(DMAP *dmap, u32_t no)
 
     if(dmap)
     {
-        RWLOCK_WRLOCK(&(dmap->rwlock));
+        RWLOCK_WRLOCK(dmap->rwlock);
         if((n = (dmap->vsize/sizeof(DMMV))) > 0 && no < n)
         {
             dmap_remove(dmap, no);
             dmap->vmap[no].off = -1;
             ret = 0;
         }
-        RWLOCK_UNLOCK(&(dmap->rwlock));
+        RWLOCK_UNLOCK(dmap->rwlock);
     }
     return ret;
 }
@@ -735,7 +735,7 @@ void dmap_close(DMAP *dmap)
         if(dmap->fd) close(dmap->fd);
         if(dmap->vmap) munmap(dmap->vmap, dmap->vmsize);
         if(dmap->vfd) close(dmap->vfd);
-        RWLOCK_DESTROY(&(dmap->rwlock));
+        RWLOCK_DESTROY(dmap->rwlock);
         free(dmap);
     }
     return ;

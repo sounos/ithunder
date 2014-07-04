@@ -289,7 +289,7 @@ int indexd_data_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *ch
                         if((block = conn->mnewchunk(conn, len)))
                         {
                             pquery = (IQUERY *)(block->data + sizeof(IHEAD));
-                            if(httpd_request_handler(conn, &httpRQ, pquery) <= 0)
+                            if(httpd_request_handler(conn, &httpRQ, pquery) < 0)
                             {
                                 conn->freechunk(conn, block);
                                 goto end;
@@ -1104,7 +1104,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
         if(booland > 0) query->flag |= IB_QUERY_BOOLAND;
         ACCESS_LOGGER(logger, "ready for query:%s not:%s from:%d count:%d fieldsfilter:%d catfilter:%lld multicat:%lld catgroup:%lld catblock:%lld orderby:%d order:%d qfhits:%d base_hits:%d base_fhits:%d base_phrase:%d base_nterm:%d base_xcatup:%lld base_xcatdown:%lld base_rank:%d int_range_count:%d long_range_count:%d double_range_count:%d usec_used:%d remote[%s:%d -> %d]", query_str, not_str, query->from, query->count, fieldsfilter, LL64(query->category_filter), LL64(query->multicat_filter), LL64(query->catgroup_filter), LL64(query->catblock_filter), orderby, order, query->qfhits, query->base_hits, query->base_fhits, query->base_phrase, query->base_nterm, LL64(query->base_xcatup), LL64(query->base_xcatdown), query->base_rank, query->int_range_count, query->long_range_count, query->double_range_count, usecs, conn->remote_ip, conn->remote_port, conn->fd);
         //fprintf(stdout, "%s::%d query:%s OK\n", __FILE__, __LINE__, query_str);
-        return (ret = ibase_qparser(ibase, query_str, not_str, query));
+        ret = ibase_qparser(ibase, query_str, not_str, query);
     }
     return ret;
 }
@@ -1207,7 +1207,7 @@ int httpd_packet_handler(CONN *conn, CB_DATA *packet)
         {
             gettimeofday(&tv, NULL); conn->xids[8] = tv.tv_sec; conn->xids[9] = tv.tv_usec;
             memset(&query, 0, sizeof(IQUERY));
-            if(http_req.nargvs > 0 && httpd_request_handler(conn, &http_req, &query) > 0) 
+            if(http_req.nargvs > 0 && httpd_request_handler(conn, &http_req, &query) >= 0) 
             {
                 return httpd_query_handler(conn, &query);
             }
@@ -1346,7 +1346,7 @@ int httpd_data_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *chu
                 if(http_argv_parse(p, end, &httpRQ) == -1)goto err_end;
                 //fprintf(stdout, "%s::%d OK\n", __FILE__, __LINE__);
                 memset(&query, 0, sizeof(IQUERY));
-                if(httpd_request_handler(conn, &httpRQ, &query) <= 0) goto err_end;
+                if(httpd_request_handler(conn, &httpRQ, &query) < 0) goto err_end;
                 //fprintf(stdout, "%s::%d OK\n", __FILE__, __LINE__);
                 if(query.flag & IB_CLEAR_CACHE)
                 {
