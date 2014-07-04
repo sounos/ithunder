@@ -674,7 +674,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
             if(query_str == NULL) return op;
         }
         /* check query_str */
-        if(query_str == NULL) return -1;
+        //if(query_str == NULL) return -1;
         gettimeofday(&tv, NULL);
         if(conn->xids[8] > 0 && conn->xids[9] > 0)
         {
@@ -1100,9 +1100,12 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
         }
         if(phrase > 0) query->flag |= IB_QUERY_PHRASE;
         if(booland > 0) query->flag |= IB_QUERY_BOOLAND;
-        ACCESS_LOGGER(logger, "ready for query:%s not:%s from:%d count:%d fieldsfilter:%d catfilter:%lld multicat:%lld catgroup:%lld catblock:%lld orderby:%d order:%d qfhits:%d base_hits:%d base_fhits:%d base_phrase:%d base_nterm:%d base_xcatup:%lld base_xcatdown:%lld base_rank:%d int_range_count:%d long_range_count:%d double_range_count:%d usec_used:%d remote[%s:%d -> %d]", query_str, not_str, query->from, query->count, fieldsfilter, LL64(query->category_filter), LL64(query->multicat_filter), LL64(query->catgroup_filter), LL64(query->catblock_filter), orderby, order, query->qfhits, query->base_hits, query->base_fhits, query->base_phrase, query->base_nterm, LL64(query->base_xcatup), LL64(query->base_xcatdown), query->base_rank, query->int_range_count, query->long_range_count, query->double_range_count, usecs, conn->remote_ip, conn->remote_port, conn->fd);
-        //fprintf(stdout, "%s::%d query:%s OK\n", __FILE__, __LINE__, query_str);
-        ret = ibase_qparser(ibase, query_str, not_str, query);
+        if(query_str)
+        {
+            ACCESS_LOGGER(logger, "ready for query:%s not:%s from:%d count:%d fieldsfilter:%d catfilter:%lld multicat:%lld catgroup:%lld catblock:%lld orderby:%d order:%d qfhits:%d base_hits:%d base_fhits:%d base_phrase:%d base_nterm:%d base_xcatup:%lld base_xcatdown:%lld base_rank:%d int_range_count:%d long_range_count:%d double_range_count:%d usec_used:%d remote[%s:%d -> %d]", query_str, not_str, query->from, query->count, fieldsfilter, LL64(query->category_filter), LL64(query->multicat_filter), LL64(query->catgroup_filter), LL64(query->catblock_filter), orderby, order, query->qfhits, query->base_hits, query->base_fhits, query->base_phrase, query->base_nterm, LL64(query->base_xcatup), LL64(query->base_xcatdown), query->base_rank, query->int_range_count, query->long_range_count, query->double_range_count, usecs, conn->remote_ip, conn->remote_port, conn->fd);
+        }
+        if(query_str && *query_str) ret = ibase_qparser(ibase, query_str, not_str, query);
+        else ret = 0;
     }
     return ret;
 }
@@ -1125,6 +1128,7 @@ int httpd_query_handler(CONN *conn, IQUERY *query)
         {
             if(query->nqterms > 0) ichunk = ibase_bquery(ibase, query);
             else ichunk = ibase_query(ibase, query);
+            //fprintf(stdout, "%s::%d query:%s OK\n", __FILE__, __LINE__, query_str);
             if(ichunk)
             {
                 res     = &(ichunk->res);
