@@ -267,8 +267,8 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query)
             {
                 imax = query->in_int_num - 1;imin = 0;
                 if((jj = query->in_int_fieldid) >= int_index_from && jj < int_index_to
-                    && (jj += (IB_INT_OFF - int_index_from)) > 0 && ibase->state->mfields[jj]
-                    && jj != min_set_fid)
+                        && (jj += (IB_INT_OFF - int_index_from)) > 0 && ibase->state->mfields[jj]
+                        && jj != min_set_fid)
                 {
                     xint = IMAP_GET(ibase->state->mfields[jj], docid);
                     if(xint < query->in_int_list[imin] || xint > query->in_int_list[imax]) goto next;
@@ -290,8 +290,8 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query)
             {
                 imax = query->in_long_num - 1;imin = 0;
                 if((jj = query->in_long_fieldid) >= long_index_from && jj < long_index_to
-                    && (jj += (IB_LONG_OFF - long_index_from)) > 0 && ibase->state->mfields[jj]
-                    && jj != min_set_fid)
+                        && (jj += (IB_LONG_OFF - long_index_from)) > 0 && ibase->state->mfields[jj]
+                        && jj != min_set_fid)
                 {
                     xlong = LMAP_GET(ibase->state->mfields[jj], docid);
                     if(xlong < query->in_long_list[imin] || xlong > query->in_long_list[imax]) goto next;
@@ -313,8 +313,8 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query)
             {
                 imax = query->in_double_num - 1;imin = 0;
                 if((jj = query->in_double_fieldid) >= double_index_from && jj < double_index_to
-                    && (jj += (IB_DOUBLE_OFF - double_index_from)) > 0 && ibase->state->mfields[jj]
-                    && jj != min_set_fid)
+                        && (jj += (IB_DOUBLE_OFF - double_index_from)) > 0 && ibase->state->mfields[jj]
+                        && jj != min_set_fid)
                 {
                     xdouble = DMAP_GET(ibase->state->mfields[jj], docid);
                     if(xdouble < query->in_double_list[imin] || xdouble > query->in_double_list[imax]) goto next;
@@ -493,69 +493,139 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query)
                 ACCESS_LOGGER(ibase->logger, "docid:%d/%lld base_score:%lld rank:%f base_rank:%lld doc_score:%lld fid:%d", docid, IBLL(headers[docid].globalid), IBLL(base_score), headers[docid].rank, IBLL(query->base_rank), IBLL(doc_score), fid);
             }
             /* sorting */
-            if(MTREE64_TOTAL(topmap) >= query->ntop)
+            if(min_set_fid != fid)
             {
-                xdata = 0ll;
-                if(is_sort_reverse)
+                if(MTREE64_TOTAL(topmap) >= query->ntop)
                 {
-                    if(doc_score >= MTREE64_MINK(topmap))
+                    xdata = 0ll;
+                    if(is_sort_reverse)
                     {
-                        mtree64_pop_min(MTR64(topmap), &old_score, &xdata);
-                        if((record = (IRECORD *)((long )xdata)))
+                        if(doc_score >= MTREE64_MINK(topmap))
                         {
-                            record->globalid    = (int64_t)docid;
-                            mtree64_push(MTR64(topmap), doc_score, xdata);
+                            mtree64_pop_min(MTR64(topmap), &old_score, &xdata);
+                            if((record = (IRECORD *)((long )xdata)))
+                            {
+                                record->globalid    = (int64_t)docid;
+                                mtree64_push(MTR64(topmap), doc_score, xdata);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if(doc_score <= MTREE64_MAXK(topmap))
+                        {
+                            mtree64_pop_max(MTR64(topmap), &old_score, &xdata);
+                            if((record = (IRECORD *)((long)xdata)))
+                            {
+                                record->globalid    = (int64_t)docid;
+                                mtree64_push(MTR64(topmap), doc_score, xdata);
+                            }
                         }
                     }
                 }
                 else
                 {
-                    if(doc_score <= MTREE64_MAXK(topmap))
+                    if(nxrecords < IB_NTOP_MAX && (record = &(xrecords[nxrecords++])))
                     {
-                        mtree64_pop_max(MTR64(topmap), &old_score, &xdata);
-                        if((record = (IRECORD *)((long)xdata)))
-                        {
-                            record->globalid    = (int64_t)docid;
-                            mtree64_push(MTR64(topmap), doc_score, xdata);
-                        }
+                        record->globalid    = (int64_t)docid;
+                        mtree64_push(MTR64(topmap), doc_score, (int64_t)record);
                     }
                 }
             }
-            else
-            {
-                if(nxrecords < IB_NTOP_MAX && (record = &(xrecords[nxrecords++])))
-                {
-                    record->globalid    = (int64_t)docid;
-                    mtree64_push(MTR64(topmap), doc_score, (int64_t)record);
-                }
-            }
             res->total++;
-next:
             ++off;
+            continue;
+next:
+            docs[off++] = 0;
         }
         TIMER_SAMPLE(timer);
         res->sort_time = (int)PT_LU_USEC(timer);
         ACCESS_LOGGER(ibase->logger, "bsort(%d) %d documents res:%d time used:%lld", query->qid, res->total, MTREE64_TOTAL(topmap), PT_LU_USEC(timer));
-        if((res->count = MTREE64_TOTAL(topmap)) > 0)
+        if(min_set_fid != fid)
         {
-            i = 0;
-            do
+            if((res->count = MTREE64_TOTAL(topmap)) > 0)
             {
-                xdata = 0;
-                doc_score = 0;
-                if(is_sort_reverse){mtree64_pop_max(MTR64(topmap), &doc_score, &xdata);}
-                else{mtree64_pop_min(MTR64(topmap), &doc_score, &xdata);}
-                if((record = (IRECORD *)((long)xdata)))
+                i = 0;
+                do
                 {
-                    docid = (int)record->globalid;
-                    records[i].score = doc_score;
-                    records[i].globalid = (int64_t)headers[docid].globalid;
-                    ACCESS_LOGGER(ibase->logger, "top[%d/%d] docid:%d/%lld score:%lld", i, MTREE64_TOTAL(topmap), docid, IBLL(headers[docid].globalid), IBLL(doc_score));
-                }
-                ++i;
-            }while(MTREE64_TOTAL(topmap) > 0);
+                    xdata = 0;
+                    doc_score = 0;
+                    if(is_sort_reverse){mtree64_pop_max(MTR64(topmap), &doc_score, &xdata);}
+                    else{mtree64_pop_min(MTR64(topmap), &doc_score, &xdata);}
+                    if((record = (IRECORD *)((long)xdata)))
+                    {
+                        docid = (int)record->globalid;
+                        records[i].score = doc_score;
+                        records[i].globalid = (int64_t)headers[docid].globalid;
+                        ACCESS_LOGGER(ibase->logger, "top[%d/%d] docid:%d/%lld score:%lld", i, MTREE64_TOTAL(topmap), docid, IBLL(headers[docid].globalid), IBLL(doc_score));
+                    }
+                    ++i;
+                }while(MTREE64_TOTAL(topmap) > 0);
+            }
         }
-
+        else
+        {
+            if(is_sort_reverse)
+            {
+                i = ndocs - 1;
+                k = 0;
+                while(i >= 0 && k < query->ntop)
+                {
+                    if((docid = docs[i]))
+                    {
+                        doc_score = IBLONG((headers[docid].rank*(double)(query->base_rank)));
+                        if(is_field_sort == IB_SORT_BY_INT)
+                        {
+                            doc_score = IB_INT2LONG_SCORE(IMAP_GET(ibase->state->mfields[fid], docid)) + (int64_t)(doc_score >> 16);
+                        }
+                        else if(is_field_sort == IB_SORT_BY_LONG)
+                        {
+                            doc_score = LMAP_GET(ibase->state->mfields[fid], docid);
+                        }
+                        else if(is_field_sort == IB_SORT_BY_DOUBLE)
+                        {
+                            xdouble = DMAP_GET(ibase->state->mfields[fid], docid);
+                            doc_score = IB_LONG_SCORE(xdouble);
+                        }
+                        records[k].score = doc_score;
+                        records[k].globalid = (int64_t)headers[docid].globalid;
+                        res->count++;
+                        ++k;
+                    }
+                    --i;
+                }
+            }
+            else
+            {
+                i = 0;
+                k = 0;
+                while(i < ndocs && k < query->ntop)
+                {
+                    if((docid = docs[i]))
+                    {
+                        doc_score = IBLONG((headers[docid].rank*(double)(query->base_rank)));
+                        if(is_field_sort == IB_SORT_BY_INT)
+                        {
+                            doc_score = IB_INT2LONG_SCORE(IMAP_GET(ibase->state->mfields[fid], docid)) + (int64_t)(doc_score >> 16);
+                        }
+                        else if(is_field_sort == IB_SORT_BY_LONG)
+                        {
+                            doc_score = LMAP_GET(ibase->state->mfields[fid], docid);
+                        }
+                        else if(is_field_sort == IB_SORT_BY_DOUBLE)
+                        {
+                            xdouble = DMAP_GET(ibase->state->mfields[fid], docid);
+                            doc_score = IB_LONG_SCORE(xdouble);
+                        }
+                        records[k].score = doc_score;
+                        records[k].globalid = (int64_t)headers[docid].globalid;
+                        res->count++;
+                        ++k;
+                    }
+                    ++i;
+                }
+            }
+        }
 end:
         if(docs) db_free_data(PDB(ibase->index), (char *)docs, docs_size);
         if(res) res->doctotal = ibase->state->dtotal;
