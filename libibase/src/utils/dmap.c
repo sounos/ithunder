@@ -329,7 +329,6 @@ int dmap_find_slot(DMAP *dmap, double key)
         max = n - 1;
         min = 0;
         if(key <= dmap->slots[min].max) ret = min;
-        else if(key >= dmap->slots[max].min) ret = max;
         else
         {
             while(max > min)
@@ -367,8 +366,7 @@ int dmap_find_slot2(DMAP *dmap, double key)
     {
         max = n - 1;
         min = 0;
-        if(key <= dmap->slots[min].max) ret = min;
-        else if(key >= dmap->slots[max].min) ret = max;
+        if(key >= dmap->slots[max].min) ret = max;
         else
         {
             while(max > min)
@@ -410,7 +408,7 @@ int dmap_find_kv(DMAP *dmap, int k, double key)
         kvs = dmap->map + dmap->slots[k].nodeid;
         min = 0;
         max = n - 1; 
-        if(key <= kvs[min].key) ret = min;
+        if(kvs[min].key >= key) ret = min;
         else
         {
             while(max > min)
@@ -454,7 +452,7 @@ int dmap_find_kv2(DMAP *dmap, int k, double key)
         kvs = dmap->map + dmap->slots[k].nodeid;
         min = 0;
         max = n - 1; 
-        if(key <= kvs[max].key) ret = max;
+        if(kvs[max].key <= key) ret = max;
         else
         {
             while(max > min)

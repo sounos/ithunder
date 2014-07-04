@@ -329,7 +329,6 @@ int imap_find_slot(IMAP *imap, int32_t key)
         max = n - 1;
         min = 0;
         if(key <= imap->slots[min].max) ret = min;
-        else if(key >= imap->slots[max].min) ret = max;
         else
         {
             while(max > min)
@@ -367,8 +366,7 @@ int imap_find_slot2(IMAP *imap, int32_t key)
     {
         max = n - 1;
         min = 0;
-        if(key <= imap->slots[min].max) ret = min;
-        else if(key >= imap->slots[max].min) ret = max;
+        if(key >= imap->slots[max].min) ret = max;
         else
         {
             while(max > min)
@@ -410,7 +408,7 @@ int imap_find_kv(IMAP *imap, int k, int32_t key)
         kvs = imap->map + imap->slots[k].nodeid;
         min = 0;
         max = n - 1; 
-        if(key <= kvs[min].key) ret = min;
+        if(kvs[min].key >= key) ret = min;
         else
         {
             while(max > min)
@@ -454,7 +452,7 @@ int imap_find_kv2(IMAP *imap, int k, int32_t key)
         kvs = imap->map + imap->slots[k].nodeid;
         min = 0;
         max = n - 1; 
-        if(key <= kvs[max].key) ret = max;
+        if(kvs[max].key <= key) ret = max;
         else
         {
             while(max > min)
