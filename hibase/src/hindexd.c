@@ -316,13 +316,11 @@ int indexd_data_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *ch
                         if(chunk->ndata == sizeof(IQUERY))
                         {
                             pquery = (IQUERY *)chunk->data; 
-                            /*
-                            if(pquery->qfunc == IB_QFUNC_XQUERY) 
-                                ichunk = ibase_xquery(ibase, pquery);
-                            else 
+                            if(pquery->nqterms > 0) 
                                 ichunk = ibase_bquery(ibase, pquery);
-                            */
-                            if((ichunk = ibase_bquery(ibase, pquery)))
+                            else 
+                                ichunk = ibase_query(ibase, pquery);
+                            if(ichunk)
                             {
                                 presp = &(ichunk->resp);
                                 res = &(ichunk->res);
@@ -1125,13 +1123,9 @@ int httpd_query_handler(CONN *conn, IQUERY *query)
         //TIMER_INIT(timer);
         if(query && query->from < query->ntop && query->count > 0)
         {
-            //fprintf(stdout, "%s::%d from:%d count:%d ntop:%d\n", __FILE__, __LINE__, query->from, query->count, query->ntop);
-            //if(query->qfunc == IB_QFUNC_QUERY) ichunk = ibase_query(ibase, query);
-            /*
-            if(query->qfunc == IB_QFUNC_XQUERY) ichunk = ibase_xquery(ibase, query);
-            else ichunk = ibase_bquery(ibase, query);
-            */
-            if((ichunk = ibase_bquery(ibase, query)))
+            if(query->nqterms > 0) ichunk = ibase_bquery(ibase, query);
+            else ichunk = ibase_query(ibase, query);
+            if(ichunk)
             {
                 res     = &(ichunk->res);
                 records  = ichunk->records;
