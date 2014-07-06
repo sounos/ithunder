@@ -486,28 +486,36 @@ MTREE *mtree_init()
 }
 
 #ifdef _DEBUG_MTREE
+#include "timer.h"
 int main()
 {
     int key = 0, data = 0, last = 0, old = 0;
-    int i = 0, x = 0, count = 500000;
+    int i = 0, x = 0, count = 2000000;
     MTREE *mtree = NULL;
-    
+    void *timer = NULL;
     if((mtree = mtree_init()))
     {
+        TIMER_INIT(timer); 
         for(i = 0; i < count; i++)
         {
-            key = (int)(rand()%count);
+            key = (int)rand();
             data = (int)i;
-            if(mtree_add(mtree, key, data, &old) == 1)
+            if(MTREE_TOTAL(mtree) < 10000)
             {
-                fprintf(stdout, "%s::%d key:%lld old:%lld\n", __FILE__, __LINE__, LL(key), LL(old));
-                ++x;
+                    mtree_push(mtree, key, data);
             }
             else
             {
-                //fprintf(stdout, "%s::%d %d:%d\n", __FILE__, __LINE__, key, i);
+                if(key > MTREE_MINK(mtree))
+                {
+                    MTREE_POP_MIN(mtree, NULL, NULL);                     
+                    mtree_push(mtree, key, data);
+                }
             }
         }
+        TIMER_SAMPLE(timer);
+        fprintf(stdout, "timer used:%lld\n", PT_LU_USEC(timer));
+        /*
         fprintf(stdout, "%s::%d min:%lld max:%lld count:%d repeat:%d\n", __FILE__, __LINE__, LL(mtree->kmin->key), LL(mtree->kmax->key), mtree->total, x);
         i = 0;
         while(mtree_pop_min(mtree, &key, &data) == 0)
@@ -541,6 +549,7 @@ int main()
             i++;
             last = key;
         }
+        */
         mtree_clean(mtree);
     }
     return 0; 
