@@ -355,8 +355,8 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query)
         no = 0, next = 0, fid = 0, nxrecords = 0, is_field_sort = 0, scale = 0, 
         total = 0, ignore_rank = 0, long_index_from = 0, long_index_to = 0, nx = 0, 
         kk = 0, prevnext = 0, ii = 0, jj = 0, imax = 0, imin = 0, xint = 0;
-    double score = 0.0, p1 = 0.0, p2 = 0.0, ffrom = 0.0,
-           tf = 1.0, Py = 0.0, Px = 0.0, fto = 0.0, xdouble = 0.0;
+    double score = 0.0, p1 = 0.0, p2 = 0.0, dfrom = 0.0,
+           tf = 1.0, Py = 0.0, Px = 0.0, dto = 0.0, xdouble = 0.0;
     int64_t bits = 0, lfrom = 0, lto = 0, base_score = 0, 
             doc_score = 0, old_score = 0, xdata = 0, xlong = 0;
     void *timer = NULL, *topmap = NULL, *fmap = NULL;//, *dp = NULL, *olddp = NULL;
@@ -500,166 +500,147 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query)
             if(nquerys > 0 && xnode->nvhits == 0) goto next;
             if(!(query->flag & IB_QUERY_BOOLAND) && nquerys > 0 && ((xnode->nvhits * 100) / nquerys) < scale) goto next;
             ACCESS_LOGGER(ibase->logger, "docid:%d/%lld nvhits:%d nquerys:%d/%d scale:%d int[%d/%d] catgroup:%d", docid, LL(headers[docid].globalid), xnode->nvhits, query->nqterms, nquerys, scale, query->int_range_count, query->int_bits_count, query->catgroup_filter);
-            /* in filter */
-            if(nqterms > 0 && query->in_int_fieldid > 0 && query->in_int_num > 0)
+            /* in/range filter */
+            if((jj = query->in_int_fieldid) > 0 && query->in_int_num > 0
+                && (jj += (IB_INT_OFF - int_index_from)) > 0 
+                && ibase->state->mfields[jj])
             {
                 imax = query->in_int_num - 1;imin = 0;
-                if((jj = query->in_int_fieldid) >= int_index_from && jj < int_index_to
-                    && (jj += (IB_INT_OFF - int_index_from)) > 0 && ibase->state->mfields[jj])
+                xint = IMAP_GET(ibase->state->mfields[jj], docid);
+                if(xint < query->in_int_list[imin] || xint > query->in_int_list[imax]) goto next;
+                if(xint != query->in_int_list[imin] && xint != query->in_int_list[imax])
                 {
-                    xint = IMAP_GET(ibase->state->mfields[jj], docid);
-                    if(xint < query->in_int_list[imin] || xint > query->in_int_list[imax]) goto next;
-                    if(xint != query->in_int_list[imin] && xint != query->in_int_list[imax])
+                    while(imax > imin)
                     {
-                        while(imax > imin)
-                        {
-                            ii = (imax + imin) / 2; 
-                            if(ii == imin)break;
-                            if(xint == query->in_int_list[ii]) break;
-                            else if(xint > query->in_int_list[ii]) imin = ii;
-                            else imax = ii;
-                        }
-                        if(xint != query->in_int_list[ii]) goto next;
+                        ii = (imax + imin) / 2; 
+                        if(ii == imin)break;
+                        if(xint == query->in_int_list[ii]) break;
+                        else if(xint > query->in_int_list[ii]) imin = ii;
+                        else imax = ii;
                     }
+                    if(xint != query->in_int_list[ii]) goto next;
                 }
             }
-            if(nqterms > 0 && query->in_long_fieldid > 0 && query->in_long_num > 0)
+            if((jj = query->in_long_fieldid) > 0 && query->in_long_num > 0
+                && (jj += (IB_LONG_OFF - long_index_from)) > 0
+                && ibase->state->mfields[jj])
             {
                 imax = query->in_long_num - 1;imin = 0;
-                if((jj = query->in_long_fieldid) >= long_index_from && jj < long_index_to
-                    && (jj += (IB_LONG_OFF - long_index_from)) > 0 && ibase->state->mfields[jj])
+                xlong = LMAP_GET(ibase->state->mfields[jj], docid);
+                if(xlong < query->in_long_list[imin] || xlong > query->in_long_list[imax]) goto next;
+                if(xlong != query->in_long_list[imin] && xlong != query->in_long_list[imax])
                 {
-                    xlong = LMAP_GET(ibase->state->mfields[jj], docid);
-                    if(xlong < query->in_long_list[imin] || xlong > query->in_long_list[imax]) goto next;
-                    if(xlong != query->in_long_list[imin] && xlong != query->in_long_list[imax])
+                    while(imax > imin)
                     {
-                        while(imax > imin)
-                        {
-                            ii = (imax + imin) / 2; 
-                            if(ii == imin)break;
-                            if(xlong == query->in_long_list[ii]) break;
-                            else if(xlong > query->in_long_list[ii]) imin = ii;
-                            else imax = ii;
-                        }
-                        if(xlong != query->in_long_list[ii]) goto next;
+                        ii = (imax + imin) / 2; 
+                        if(ii == imin)break;
+                        if(xlong == query->in_long_list[ii]) break;
+                        else if(xlong > query->in_long_list[ii]) imin = ii;
+                        else imax = ii;
                     }
+                    if(xlong != query->in_long_list[ii]) goto next;
                 }
             }
-            if(nqterms > 0 && query->in_double_fieldid > 0 && query->in_double_num > 0)
+            if((jj = query->in_double_fieldid) > 0 && query->in_double_num > 0
+                && (jj += (IB_DOUBLE_OFF - double_index_from)) > 0
+                && ibase->state->mfields[jj])
             {
                 imax = query->in_double_num - 1;imin = 0;
-                if((jj = query->in_double_fieldid) >= double_index_from && jj < double_index_to
-                    && (jj += (IB_DOUBLE_OFF - double_index_from)) > 0 && ibase->state->mfields[jj])
+                xdouble = DMAP_GET(ibase->state->mfields[jj], docid);
+                if(xdouble < query->in_double_list[imin] || xdouble > query->in_double_list[imax]) goto next;
+                if(xdouble != query->in_double_list[imin] && xdouble != query->in_double_list[imax])
                 {
-                    xdouble = DMAP_GET(ibase->state->mfields[jj], docid);
-                    if(xdouble < query->in_double_list[imin] || xdouble > query->in_double_list[imax]) goto next;
-                    if(xdouble != query->in_double_list[imin] && xdouble != query->in_double_list[imax])
+                    while(imax > imin)
                     {
-                        while(imax > imin)
-                        {
-                            ii = (imax + imin) / 2; 
-                            if(ii == imin)break;
-                            if(xdouble == query->in_double_list[ii]) break;
-                            else if(xdouble > query->in_double_list[ii]) imin = ii;
-                            else imax = ii;
-                        }
-                        if(xdouble != query->in_double_list[ii]) goto next;
+                        ii = (imax + imin) / 2; 
+                        if(ii == imin)break;
+                        if(xdouble == query->in_double_list[ii]) break;
+                        else if(xdouble > query->in_double_list[ii]) imin = ii;
+                        else imax = ii;
                     }
+                    if(xdouble != query->in_double_list[ii]) goto next;
                 }
             }
-            /* long range  filter */
             if((query->int_range_count > 0 || query->int_bits_count > 0))
             {
                 for(i = 0; i < query->int_range_count; i++)
                 {
-                    if((k = query->int_range_list[i].field_id) >= int_index_from 
-                            && k < int_index_to && (range_flag = query->int_range_list[i].flag))
-                    {
-                        ifrom = query->int_range_list[i].from;
-                        ito = query->int_range_list[i].to;
-                        k -= int_index_from;
-                        k += IB_INT_OFF;
-                        xint = IMAP_GET(ibase->state->mfields[k], docid);
-                        if((range_flag & IB_RANGE_FROM) && xint < ifrom) goto next;
-                        if((range_flag & IB_RANGE_TO) && xint > ito) goto next;
-                        //ACCESS_LOGGER(ibase->logger, "from:%d to:%d k:%d",  ifrom, ito, intidx[k]);
-                    }
+                    k = query->int_range_list[i].field_id;
+                    range_flag = query->int_range_list[i].flag;
+                    ifrom = query->int_range_list[i].from;
+                    ito = query->int_range_list[i].to;
+                    k -= int_index_from;
+                    k += IB_INT_OFF;
+                    if(!ibase->state->mfields[k]) goto next;
+                    xint = IMAP_GET(ibase->state->mfields[k], docid);
+                    if((range_flag & IB_RANGE_FROM) && xint < ifrom) goto next;
+                    if((range_flag & IB_RANGE_TO) && xint > ito) goto next;
                 }
                 for(i = 0; i < query->int_bits_count; i++)
                 {
-                    if((k = query->int_bits_list[i].field_id) >= int_index_from 
-                            && k < int_index_to && query->int_bits_list[i].bits != 0) 
+                    if(query->int_bits_list[i].bits == 0) continue;
+                    k = query->int_bits_list[i].field_id;
+                    k -= int_index_from;
+                    k += IB_INT_OFF;
+                    if(!ibase->state->mfields[k]) goto next;
+                    xint = IMAP_GET(ibase->state->mfields[k], docid);
+                    if((query->int_bits_list[i].flag & IB_BITFIELDS_FILTER))
                     {
-                        k -= int_index_from;
-                        k += IB_INT_OFF;
-                        xint = IMAP_GET(ibase->state->mfields[k], docid);
-                        if((query->int_bits_list[i].flag & IB_BITFIELDS_FILTER))
-                        {
-                            if((query->int_bits_list[i].bits & xint) == 0) goto next;
-                        }
-                        else
-                        {
-                            if((query->int_bits_list[i].bits & xint)) goto next;
-                        }
+                        if((query->int_bits_list[i].bits & xint) == 0) goto next;
+                    }
+                    else
+                    {
+                        if((query->int_bits_list[i].bits & xint)) goto next;
                     }
                 }
             }
-            /* long range  filter */
             if((query->long_range_count > 0 || query->long_bits_count > 0))
             {
                 for(i = 0; i < query->long_range_count; i++)
                 {
-                    if((k = query->long_range_list[i].field_id) >= long_index_from 
-                            && k < long_index_to && (range_flag = query->long_range_list[i].flag))
-                    {
-                        lfrom = query->long_range_list[i].from;
-                        lto = query->long_range_list[i].to;
-                        k -= long_index_from;
-                        k += IB_LONG_OFF;
-                        xlong = LMAP_GET(ibase->state->mfields[k], docid);
-                        //k += ibase->state->long_index_fields_num * docid;
-                        if((range_flag & IB_RANGE_FROM) && xlong < lfrom) goto next;
-                        if((range_flag & IB_RANGE_TO) && xlong > lto) goto next;
-                    }
+                    k = query->long_range_list[i].field_id;
+                    range_flag = query->long_range_list[i].flag;
+                    lfrom = query->long_range_list[i].from;
+                    lto = query->long_range_list[i].to;
+                    k -= long_index_from;
+                    k += IB_LONG_OFF;
+                    if(!ibase->state->mfields[k]) goto next;
+                    xlong = LMAP_GET(ibase->state->mfields[k], docid);
+                    if((range_flag & IB_RANGE_FROM) && xlong < lfrom) goto next;
+                    if((range_flag & IB_RANGE_TO) && xlong > lto) goto next;
                 }
                 for(i = 0; i < query->long_bits_count; i++)
                 {
-                    if((k = query->long_bits_list[i].field_id) >= long_index_from 
-                            && k < long_index_to && query->long_bits_list[i].bits != 0)
+                    if(query->int_bits_list[i].bits == 0) continue;
+                    k = query->long_bits_list[i].field_id;
+                    k -= long_index_from;
+                    k += IB_LONG_OFF;
+                    if(!ibase->state->mfields[k]) goto next;
+                    xlong = LMAP_GET(ibase->state->mfields[k], docid);
+                    if((query->long_bits_list[i].flag & IB_BITFIELDS_FILTER))
                     {
-                        k -= long_index_from;
-                        k += IB_LONG_OFF;
-                        xlong = LMAP_GET(ibase->state->mfields[k], docid);
-                        //k += ibase->state->long_index_fields_num * docid;
-                        if((query->long_bits_list[i].flag & IB_BITFIELDS_FILTER))
-                        {
-                            if((query->long_bits_list[i].bits & xlong) == 0) goto next;
-                        }
-                        else
-                        {
-                            if((query->long_bits_list[i].bits & xlong)) goto next;
-                        }
+                        if((query->long_bits_list[i].bits & xlong) == 0) goto next;
+                    }
+                    else
+                    {
+                        if((query->long_bits_list[i].bits & xlong)) goto next;
                     }
                 }
             }
-            /* double range filter */
             if(query->double_range_count > 0)
             {
                 for(i = 0; i < query->double_range_count; i++)
                 {
-                    if((k = query->double_range_list[i].field_id) >= double_index_from 
-                            && k < double_index_to 
-                            && (range_flag = query->double_range_list[i].flag))
-                    {
-                        ffrom = query->double_range_list[i].from;
-                        fto = query->double_range_list[i].to;
-                        k -= double_index_from;
-                        k += IB_DOUBLE_OFF;
-                        xdouble = DMAP_GET(ibase->state->mfields[k], docid);
-                        //k += ibase->state->double_index_fields_num * docid;
-                        if((range_flag & IB_RANGE_FROM) && xdouble < ffrom) goto next;
-                        if((range_flag & IB_RANGE_TO) && xdouble > fto) goto next;
-                    }
+                    k = query->double_range_list[i].field_id;
+                    range_flag = query->double_range_list[i].flag;
+                    dfrom = query->double_range_list[i].from;
+                    dto = query->double_range_list[i].to;
+                    k -= double_index_from;
+                    k += IB_DOUBLE_OFF;
+                    if(!ibase->state->mfields[k]) goto next;
+                    xdouble = DMAP_GET(ibase->state->mfields[k], docid);
+                    if((range_flag & IB_RANGE_FROM) && xdouble < dfrom) goto next;
+                    if((range_flag & IB_RANGE_TO) && xdouble > dto) goto next;
                 }
             }
             /* category grouping  */
