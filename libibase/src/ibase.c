@@ -878,7 +878,11 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                                     {
                                         qterms[x].id = termid;
                                         qterms[x].size = size;
-                                        if(fid >=0 )qterms[x].bithit |= 1 << fid;
+                                        if(fid >=0)
+                                        {
+                                            query->flag |= IB_QUERY_FIELDS;
+                                            qterms[x].bithit |= 1 << fid;
+                                        }
                                         qterms[x].flag |= QTERM_BIT_AND;
                                         if(prevnext && last_no >= 0)
                                         {
@@ -992,7 +996,11 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                                     if(x >= 0 && x < IB_QUERY_MAX)
                                     {
                                         qterms[x].id = termid;
-                                        if(fid >=0 )qterms[x].bitnot |= 1 << fid;
+                                        if(fid >=0)
+                                        {
+                                            query->flag |= IB_QUERY_FIELDS;
+                                            qterms[x].bitnot |= 1 << fid;
+                                        }
                                         qterms[x].flag |= QTERM_BIT_NOT;
                                     }
                                 }

@@ -1040,7 +1040,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
         }
         if((p = geofilter))
         {
-
+            
         }
         if((p = bitfields))
         {

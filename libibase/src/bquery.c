@@ -66,6 +66,8 @@ do                                                                              
     old->hits[_m_] = pxnode->which;                                             \
     old->bithits |= pxnode->bithits;                                            \
     old->bitfields |= pxnode->bitfields;                                        \
+    old->bithit |= pxnode->bithit;                                              \
+    old->bitnot |= pxnode->bitnot;                                              \
     if(pxnode->bitfields & qfhits) old->nhitfields++;                           \
     if(ibase->state->phrase_status != IB_PHRASE_DISABLED && is_query_phrase)    \
     {                                                                           \
@@ -85,8 +87,6 @@ do                                                                              
     }                                                                           \
 }while(0)
 
-//#define XMAP_PUSH(xmap, pxnode, _k_, _i_, _z_, _to_)
-//
 void xmap_push(IBASE *ibase, int is_query_phrase, int qfhits, XMAP *xmap, XNODE *pxnode)
 {
     int _x_ = 0, _i_ = 0, _n_ = 0, _z_ = 0, _to_ = 0;
@@ -227,26 +227,9 @@ void xmap_push(IBASE *ibase, int is_query_phrase, int qfhits, XMAP *xmap, XNODE 
             }
         }
     }
-    /*
-    if(xmap->count > 0)
-    {
-        _x_ = xmap->min;
-        _to_ = xmap->max;
-        _n_ = 0;
-        while(_x_ <= _to_)
-        {
-            //ACCESS_LOGGER(ibase->logger, "xnodes[%d][%p] docid:%d nhits:%d", _x_, xnodes[_x_], xnodes[_x_]->docid, xnodes[_x_]->nhits);
-            if(_x_ < _to_ && xnodes[_x_]->docid >= xnodes[_x_+1]->docid) _n_ = 1;
-            ++_x_;
-        }
-        if(_n_) exit(-1);
-    }
-    */
     return ;
-}//while(0)
+}
 
-//#define XMAP_POP(xmap, pxnode)
-//do
 XNODE *xmap_pop(IBASE *ibase, XMAP *xmap)
 {
     XNODE **xnodes = NULL;
@@ -255,14 +238,12 @@ XNODE *xmap_pop(IBASE *ibase, XMAP *xmap)
     if(xmap->count > 0 && xmap->min >= 0 && xmap->min < IB_XNODE_MAX && (xnodes = xmap->xnodes))
     {
         pxnode = xnodes[xmap->min];
-        //ACCESS_LOGGER(ibase->logger, "pop(min[%p]:%d[%d] max:%d[%d]) hits:%d count:%d", xnodes[xmap->min], xmap->min, xnodes[xmap->min]->docid, xmap->max,  xnodes[xmap->max]->docid, pxnode->nhits, xmap->count);
         xnodes[xmap->min] = NULL;
         ++(xmap->min);
         if(--(xmap->count) == 0) xmap->max = xmap->min;
     }
     return pxnode;
 }
-//while(0)
 
 void ibase_unindex(IBASE *ibase, ITERM *itermlist, XMAP *_xmap_, 
         int is_query_phrase, int qfhits, int _x_)
@@ -320,6 +301,12 @@ void ibase_unindex(IBASE *ibase, ITERM *itermlist, XMAP *_xmap_,
         itermlist[_x_].xnode.docid = itermlist[_x_].docid;
         itermlist[_x_].xnode.bithits = 1 << _x_;
         itermlist[_x_].xnode.bitfields = itermlist[_x_].fields;
+        itermlist[_x_].xnode.bithit = 0;
+        itermlist[_x_].xnode.bitnot = 0;
+        if((itermlist[_x_].fields & itermlist[_x_].bithit) == itermlist[_x_].bithit) 
+            itermlist[_x_].xnode.bithit |= 1 << _x_;
+        if(itermlist[_x_].fields & itermlist[_x_].bitnot) 
+            itermlist[_x_].xnode.bitnot |= 1 << _x_;
         if(itermlist[_x_].fields & qfhits)
             itermlist[_x_].xnode.nhitfields = 1;
         else
@@ -354,7 +341,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query)
         xno = 0, min = 0,double_index_to = 0, range_flag = 0, prev = 0, last = -1, 
         no = 0, next = 0, fid = 0, nxrecords = 0, is_field_sort = 0, scale = 0, 
         total = 0, ignore_rank = 0, long_index_from = 0, long_index_to = 0, nx = 0, 
-        kk = 0, prevnext = 0, ii = 0, jj = 0, imax = 0, imin = 0, xint = 0;
+        kk = 0, prevnext = 0, ii = 0, jj = 0, imax = 0, imin = 0, xint = 0, bithit = 0;
     double score = 0.0, p1 = 0.0, p2 = 0.0, dfrom = 0.0,
            tf = 1.0, Py = 0.0, Px = 0.0, dto = 0.0, xdouble = 0.0;
     int64_t bits = 0, lfrom = 0, lto = 0, base_score = 0, 
@@ -433,6 +420,9 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query)
         {
             itermlist[i].idf = query->qterms[i].idf;
             itermlist[i].termid = query->qterms[i].id;
+            itermlist[i].bithit = query->qterms[i].bithit;
+            itermlist[i].bitnot = query->qterms[i].bitnot;
+            bithit |= 1 << i;
             if((query->qterms[i].flag & QTERM_BIT_DOWN) && query->qweight) 
             {
                 itermlist[i].weight = 0;
@@ -497,6 +487,11 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query)
             if((query->flag & IB_QUERY_BOOLAND) && query->operators.bitsand 
             && (query->nqterms != query->nquerys || (query->operators.bitsand & xnode->bithits) != query->operators.bitsand))
                 goto next;
+            if(query->flag & IB_QUERY_FIELDS)
+            {
+                if(xnode->bitnot) goto next;
+                if(xnode->bithit != bithit) goto next;
+            }
             if(nquerys > 0 && xnode->nvhits == 0) goto next;
             if(!(query->flag & IB_QUERY_BOOLAND) && nquerys > 0 && ((xnode->nvhits * 100) / nquerys) < scale) goto next;
             ACCESS_LOGGER(ibase->logger, "docid:%d/%lld nvhits:%d nquerys:%d/%d scale:%d int[%d/%d] catgroup:%d", docid, LL(headers[docid].globalid), xnode->nvhits, query->nqterms, nquerys, scale, query->int_range_count, query->int_bits_count, query->catgroup_filter);

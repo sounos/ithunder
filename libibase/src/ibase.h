@@ -37,6 +37,7 @@ extern "C" {
 #define  IB_CLEAR_CACHE         0x40
 #define  IB_QUERY_BOOLAND       0x80
 #define  IB_QUERY_FORBIDDEN     0x100
+#define  IB_QUERY_FIELDS        0x200
 #define  IB_IS_DISPLAY          0x01
 #define  IB_IS_HIGHLIGHT        0x02
 #define  IB_SUMMARY_MAX         8192
@@ -116,6 +117,8 @@ typedef struct _XNODE
     int   nvhits;
     int   nhits;
     int   nhitfields;
+    int   bithit;
+    int   bitnot;
     short which;
     short no;
     short xmin;
@@ -159,6 +162,8 @@ typedef struct _ITERM
     int last;
     int term_len;
     int weight;
+    int bithit;
+    int bitnot;
     char *p;
     char *end;
     char *sprevnext;
