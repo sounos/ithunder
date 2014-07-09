@@ -687,149 +687,6 @@ ICHUNK *ibase_pop_chunk(IBASE *ibase)
     return chunk;
 }
 
-/* query parser */
-int ibase_qparser_X(IBASE *ibase, char *query_str, char *not_str, IQUERY *query)
-{
-    int termid = 0, nterm = 0, i = 0, N = 0, n = 0;
-    char *p = NULL, *s = NULL, *es = NULL; 
-    void *map = NULL;
-
-    if(ibase && ibase->mmtrie && ibase->state && query && query_str 
-            && (map = ibase_pop_stree(ibase)))
-    {
-        N = ibase->state->docid;
-        p = s = query_str;
-        es = s + strlen(s);
-        while(p < es){if(*p >= 'A' && *p <= 'Z')*p += 'a' - 'A'; ++p;}
-        while(s < es)
-        {
-            termid = 0;nterm = 0;
-            if(*s == '"')
-            {
-                p = ++s;
-                while(p < es && *p != '"')
-                {
-                    ++p;
-                }
-                if(*p == '"')
-                {
-                    n = p - s;
-                    if((termid = mmtrie_get((MMTRIE *)(ibase->mmtrie), s, n)) <= 0)
-                        s = ++p;
-                    else
-                        nterm = n;
-                }
-                else
-                {
-                    n = es - s;
-                    termid = mmtrie_maxfind((MMTRIE *)(ibase->mmtrie), s, n, &nterm);
-                }
-            }
-            else
-            {
-                while(s < es && (*(UCHR(s))) < 0x80
-                        && !ISCHAR(UCHR(s)) && !ISNUM(UCHR(s))) ++s;
-                n = es - s;
-                termid = mmtrie_maxfind((MMTRIE *)(ibase->mmtrie), s, n, &nterm);
-            }
-            if(termid > 0 && nterm > 0)
-            {
-                if(MTREE64_ADD(map, termid, (query->nqterms + 1), NULL) == 0 
-                        && (i = query->nqterms++) < IB_QUERY_MAX)
-                {
-                    query->operators.bitsand |= 1 << i;
-                    query->qterms[i].id = termid;
-                    MUTEX_LOCK(ibase->mutex_termstate);
-                    n = ((TERMSTATE *)ibase->termstateio.map)[termid].total;
-                    MUTEX_UNLOCK(ibase->mutex_termstate);
-                    query->qterms[i].idf = log(((double)N - (double )n + 0.5f)/(double)n + 0.5f);
-                }
-                s += nterm;
-            }
-            else
-            {
-                if(((unsigned char )(*s)) >= 252) n = 6;
-                else if(((unsigned char )(*s)) >= 248) n = 5;
-                else if(((unsigned char )(*s)) >= 240) n = 4;
-                else if(((unsigned char )(*s)) >= 224) n = 3;
-                else if(((unsigned char )(*s)) >= 192) n = 2;
-                else n = 1;
-                s += n;
-            }
-        }
-        s = NULL;
-        es = NULL;
-        if(not_str)
-        {
-            p = s = not_str;
-            es = s + strlen(not_str);
-            while(p < es){if(*p >= 'A' && *p <= 'Z')*p += 'a' - 'A'; ++p;}
-        }
-        while(s < es)
-        {
-            termid = 0;nterm = 0;
-            if(*s == '"')
-            {
-                p = ++s;
-                while(p < es && *p != '"')++p;
-                if(*p == '"')
-                {
-                    n = p - s;
-                    if((termid = mmtrie_get((MMTRIE *)(ibase->mmtrie), s, n)) <= 0)
-                        s = ++p;
-                    else
-                        nterm = n;
-                }
-                else
-                {
-                    n = es - s;
-                    termid = mmtrie_maxfind((MMTRIE *)(ibase->mmtrie), s, n, &nterm);
-                }
-            }
-            else
-            {
-                while(s < es && (*(UCHR(s))) < 0x80
-                        && !ISCHAR(UCHR(s)) && !ISNUM(UCHR(s))) ++s;
-                n = es - s;
-                termid = mmtrie_maxfind((MMTRIE *)(ibase->mmtrie), s, n, &nterm);
-            }
-            if(termid > 0 && nterm > 0)
-            {
-                if(MTREE64_ADD(map, termid, query->nqterms + 1, NULL) == 0 
-                    && (i = query->nqterms++) < IB_QUERY_MAX)
-                {
-                    query->operators.bitsnot |= 1 << i;
-                    query->qterms[i].id = termid;
-                    MUTEX_LOCK(ibase->mutex_termstate);
-                    n = ((TERMSTATE *)ibase->termstateio.map)[termid].total;
-                    MUTEX_UNLOCK(ibase->mutex_termstate);
-                    query->qterms[i].idf = log(((double)N - (double )n + 0.5f)/(double)n + 0.5f);
-                }
-                s += nterm;
-            }
-            else
-            {
-                if(((unsigned char )(*s)) >= 252) n = 6;
-                else if(((unsigned char )(*s)) >= 248) n = 5;
-                else if(((unsigned char )(*s)) >= 240) n = 4;
-                else if(((unsigned char )(*s)) >= 224) n = 3;
-                else if(((unsigned char )(*s)) >= 192) n = 2;
-                else n = 1;
-                s += n;
-            }
-        }
-        if(query->nqterms > 0)
-        {
-            query->ravgdl = 1.0;
-            if(ibase->state->dtotal != 0)
-                query->ravgdl = (double)ibase->state->ttotal/(double)ibase->state->dtotal;
-        }
-        //ACCESS_LOGGER(ibase->logger, "query:%s nqterms:%d", query_str, query->nqterms);
-        if(map){ibase_push_stree(ibase, map);}
-        return query->nqterms;
-    }
-    return -1;
-}
 
 /* push segmentor */
 void ibase_push_segmentor(IBASE *ibase, void *segmentor)
@@ -894,7 +751,7 @@ void *ibase_pop_segmentor(IBASE *ibase)
     return segmentor;
 }
 /* query parser */
-int ibase_qparser(IBASE *ibase, char *query_str, char *not_str, IQUERY *query)
+int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY *query)
 {
     int termid = 0, nterm = 0, i = 0, x = 0, found = 0, last = -1, last_no = -1, size = 0,
         n = 0, k = 0, N = 0, z = 0, from = 0, to = 0, min = 0, prevnext = 0, j = 0, 
@@ -910,12 +767,14 @@ int ibase_qparser(IBASE *ibase, char *query_str, char *not_str, IQUERY *query)
 
     if(ibase && query_str && query && (termstates = ((TERMSTATE *)ibase->termstateio.map)))
     {
+        nqterms = query->nqterms;
         ACCESS_LOGGER(ibase->logger, "Ready parse(query_str:%s nsegs:%d)", query_str, ibase->nqsegmentors);
         if((segmentor = (scws_t)ibase_pop_segmentor(ibase)))
         {
             ACCESS_LOGGER(ibase->logger, "starting parse(query_str:%s nsegs:%d)", query_str, ibase->nqsegmentors);
-            memset(qterms, 0, sizeof(QTERM) * IB_QUERY_MAX);
+            memcpy(qterms, query->qterms, sizeof(QTERM) * IB_QUERY_MAX);
             memset(xqterms, 0, sizeof(QTERM) * IB_QUERY_MAX);
+            for(i = 0; i < nqterms; i++){xqterms[i].id = qterms[i].id;list[i]=i;}
             s = query_str;
             es = s + strlen(query_str);
             /* query string */
@@ -1019,6 +878,7 @@ int ibase_qparser(IBASE *ibase, char *query_str, char *not_str, IQUERY *query)
                                     {
                                         qterms[x].id = termid;
                                         qterms[x].size = size;
+                                        if(fid >=0 )qterms[x].bithit |= 1 << fid;
                                         qterms[x].flag |= QTERM_BIT_AND;
                                         if(prevnext && last_no >= 0)
                                         {
@@ -1132,6 +992,7 @@ int ibase_qparser(IBASE *ibase, char *query_str, char *not_str, IQUERY *query)
                                     if(x >= 0 && x < IB_QUERY_MAX)
                                     {
                                         qterms[x].id = termid;
+                                        if(fid >=0 )qterms[x].bitnot |= 1 << fid;
                                         qterms[x].flag |= QTERM_BIT_NOT;
                                     }
                                 }
@@ -1178,6 +1039,8 @@ int ibase_qparser(IBASE *ibase, char *query_str, char *not_str, IQUERY *query)
                 z = list[i];
                 termid = query->qterms[i].id  = qterms[z].id;
                 query->qterms[i].size = qterms[z].size;
+                query->qterms[i].bitnot = qterms[z].bitnot;
+                query->qterms[i].bithit = qterms[z].bithit;
                 //fprintf(stdout, "i:%d termid:%d\n", i, qterms[z].id);
                 if(termid <= ibase->state->termid && (n = (termstates[termid].total)) > 0)
                 {

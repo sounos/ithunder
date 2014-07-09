@@ -130,10 +130,16 @@ static char *e_argvs[] =
 #define E_ARGV_BITFIELDS    34
     "qweight",
 #define E_ARGV_QWEIGHT      35
-    "in"
+    "in",
 #define E_ARGV_IN           36
+    "keys",
+#define E_ARGV_KEYS         37
+    "geofilter",
+#define E_ARGV_GEOFILTER    38
+    ""
+
 };
-#define  E_ARGV_NUM         37
+#define  E_ARGV_NUM         39
 int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query);
 /* packet reader for indexd */
 int indexd_packet_reader(CONN *conn, CB_DATA *buffer)
@@ -533,11 +539,12 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
     char *p = NULL, *query_str = NULL, *not_str = "", *display = NULL, *range_filter = NULL,
          *hitscale = NULL, *slevel_filter = NULL, *catfilter = NULL, *catgroup = NULL, 
          *multicat = NULL, *catblock = NULL, *xup = NULL, *xdown = NULL, *range_from = NULL, 
-         *range_to = NULL, *bitfields = NULL, *last = NULL, *in = NULL, *in_ptr = 0;
+         *range_to = NULL, *bitfields = NULL, *last = NULL, *in = NULL, *in_ptr = NULL, 
+         *geofilter = NULL, *keys = NULL, *keyslist[IB_IDX_MAX], *notlist[IB_IDX_MAX];
     int ret = -1, n = 0, i = 0, k = 0, id = 0, phrase = 0, booland = 0, fieldsfilter = -1, 
         orderby = 0, order = 0, field_id = 0, int_index_from = 0, int_index_to = 0, 
         long_index_from = 0, long_index_to = 0, double_index_from = 0, double_index_to = 0, 
-        xint = 0, op = 0, need_rank = 0, usecs = 0, flag =0;
+        xint = 0, op = 0, need_rank = 0, usecs = 0, flag = 0, nkeys = 0;
     int64_t xlong = 0;
     struct timeval tv = {0};
     double xdouble = 0.0;
@@ -660,6 +667,12 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                             break;
                         case E_ARGV_IN:
                             in = p;
+                            break;
+                        case E_ARGV_KEYS:
+                            keys = p;
+                            break;
+                        case E_ARGV_GEOFILTER:
+                            geofilter = p;
                             break;
                         default :
                             break;
@@ -1025,6 +1038,10 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
             }
             */
         }
+        if((p = geofilter))
+        {
+
+        }
         if((p = bitfields))
         {
             while(*p != '\0')
@@ -1084,6 +1101,30 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                 if(p == last)break;
             }
         }
+        memset(keyslist, 0, sizeof(char *) * IB_IDX_MAX);
+        memset(notlist, 0, sizeof(char *) * IB_IDX_MAX);
+        if((p = keys))
+        {
+            while(*p != '\0')
+            {
+                last = p;
+                while(*p == 0x20 || *p == '\t' || *p == ',' || *p == ';')++p;
+                i = atoi(p);
+                while(*p != ':' && *p != '\0') ++p;
+                if(*p != ':') break;
+                keyslist[i] = ++p;
+                while(*p != '|' && *p != ',' && *p != '\0') ++p;
+                if(*p == '|')
+                {
+                    *p++ = '\0';
+                    notlist[i] = ++p;
+                    while(*p != ',' && *p != '\0') ++p;
+                }
+                *p++ = '\0';
+                if(p == last)break;
+                nkeys++;
+            }
+        }
         /* hitscale */
         if((p = hitscale))
         {
@@ -1094,8 +1135,8 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                while(*p == 0x20 || *p == '\t' || *p == ',' || *p == ';')++p;
                query->hitscale[i] = atoi(p);
                while(*p >= '0' && *p <= '9')++p;
-                ++i;
-                if(p == last)break;
+               ++i;
+               if(p == last)break;
            }
         }
         if(phrase > 0) query->flag |= IB_QUERY_PHRASE;
@@ -1104,7 +1145,17 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
         {
             ACCESS_LOGGER(logger, "ready for query:%s not:%s from:%d count:%d fieldsfilter:%d catfilter:%lld multicat:%lld catgroup:%lld catblock:%lld orderby:%d order:%d qfhits:%d base_hits:%d base_fhits:%d base_phrase:%d base_nterm:%d base_xcatup:%lld base_xcatdown:%lld base_rank:%d int_range_count:%d long_range_count:%d double_range_count:%d usec_used:%d remote[%s:%d -> %d]", query_str, not_str, query->from, query->count, fieldsfilter, LL64(query->category_filter), LL64(query->multicat_filter), LL64(query->catgroup_filter), LL64(query->catblock_filter), orderby, order, query->qfhits, query->base_hits, query->base_fhits, query->base_phrase, query->base_nterm, LL64(query->base_xcatup), LL64(query->base_xcatdown), query->base_rank, query->int_range_count, query->long_range_count, query->double_range_count, usecs, conn->remote_ip, conn->remote_port, conn->fd);
         }
-        if(query_str && *query_str) ret = ibase_qparser(ibase, query_str, not_str, query);
+        if(nkeys > 0)
+        {
+            for(i = 0; i < IB_IDX_MAX; i++)
+            {
+                if(keyslist[i] || notlist[i])
+                {
+                    ret = ibase_qparser(ibase, i, keyslist[i], notlist[i], query);
+                }
+            }
+        }
+        if(query_str && *query_str) ret = ibase_qparser(ibase, -1, query_str, not_str, query);
         else ret = 0;
     }
     return ret;

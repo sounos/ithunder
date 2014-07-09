@@ -10,6 +10,7 @@ extern "C" {
 #ifndef  IB_QUERY_MAX
 #define  IB_QUERY_MAX           32
 #endif
+#define  IB_IDX_MAX             32
 #define  IB_INT_OFF             32
 #define  IB_INT_TO              64
 #define  IB_LONG_OFF            64
@@ -432,6 +433,8 @@ typedef struct _QTERM
     int   id;
     int   prev;
     int   next;
+    int   bithit;
+    int   bitnot;
     double idf;
 }QTERM;
 
@@ -712,7 +715,7 @@ typedef struct _IBASE
     int     (*set_int_field)(struct _IBASE *ibase, int64_t globalid, int field_no, int val);
     int     (*set_long_field)(struct _IBASE *ibase, int64_t globalid, int field_no, int64_t val);
     int     (*set_double_field)(struct _IBASE *ibase, int64_t globalid, int field_no, double val);
-    int     (*qparser)(struct _IBASE *ibase, char *query_str, char *not_str, IQUERY *query);
+    int     (*qparser)(struct _IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY *query);
     int     (*set_index_status)(struct _IBASE *ibase, int status);
     int     (*set_phrase_status)(struct _IBASE *ibase, int status);
     int     (*set_compression_status)(struct _IBASE *ibase, int status);
@@ -760,7 +763,7 @@ int ibase_disable_term(IBASE *ibase, int termid);
 /* block */
 int ibase_update_bterm(IBASE *ibase, BTERM *bterm, char *term);
 /* query parser ,return term count */
-int ibase_qparser(IBASE *ibase, char *query_str, char *not_str, IQUERY *query);
+int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY *query);
 /* set index status */
 int ibase_set_index_status(IBASE *ibase, int status);
 /* set phrase status */
