@@ -1001,7 +1001,10 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                                             query->flag |= IB_QUERY_FIELDS;
                                             qterms[x].bitnot |= 1 << fid;
                                         }
-                                        qterms[x].flag |= QTERM_BIT_NOT;
+                                        else
+                                        {
+                                            qterms[x].flag |= QTERM_BIT_NOT;
+                                        }
                                     }
                                 }
                             }

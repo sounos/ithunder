@@ -489,6 +489,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query)
                 goto next;
             if(query->flag & IB_QUERY_FIELDS)
             {
+                //WARN_LOGGER(ibase->logger, "docid:%d bitnot:%d", docid, xnode->bitnot);
                 if(xnode->bitnot) goto next;
                 if(xnode->bithit != bithit) goto next;
             }

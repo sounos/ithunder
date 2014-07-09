@@ -1117,7 +1117,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                 if(*p == '|')
                 {
                     *p++ = '\0';
-                    notlist[i] = ++p;
+                    notlist[i] = p;
                     while(*p != ',' && *p != '\0') ++p;
                 }
                 *p++ = '\0';
@@ -1152,8 +1152,16 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                 if(keyslist[i] || notlist[i])
                 {
                     ret = ibase_qparser(ibase, i, keyslist[i], notlist[i], query);
+                    //fprintf(stdout, "%s:%s\n", keyslist[i], notlist[i]);
                 }
             }
+            /*
+            for(i = 0; i < query->nqterms; i++)
+            {
+                fprintf(stdout, "termid:%d bithit:%d bitnot:%d \n", query->qterms[i].id, query->qterms[i].bithit, query->qterms[i].bitnot);
+            }
+            fprintf(stdout, "%s::%d flag:%d nquerys:%d\n", __FILE__, __LINE__, query->flag&IB_QUERY_FIELDS, query->nquerys);
+            */
         }
         if(query_str && *query_str) ret = ibase_qparser(ibase, -1, query_str, not_str, query);
         else ret = 0;
