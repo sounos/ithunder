@@ -101,6 +101,7 @@ extern "C" {
 #define  IB_PATH_MAX             1024
 #define  IB_CHARSET_MAX          256
 #endif
+#pragma pack(push, 4)
 /* block data */
 typedef struct _IBDATA
 {
@@ -284,6 +285,8 @@ typedef struct _DOCHEADER
     short   intblock_size;
     short   longblock_size;
     short   doubleblock_size;
+    short   dbid;
+    short   bits;
     int     terms_total;
     int     crc;
     int     size;
@@ -308,6 +311,8 @@ typedef struct _FHEADER
     short   flag;
     short   nfields;
     short   slevel;
+    short   dbid;
+    short   bits;
     int     crc;
     int     size;
     int64_t globalid;
@@ -479,7 +484,8 @@ typedef struct _IQUERY
     short       in_long_fieldid;
     short       in_double_num;
     short       in_double_fieldid;
-    int         bits;
+    short       dbid;
+    short       bits;
     short       hitscale[IB_QUERY_MAX]; 
     short       slevel_filter[IB_SLEVEL_MAX]; 
     int         flag;//is_sort/is_rsort/is_phrase/is_relevance/is_clear_cache/is_query_and/is_query_forbidden
@@ -732,6 +738,7 @@ typedef struct _IBASE
     int     (*set_log_level)(struct _IBASE *ibase, int level);
     void    (*clean)(struct _IBASE *ibase);
 }IBASE;
+#pragma pack(pop)
 /* initialize ibase */
 IBASE *ibase_init();
 /* mkdir force */

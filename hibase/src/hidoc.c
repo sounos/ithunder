@@ -1797,6 +1797,7 @@ int hidoc_genindex(HIDOC *hidoc, HINDEX *hindex, FHEADER *fheader, IFIELD *field
             goto end;
         }
         docheader->status = fheader->status;
+        docheader->dbid = fheader->dbid;
         docheader->crc = fheader->crc;
         docheader->category = fheader->category;
         docheader->slevel = fheader->slevel;

@@ -32,6 +32,7 @@
 #define HTTP_NOT_FOUND          "HTTP/1.0 404 Not Found\r\nContent-Length:0\r\n\r\n" 
 #define HTTP_NOT_MODIFIED       "HTTP/1.0 304 Not Modified\r\nContent-Length:0\r\n\r\n"
 #define HTTP_NO_CONTENT         "HTTP/1.0 204 No Content\r\nContent-Length:0\r\n\r\n"
+#define IBASE_DB_MAX  8192
 #ifndef LL64
 #define LL64(xxxx) ((long long int)xxxx)
 #endif
@@ -42,6 +43,7 @@ static unsigned char *httpd_index_html_code = NULL;
 static int  nhttpd_index_html_code = 0;
 static SBASE *sbase = NULL;
 static IBASE *ibase = NULL;
+static IBASE *pools[IBASE_DB_MAX];
 static SERVICE *httpd = NULL;
 static SERVICE *indexd = NULL;
 static SERVICE *queryd = NULL;
@@ -49,6 +51,9 @@ static dictionary *dict = NULL;
 static void *http_headers_map = NULL;
 static void *argvmap = NULL;
 static void *logger = NULL;
+static char *ibase_basedir = NULL;
+static int  ibase_used_for = 0;
+static int  ibase_mmsource_status = 0;
 //static int httpd_page_num  = 20;
 //static int httpd_page_max  = 50;
 static char *highlight_start = "<font color=red>";
@@ -136,10 +141,11 @@ static char *e_argvs[] =
 #define E_ARGV_KEYS         37
     "geofilter",
 #define E_ARGV_GEOFILTER    38
+    "dbid",
+#define E_ARGV_DBID         39
     ""
-
 };
-#define  E_ARGV_NUM         39
+#define  E_ARGV_NUM         40
 int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query);
 /* packet reader for indexd */
 int indexd_packet_reader(CONN *conn, CB_DATA *buffer)
@@ -194,13 +200,14 @@ err_end:
 /* index  handler */
 int indexd_index_handler(CONN *conn)
 {
+    char *p = NULL, *end = NULL, path[IB_PATH_MAX];
     CB_DATA *chunk = NULL, *packet = NULL;
-    char *p = NULL, *end = NULL;
+    int i = 0, count = 0, dbid = 0;
+    DOCHEADER *docheader = NULL;
     IBDATA block = {0};
     IHEAD resp = {0};
     IHEAD *req = NULL;
-    DOCHEADER *docheader = NULL;
-    int i = 0, count = 0;
+    IBASE *db = NULL;
 
     if(conn)
     {
@@ -228,7 +235,22 @@ int indexd_index_handler(CONN *conn)
                 }
                 else
                 {
-                    if((ibase_add_document(ibase, &block)) != 0)
+                    if(ibase_used_for == IB_USED_FOR_INDEXD)
+                    {
+                        dbid = (int)docheader->dbid;
+                        if(pools[dbid] == NULL)
+                        {
+                            pools[dbid] = ibase_init();
+                            sprintf(path, "%s/%d", ibase_basedir, dbid);
+                            ibase_set_basedir(pools[dbid], path, ibase_used_for, ibase_mmsource_status);
+                        }
+                        db = pools[dbid];
+                    }
+                    else
+                    {
+                        db = pools[0];
+                    }
+                    if((ibase_add_document(db, &block)) != 0)
                     {
                         FATAL_LOGGER(logger, "Add documents[%d][%d] failed, %s", i, docheader->globalid, strerror(errno));
                         goto err_end;
@@ -270,6 +292,7 @@ int indexd_data_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *ch
     BTERM *bterm = NULL;
     IQSET *qset = NULL;
     IHEAD *req = NULL;
+    IBASE *db = NULL;
 
     if(conn && packet && (req = (IHEAD *)packet->data))
     {
@@ -322,10 +345,11 @@ int indexd_data_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *ch
                         if(chunk->ndata == sizeof(IQUERY))
                         {
                             pquery = (IQUERY *)chunk->data; 
+                            db = pools[pquery->dbid];
                             if(pquery->nqterms > 0) 
-                                ichunk = ibase_bquery(ibase, pquery);
+                                ichunk = ibase_bquery(db, pquery);
                             else 
-                                ichunk = ibase_query(ibase, pquery);
+                                ichunk = ibase_query(db, pquery);
                             if(ichunk)
                             {
                                 presp = &(ichunk->resp);
@@ -674,6 +698,9 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                         case E_ARGV_GEOFILTER:
                             geofilter = p;
                             break;
+                        case E_ARGV_DBID:
+                            query->dbid = atoi(p);
+                            break;
                         default :
                             break;
                     }
@@ -695,6 +722,11 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                 - ((off_t) conn->xids[8] * (off_t)1000000 + (off_t)conn->xids[9]);
             conn->xids[8] = 0;
             conn->xids[9] = 0;
+        }
+        if(query->dbid < 0 || query->dbid > IBASE_DB_MAX) 
+        {
+            WARN_LOGGER(ibase->logger, "Invalid DBID：%d", query->dbid);
+            query->dbid = 0;
         }
         //query->ntop = query->from + query->count;
         if(query->ntop <= 0 || query->ntop > IB_TOPK_NUM) query->ntop = IB_TOPK_NUM;
@@ -1179,14 +1211,16 @@ int httpd_query_handler(CONN *conn, IQUERY *query)
     ICHUNK *ichunk = NULL;
     IQSET qset = {0};
     IRES *res = NULL;
+    IBASE *db = NULL;
 
     if(conn)
     {
         //TIMER_INIT(timer);
         if(query && query->from < query->ntop && query->count > 0)
         {
-            if(query->nqterms > 0) ichunk = ibase_bquery(ibase, query);
-            else ichunk = ibase_query(ibase, query);
+            db = pools[query->dbid];
+            if(query->nqterms > 0) ichunk = ibase_bquery(db, query);
+            else ichunk = ibase_query(db, query);
             //fprintf(stdout, "%s::%d query:%s OK\n", __FILE__, __LINE__, query_str);
             if(ichunk)
             {
@@ -1449,8 +1483,9 @@ int httpd_oob_handler(CONN *conn, CB_DATA *oob)
 /* Initialize from ini file */
 int sbase_initialize(SBASE *sbase, char *conf)
 {
-    char *s = NULL, *p = NULL, *dir = NULL, *charset = NULL, *rules = NULL, line[256];
-    int i = 0, n = 0, used_for = -1, mmsource_status = 0, pidfd = 0;
+    char *s = NULL, *p = NULL, *charset = NULL, *rules = NULL, line[256], path[IB_PATH_MAX];
+    int i = 0, n = 0, pidfd = 0;
+    struct stat st = {0};
 
     if((dict = iniparser_new(conf)) == NULL)
     {
@@ -1489,14 +1524,27 @@ int sbase_initialize(SBASE *sbase, char *conf)
     sbase->set_evlog(sbase, iniparser_getstr(dict, "SBASE:evlogfile"));
     sbase->set_evlog_level(sbase, iniparser_getint(dict, "SBASE:evlog_level", 0));
     /* IBASE */
-    used_for = iniparser_getint(dict, "IBASE:used_for", 0);
-    mmsource_status = iniparser_getint(dict, "IBASE:mmsource_status", 1);
-    if((dir = iniparser_getstr(dict, "IBASE:basedir")) == NULL || (ibase = ibase_init()) == NULL 
-            || ibase->set_basedir(ibase, dir, used_for, mmsource_status) != 0)
+    ibase_used_for = iniparser_getint(dict, "IBASE:used_for", 0);
+    ibase_mmsource_status = iniparser_getint(dict, "IBASE:mmsource_status", 1);
+    if((ibase_basedir = iniparser_getstr(dict, "IBASE:basedir")) == NULL) 
     {
         fprintf(stderr, "Initialize ibase failed, %s", strerror(errno));
         _exit(-1);
     }
+    memset(pools, 0, sizeof(IBASE *) * IBASE_DB_MAX);
+    sprintf(path, "%s/%d", ibase_basedir, 0);
+    pools[0] = ibase_init();
+    ibase_set_basedir(pools[0], path, ibase_used_for, ibase_mmsource_status);
+    for(i = 1; i < IBASE_DB_MAX; i++)
+    {
+        sprintf(path, "%s/%d", ibase_basedir, i);
+        if(lstat(path, &st) == 0 && S_ISDIR(st.st_mode))
+        {
+            pools[i] = ibase_init();
+            ibase_set_basedir(pools[i], path, ibase_used_for, ibase_mmsource_status);
+        }
+    }
+    ibase = pools[0];
     if((p = iniparser_getstr(dict, "IBASE:dict_file")) 
             && (charset = iniparser_getstr(dict, "IBASE:dict_charset")))
     {
@@ -1681,7 +1729,7 @@ static void indexd_stop(int sig)
 int main(int argc, char **argv)
 {
     char *conf = NULL, ch = 0;
-    int is_daemon = 0;
+    int is_daemon = 0, i = 0;
     pid_t pid;
 
     /* get configure file */
@@ -1742,7 +1790,10 @@ int main(int argc, char **argv)
     //sbase->running(sbase, 3600);
     //sbase->running(sbase, 60000000);
     //sbase->stop(sbase);
-    ibase->clean(ibase);
+    for(i = 0; i < IBASE_DB_MAX; i++)
+    {
+        if(pools[i]) ibase_clean(pools[i]);
+    }
     sbase->clean(sbase);
     if(http_headers_map) http_headers_map_clean(http_headers_map);
     if(argvmap)mtrie_clean(argvmap);
