@@ -375,10 +375,13 @@ int ibase_set_int_index(IBASE *ibase, int int_index_from, int int_fields_num)
         }
         if(ibase->state->int_index_fields_num == 0)
         {
-            n = IB_INT_OFF + int_fields_num;
-            for(i = IB_INT_OFF; i < n; i++)
+            if(ibase->state->used_for == IB_USED_FOR_INDEXD)
             {
-                ibase_check_int_idx(ibase, i);
+                n = IB_INT_OFF + int_fields_num;
+                for(i = IB_INT_OFF; i < n; i++)
+                {
+                    ibase_check_int_idx(ibase, i);
+                }
             }
             ibase->state->int_index_from = int_index_from;
             ibase->state->int_index_fields_num = int_fields_num;
@@ -455,10 +458,13 @@ int ibase_set_long_index(IBASE *ibase, int long_index_from, int long_fields_num)
         }
         if(ibase->state->long_index_fields_num == 0)
         {
-            n = IB_LONG_OFF + long_fields_num;
-            for(i = IB_LONG_OFF; i < n; i++)
+            if(ibase->state->used_for == IB_USED_FOR_INDEXD)
             {
-                ibase_check_long_idx(ibase, i);
+                n = IB_LONG_OFF + long_fields_num;
+                for(i = IB_LONG_OFF; i < n; i++)
+                {
+                    ibase_check_long_idx(ibase, i);
+                }
             }
             ibase->state->long_index_from = long_index_from;
             ibase->state->long_index_fields_num = long_fields_num;
@@ -534,10 +540,13 @@ int ibase_set_double_index(IBASE *ibase, int double_index_from, int double_field
         }
         if(ibase->state->double_index_fields_num == 0)
         {
-            n = IB_DOUBLE_OFF + double_fields_num;
-            for(i = IB_DOUBLE_OFF; i < n; i++)
+            if(ibase->state->used_for == IB_USED_FOR_INDEXD)
             {
-                ibase_check_double_idx(ibase, i);
+                n = IB_DOUBLE_OFF + double_fields_num;
+                for(i = IB_DOUBLE_OFF; i < n; i++)
+                {
+                    ibase_check_double_idx(ibase, i);
+                }
             }
             ibase->state->double_index_from = double_index_from;
             ibase->state->double_index_fields_num = double_fields_num;
