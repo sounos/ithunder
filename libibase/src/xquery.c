@@ -201,17 +201,18 @@ ICHUNK *ibase_xquery(IBASE *ibase, IQUERY *query)
         if(topmap == NULL || fmap == NULL || stree == NULL 
                 || itermlist == NULL || headers == NULL) goto end;
         scale = query->hitscale[nquerys-1];
-        if((fid = query->int_order_field) >= int_index_from && fid < int_index_to)
+        fid = query->orderby;
+        if(fid >= int_index_from && fid < int_index_to)
         {
             is_field_sort = IB_SORT_BY_INT;
             fid -= int_index_from;
         }
-        else if((fid = query->long_order_field) >= long_index_from && fid < long_index_to)
+        else if(fid >= long_index_from && fid < long_index_to)
         {
             is_field_sort = IB_SORT_BY_LONG;
             fid -= long_index_from;
         }
-        else if((fid = query->double_order_field) >= double_index_from && fid < double_index_to)
+        else if(fid >= double_index_from && fid < double_index_to)
         {
             is_field_sort = IB_SORT_BY_DOUBLE;
             fid -= double_index_from;

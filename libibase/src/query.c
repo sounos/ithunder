@@ -57,19 +57,20 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query)
         double_index_from = ibase->state->double_index_from;
         double_index_to = double_index_from + ibase->state->double_index_fields_num;
         if(topmap == NULL || headers == NULL) goto end;
-        if((fid = query->int_order_field) >= int_index_from && fid < int_index_to)
+        fid = query->orderby;
+        if(fid >= int_index_from && fid < int_index_to)
         {
             fid -= int_index_from;
             fid += IB_INT_OFF;
             if(ibase->state->mfields[fid]) is_field_sort = IB_SORT_BY_INT;
         }
-        else if((fid = query->long_order_field) >= long_index_from && fid < long_index_to)
+        else if(fid >= long_index_from && fid < long_index_to)
         {
             fid -= long_index_from;
             fid += IB_LONG_OFF;
             if(ibase->state->mfields[fid]) is_field_sort = IB_SORT_BY_LONG;
         }
-        else if((fid = query->double_order_field) >= double_index_from && fid < double_index_to)
+        else if(fid >= double_index_from && fid < double_index_to)
         {
             fid -= double_index_from;
             fid += IB_DOUBLE_OFF;

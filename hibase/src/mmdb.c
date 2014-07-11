@@ -695,7 +695,6 @@ int mmdb_set_query(MMDB *mmdb, int qid, IQUERY *query, int nquerys,
         memcpy(&lquery, query, sizeof(IQUERY));
         lquery.from = 0;
         lquery.count = 0;
-        lquery.qfunc = 0;
         lquery.qid = 0;
         lquery.ravgdl = 0.0f;
         memset(&(lquery.display), 0, sizeof(IDISPLAY) * IB_FIELDS_MAX);

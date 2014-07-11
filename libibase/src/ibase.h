@@ -464,13 +464,13 @@ typedef struct _IQUERY
 {
     short       from;
     short       count;
-    short       qfunc;
+    short       bits;
     short       ntop;
     short       nqterms;
     short       nquerys;
-    short       int_order_field;
-    short       long_order_field;
-    short       double_order_field;
+    short       orderby;
+    short       groupby;
+    short       dbid;
     short       int_range_count;
     short       long_range_count;
     short       double_range_count;
@@ -484,8 +484,6 @@ typedef struct _IQUERY
     short       in_long_fieldid;
     short       in_double_num;
     short       in_double_fieldid;
-    short       dbid;
-    short       bits;
     short       hitscale[IB_QUERY_MAX]; 
     short       slevel_filter[IB_SLEVEL_MAX]; 
     int         flag;//is_sort/is_rsort/is_phrase/is_relevance/is_clear_cache/is_query_and/is_query_forbidden

@@ -396,19 +396,20 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query)
         if(topmap == NULL || fmap == NULL || xmap == NULL 
                 || itermlist == NULL || headers == NULL) goto end;
         if(nquerys > 0) scale = query->hitscale[nquerys-1];
-        if((fid = query->int_order_field) >= int_index_from && fid < int_index_to)
+        fid = query->orderby;
+        if(fid >= int_index_from && fid < int_index_to)
         {
             fid -= int_index_from;
             fid += IB_INT_OFF;
             if(ibase->state->mfields[fid]) is_field_sort = IB_SORT_BY_INT;
         }
-        else if((fid = query->long_order_field) >= long_index_from && fid < long_index_to)
+        else if(fid >= long_index_from && fid < long_index_to)
         {
             fid -= long_index_from;
             fid += IB_LONG_OFF;
             if(ibase->state->mfields[fid]) is_field_sort = IB_SORT_BY_LONG;
         }
-        else if((fid = query->double_order_field) >= double_index_from && fid < double_index_to)
+        else if(fid >= double_index_from && fid < double_index_to)
         {
             fid -= double_index_from;
             fid += IB_DOUBLE_OFF;

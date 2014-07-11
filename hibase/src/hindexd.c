@@ -97,8 +97,8 @@ static char *e_argvs[] =
 #define E_ARGV_XUP          15
     "xdown",
 #define E_ARGV_XDOWN        16
-    "qfunc",
-#define E_ARGV_QFUNC        17
+    "groupby",
+#define E_ARGV_GROUPBY      17
     "qfhits",
 #define E_ARGV_QFHITS       18
     "rel",
@@ -145,7 +145,7 @@ static char *e_argvs[] =
 #define E_ARGV_DBID         39
     ""
 };
-#define  E_ARGV_NUM         40
+#define  E_ARGV_NUM         41
 int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query);
 /* packet reader for indexd */
 int indexd_packet_reader(CONN *conn, CB_DATA *buffer)
@@ -605,6 +605,9 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                         case E_ARGV_ORDERBY:
                             orderby = atoi(p);
                             break;
+                        case E_ARGV_GROUPBY:
+                            query->groupby = atoi(p);
+                            break;
                         case E_ARGV_FROM :
                             query->from = atoi(p);
                             break;
@@ -646,9 +649,6 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                             break;
                         case E_ARGV_XDOWN:
                             xdown = p;
-                            break;
-                        case E_ARGV_QFUNC:
-                            query->qfunc = atoi(p);
                             break;
                         case E_ARGV_QFHITS:
                             query->qfhits = atoi(p);
@@ -956,17 +956,17 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
         /* order/order by/range */
         if(order < 0) query->flag |= IB_QUERY_RSORT;
         else query->flag |= IB_QUERY_SORT;
-                if(orderby >= int_index_from && orderby < int_index_to)
+        if(orderby >= int_index_from && orderby < int_index_to)
         {
-            query->int_order_field = orderby;
+            query->orderby = orderby;
         }
         else if(orderby >= long_index_from && orderby < long_index_to)
         {
-            query->long_order_field = orderby;
+            query->orderby = orderby;
         }
         else if(orderby >= double_index_from && orderby < double_index_to)
         {
-            query->double_order_field = orderby;
+            query->orderby = orderby;
         }
         //DEBUG_LOGGER(logger, "int_from:%d int_to:%d long_from:%d long_to:%d  double_from:%d double_to:%d orderby:%d/%d", int_index_from, int_index_to, long_index_from, long_index_to, double_index_from, double_index_to, orderby, query->double_order_field);
         /* range */
