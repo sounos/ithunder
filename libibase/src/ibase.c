@@ -19,6 +19,7 @@
 #include "mtree64.h"
 #include "db.h"
 #include "xmm.h"
+#include "immx.h"
 #include "imap.h"
 #include "lmap.h"
 #include "dmap.h"
@@ -556,6 +557,54 @@ int ibase_set_double_index(IBASE *ibase, int double_index_from, int double_field
     }
     return -1;
 }
+
+/* push immx */
+void ibase_push_immx(IBASE *ibase, void *immx)
+{
+    int x = 0;
+
+    if(ibase && immx)
+    {
+        MUTEX_LOCK(ibase->mutex_mmx);
+        if(ibase->nqimmxs < IB_MMX_MAX)
+        {
+            IMMX_RESET(immx);
+            x = ibase->nqimmxs++;
+            ibase->qimmxs[x] = immx;
+        }
+        else
+        {
+            IMMX_CLEAN(immx);
+        }
+        MUTEX_UNLOCK(ibase->mutex_mmx);
+    }
+    return ;
+}
+
+/* ibase pop immx */
+void *ibase_pop_immx(IBASE *ibase)
+{
+    void *immx = NULL;
+    int x = 0;
+
+    if(ibase)
+    {
+        MUTEX_LOCK(ibase->mutex_mmx);
+        if(ibase->nqimmxs > 0)
+        {
+            x = --(ibase->nqimmxs);
+            immx = ibase->qimmxs[x];
+            ibase->qimmxs[x] = NULL;
+        }
+        else
+        {
+            immx = IMMX_INIT();
+        }
+        MUTEX_UNLOCK(ibase->mutex_mmx);
+    }
+    return immx;
+}
+
 /* push stree */
 void ibase_push_stree(IBASE *ibase, void *stree)
 {
@@ -1623,6 +1672,7 @@ void ibase_clean(IBASE *ibase)
         for(i = 0; i < ibase->nqiterms; i++){xmm_free(ibase->qiterms[i], sizeof(ITERM) * IB_QUERY_MAX);}
         for(i = 0; i < ibase->nqxmaps; i++){xmm_free(ibase->qxmaps[i], sizeof(XMAP));}
         for(i = 0; i < ibase->nqstrees; i++){mtree64_clean((MTR64(ibase->qstrees[i])));}
+        for(i = 0; i < ibase->nqimmxs; i++){IMMX_CLEAN(ibase->qimmxs[i]);}
         for(i = 0; i < ibase->nqchunks; i++){xmm_free(ibase->qchunks[i], sizeof(ICHUNK));}
 #ifdef HAVE_SCWS
         for(i = 0; i < ibase->nqsegmentors; i++)
@@ -1642,6 +1692,7 @@ void ibase_clean(IBASE *ibase)
         MUTEX_DESTROY(ibase->mutex_block);
         MUTEX_DESTROY(ibase->mutex_iblock);
         MUTEX_DESTROY(ibase->mutex_stree);
+        MUTEX_DESTROY(ibase->mutex_mmx);
         MUTEX_DESTROY(ibase->mutex_xmap);
         MUTEX_DESTROY(ibase->mutex_record);
         MUTEX_DESTROY(ibase->mutex_segmentor);
@@ -1667,6 +1718,7 @@ IBASE *ibase_init()
         MUTEX_INIT(ibase->mutex_block);
         MUTEX_INIT(ibase->mutex_iblock);
         MUTEX_INIT(ibase->mutex_stree);
+        MUTEX_INIT(ibase->mutex_mmx);
         MUTEX_INIT(ibase->mutex_xmap);
         MUTEX_INIT(ibase->mutex_record);
         MUTEX_INIT(ibase->mutex_segmentor);

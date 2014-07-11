@@ -21,6 +21,8 @@ utils/lmap.h \
 utils/lmap.c \
 utils/dmap.h \
 utils/dmap.c \
+utils/immx.h \
+utils/immx.c \
 utils/xmm.h \
 utils/xmm.c \
 utils/mtree64.h \

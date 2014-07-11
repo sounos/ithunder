@@ -71,6 +71,7 @@ extern "C" {
 #define  IB_XNODE_MAX           10000
 #define  IB_XMAPS_MAX           2048
 #define  IB_STREES_MAX          2048
+#define  IB_MMX_MAX             2048
 #define  IB_USED_FOR_INDEXD     0x00
 #define  IB_USED_FOR_QDOCD      0x01
 #define  IB_USED_FOR_QPARSERD   0x02
@@ -672,6 +673,9 @@ typedef struct _IBASE
     int nqiterms;
     int nqxmaps; 
     int nqstrees;
+    int nqimmxs;
+    int nqlmmxs;
+    int nqdmmxs;
     int nqchunks;
     int nsegmentors;
     void *mutex;
@@ -680,6 +684,7 @@ typedef struct _IBASE
     void *mutex_block;
     void *mutex_iblock;
     void *mutex_stree;
+    void *mutex_mmx;
     void *mutex_xmap;
     void *mutex_record;
     void *mutex_segmentor;
@@ -692,6 +697,9 @@ typedef struct _IBASE
     ITERM *qiterms[IB_QITERMS_MAX];
     XMAP *qxmaps[IB_XMAPS_MAX];
     void *qstrees[IB_STREES_MAX];
+    void *qimmxs[IB_MMX_MAX];
+    void *qlmmxs[IB_MMX_MAX];
+    void *qdmmxs[IB_MMX_MAX];
     ICHUNK  *qchunks[IB_CHUNKS_MAX];
     void *index; /* index db */
     void *mmtree; /* int tree */

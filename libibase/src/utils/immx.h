@@ -4,175 +4,175 @@
 #include <unistd.h>
 #include <string.h>
 #include "xmm.h"
-typedef struct _IMMXNODE
+typedef struct _IMXNODE
 {
     int  key;
-    int  data;
-    struct _IMMXNODE *rbe_left;     
-    struct _IMMXNODE *rbe_right;    
-    struct _IMMXNODE *rbe_parent;   
+    int data;
+    struct _IMXNODE *rbe_left;     
+    struct _IMXNODE *rbe_right;    
+    struct _IMXNODE *rbe_parent;   
     int rbe_color;         
-}IMMXNODE;
-#define IMMX_LINE_MAX     1024
-#define IMMX_LINE_NUM     1024
+}IMXNODE;
+#define IMX_LINE_MAX     1024
+#define IMX_LINE_NUM     1024
 typedef struct _IMMX
 {
-    IMMXNODE node;
-    IMMXNODE *rbh_root;
-    IMMXNODE *old;
-    IMMXNODE *max;
-    IMMXNODE *min;
-    IMMXNODE *bnode;
-    IMMXNODE *p;
-    IMMXNODE *pp;
-    IMMXNODE *head;
-    IMMXNODE *tail;
-    IMMXNODE *tmp;
-    IMMXNODE *xtmp;
-    IMMXNODE *freelist[IMMX_LINE_MAX];
+    IMXNODE node;
+    IMXNODE *rbh_root;
+    IMXNODE *old;
+    IMXNODE *max;
+    IMXNODE *min;
+    IMXNODE *bnode;
+    IMXNODE *p;
+    IMXNODE *pp;
+    IMXNODE *head;
+    IMXNODE *tail;
+    IMXNODE *tmp;
+    IMXNODE *xtmp;
+    IMXNODE *freelist[IMX_LINE_MAX];
     int    nfreelist;
     int loop;
     int count;
     int total;
     int free_count;
 }IMMX;
-#define PIMMX(ptr) ((IMMX *)ptr)
-#define IMMX_NEGINF	-1
-#define IMMX_INF	    1
-#define IMMX_BLACK	0
-#define IMMX_RED		1
-#define IMMX_LEFT(elm)		(elm->rbe_left)
-#define IMMX_RIGHT(elm)		(elm->rbe_right)
-#define IMMX_PARENT(elm)		(elm->rbe_parent)
-#define IMMX_COLOR(elm)		(elm->rbe_color)
-#define IMMX_ROOT(head)       (PIMMX(head)->rbh_root)
-#define PIMMX_PARENT(head)    (PIMMX(head)->parent)
-#define PIMMX_GPARENT(head)   (PIMMX(head)->gparent)
-#define PIMMX_CHILD(head)     (PIMMX(head)->child)
-#define PIMMX_OLEFT(head)     (PIMMX(head)->oleft)
-#define PIMMX_ORIGHT(head)    (PIMMX(head)->oright)
-#define PIMMX_COLOR(head)     (PIMMX(head)->color)
-#define PIMMX_OLD(head)       (PIMMX(head)->old)
-#define PIMMX_TMP(head)       (PIMMX(head)->tmp)
-#define PIMMX_MAX(head)       (PIMMX(head)->max)
-#define PIMMX_MIN(head)       (PIMMX(head)->min)
-#define PIMMX_MAXK(head)      (PIMMX(head)->max->key)
-#define PIMMX_MINK(head)      (PIMMX(head)->min->key)
-#define IMMX_EMPTY(head)      (IMMX_ROOT(head) == NULL)
-#define IMMX_NODE_SET(elm, old)                                                             \
+#define PIMX(ptr) ((IMMX *)ptr)
+#define IMX_NEGINF	-1
+#define IMX_INF	    1
+#define IMX_BLACK	0
+#define IMX_RED		1
+#define IMX_LEFT(elm)		(elm->rbe_left)
+#define IMX_RIGHT(elm)		(elm->rbe_right)
+#define IMX_PARENT(elm)		(elm->rbe_parent)
+#define IMX_COLOR(elm)		(elm->rbe_color)
+#define IMX_ROOT(head)       (PIMX(head)->rbh_root)
+#define PIMX_PARENT(head)    (PIMX(head)->parent)
+#define PIMX_GPARENT(head)   (PIMX(head)->gparent)
+#define PIMX_CHILD(head)     (PIMX(head)->child)
+#define PIMX_OLEFT(head)     (PIMX(head)->oleft)
+#define PIMX_ORIGHT(head)    (PIMX(head)->oright)
+#define PIMX_COLOR(head)     (PIMX(head)->color)
+#define PIMX_OLD(head)       (PIMX(head)->old)
+#define PIMX_TMP(head)       (PIMX(head)->tmp)
+#define PIMX_MAX(head)       (PIMX(head)->max)
+#define PIMX_MIN(head)       (PIMX(head)->min)
+#define PIMX_MAXK(head)      (PIMX(head)->max->key)
+#define PIMX_MINK(head)      (PIMX(head)->min->key)
+#define IMX_EMPTY(head)      (IMX_ROOT(head) == NULL)
+#define IMX_NODE_SET(elm, old)                                                              \
 do                                                                                          \
 {                                                                                           \
-    IMMX_PARENT(elm) = IMMX_PARENT(old);                                                    \
-    IMMX_LEFT(elm) = IMMX_LEFT(old);                                                        \
-    IMMX_RIGHT(elm) = IMMX_RIGHT(old);                                                      \
-    IMMX_COLOR(elm) = IMMX_COLOR(old);                                                      \
+    IMX_PARENT(elm) = IMX_PARENT(old);                                                      \
+    IMX_LEFT(elm) = IMX_LEFT(old);                                                          \
+    IMX_RIGHT(elm) = IMX_RIGHT(old);                                                        \
+    IMX_COLOR(elm) = IMX_COLOR(old);                                                        \
 }while(0)
-#define IMMX_SET(elm, parent)                                                               \
+#define IMX_SET(elm, parent)                                                                \
 do                                                                                          \
 {					                                                                        \
-	IMMX_PARENT(elm) = parent;					                                            \
-	IMMX_LEFT(elm) = IMMX_RIGHT(elm) = NULL;		                                        \
-	IMMX_COLOR(elm) = IMMX_RED;					                                            \
+	IMX_PARENT(elm) = parent;					                                            \
+	IMX_LEFT(elm) = IMX_RIGHT(elm) = NULL;		                                            \
+	IMX_COLOR(elm) = IMX_RED;					                                            \
 }while(0)
 
-#define IMMX_SET_BLACKRED(black, red)                                                       \
+#define IMX_SET_BLACKRED(black, red)                                                        \
 do                                                                                          \
 {				                                                                            \
-	IMMX_COLOR(black) = IMMX_BLACK;				                                            \
-	IMMX_COLOR(red) = IMMX_RED;					                                            \
+	IMX_COLOR(black) = IMX_BLACK;				                                            \
+	IMX_COLOR(red) = IMX_RED;					                                            \
 }while(0)
 
-#ifndef IMMX_AUGMENT
-#define IMMX_AUGMENT(x)
+#ifndef IMX_AUGMENT
+#define IMX_AUGMENT(x)
 #endif
 
-#define IMMX_ROTATE_LEFT(head, elm, tmp)                                                    \
+#define IMX_ROTATE_LEFT(head, elm, tmp)                                                     \
 do                                                                                          \
 {			                                                                                \
-	(tmp) = IMMX_RIGHT(elm);					                                            \
-	if ((IMMX_RIGHT(elm) = IMMX_LEFT(tmp)))                                                 \
+	(tmp) = IMX_RIGHT(elm);					                                                \
+	if ((IMX_RIGHT(elm) = IMX_LEFT(tmp)))                                                   \
     {		                                                                                \
-		IMMX_PARENT(IMMX_LEFT(tmp)) = (elm);		                                        \
+		IMX_PARENT(IMX_LEFT(tmp)) = (elm);		                                            \
 	}								                                                        \
-	IMMX_AUGMENT(elm);						                                                \
-	if ((IMMX_PARENT(tmp) = IMMX_PARENT(elm)))                                              \
+	IMX_AUGMENT(elm);						                                                \
+	if ((IMX_PARENT(tmp) = IMX_PARENT(elm)))                                                \
     {		                                                                                \
-		if ((elm) == IMMX_LEFT(IMMX_PARENT(elm)))	                                        \
-			IMMX_LEFT(IMMX_PARENT(elm)) = (tmp);	                                        \
+		if ((elm) == IMX_LEFT(IMX_PARENT(elm)))	                                            \
+			IMX_LEFT(IMX_PARENT(elm)) = (tmp);	                                            \
 		else							                                                    \
-			IMMX_RIGHT(IMMX_PARENT(elm)) = (tmp);	                                        \
+			IMX_RIGHT(IMX_PARENT(elm)) = (tmp);	                                            \
 	} else								                                                    \
-		IMMX_ROOT(head) = (tmp);				                                            \
-	IMMX_LEFT(tmp) = (elm);					                                                \
-	IMMX_PARENT(elm) = (tmp);					                                            \
-	IMMX_AUGMENT(tmp);						                                                \
-	if ((IMMX_PARENT(tmp))) IMMX_AUGMENT(IMMX_PARENT(tmp));			                        \
+		IMX_ROOT(head) = (tmp);				                                                \
+	IMX_LEFT(tmp) = (elm);					                                                \
+	IMX_PARENT(elm) = (tmp);					                                            \
+	IMX_AUGMENT(tmp);						                                                \
+	if ((IMX_PARENT(tmp))) IMX_AUGMENT(IMX_PARENT(tmp));			                        \
 }while(0)
 
-#define IMMX_ROTATE_RIGHT(head, elm, tmp)                                                   \
+#define IMX_ROTATE_RIGHT(head, elm, tmp)                                                    \
 do                                                                                          \
 {			                                                                                \
-	(tmp) = IMMX_LEFT(elm);					                                                \
-	if ((IMMX_LEFT(elm) = IMMX_RIGHT(tmp)))                                                 \
+	(tmp) = IMX_LEFT(elm);					                                                \
+	if ((IMX_LEFT(elm) = IMX_RIGHT(tmp)))                                                   \
     {		                                                                                \
-		IMMX_PARENT(IMMX_RIGHT(tmp)) = (elm);		                                        \
+		IMX_PARENT(IMX_RIGHT(tmp)) = (elm);		                                            \
 	}								                                                        \
-	IMMX_AUGMENT(elm);						                                                \
-	if ((IMMX_PARENT(tmp) = IMMX_PARENT(elm)))                                              \
+	IMX_AUGMENT(elm);						                                                \
+	if ((IMX_PARENT(tmp) = IMX_PARENT(elm)))                                                \
     {		                                                                                \
-		if ((elm) == IMMX_LEFT(IMMX_PARENT(elm)))	                                        \
-			IMMX_LEFT(IMMX_PARENT(elm)) = (tmp);	                                        \
+		if ((elm) == IMX_LEFT(IMX_PARENT(elm)))	                                            \
+			IMX_LEFT(IMX_PARENT(elm)) = (tmp);	                                            \
 		else							                                                    \
-			IMMX_RIGHT(IMMX_PARENT(elm)) = (tmp);	                                        \
+			IMX_RIGHT(IMX_PARENT(elm)) = (tmp);	                                            \
 	} else								                                                    \
-		IMMX_ROOT(head) = (tmp);				                                            \
-	IMMX_RIGHT(tmp) = (elm);					                                            \
-	IMMX_PARENT(elm) = (tmp);					                                            \
-	IMMX_AUGMENT(tmp);						                                                \
-	if ((IMMX_PARENT(tmp)))IMMX_AUGMENT(IMMX_PARENT(tmp));			                        \
+		IMX_ROOT(head) = (tmp);				                                                \
+	IMX_RIGHT(tmp) = (elm);					                                                \
+	IMX_PARENT(elm) = (tmp);					                                            \
+	IMX_AUGMENT(tmp);						                                                \
+	if ((IMX_PARENT(tmp)))IMX_AUGMENT(IMX_PARENT(tmp));			                            \
 }while(0)
 /* remove node */
-IMMXNODE *immx_remove(IMMX *map, IMMXNODE *elm);
+IMXNODE *imx_remove(IMMX *map, IMXNODE *elm);
 /* insert new node */
-IMMXNODE *immx_insert(IMMX *map, IMMXNODE *elm);
+IMXNODE *imx_insert(IMMX *map, IMXNODE *elm);
 /* find node */
-IMMXNODE *immx_find(IMMX *map, IMMXNODE *elm);
+IMXNODE *imx_find(IMMX *map, IMXNODE *elm);
 /* next node for great */
-IMMXNODE *immx_next(IMMXNODE *elm);
+IMXNODE *imx_next(IMXNODE *elm);
 /* prev node for less */
-IMMXNODE *immx_prev(IMMXNODE *elm);
+IMXNODE *imx_prev(IMXNODE *elm);
 /* find min/max node */
-IMMXNODE *immx_minmax(IMMX *map, int val);
+IMXNODE *imx_minmax(IMMX *map, int val);
 
-#define IMMX_MIN(map) immx_minmax(map, IMMX_NEGINF)
-#define IMMX_MAX(map)	immx_minmax(map, IMMX_INF)
-#define IMMX_MAX(ptr) PIMMX(ptr)->max
-#define IMMX_MIN(ptr) PIMMX(ptr)->min
+#define IMX_MIN(map) imx_minmax(map, IMX_NEGINF)
+#define IMX_MAX(map)	imx_minmax(map, IMX_INF)
+#define IMMX_MAX(ptr) PIMX(ptr)->max
+#define IMMX_MIN(ptr) PIMX(ptr)->min
 #define IMMX_INIT() xmm_mnew(sizeof(IMMX))
 
 /* add to min/max */
 #define IMMX_MINMAX_ADD(ptr, node)                                                          \
 do                                                                                          \
 {                                                                                           \
-    if(PIMMX(ptr)->max  == NULL || node->key > PIMMX(ptr)->max->key)                        \
+    if(PIMX(ptr)->max  == NULL || node->key > PIMX(ptr)->max->key)                          \
     {                                                                                       \
-        PIMMX(ptr)->max = node;                                                             \
+        PIMX(ptr)->max = node;                                                              \
     }                                                                                       \
-    if(PIMMX(ptr)->min == NULL || node->key < PIMMX(ptr)->min->key)                         \
-        PIMMX(ptr)->min = node;                                                             \
+    if(PIMX(ptr)->min == NULL || node->key < PIMX(ptr)->min->key)                           \
+        PIMX(ptr)->min = node;                                                              \
 }while(0)
 
 /* rebuild min/max */
 #define IMMX_MINMAX_REBUILD(ptr, node)                                                      \
 do                                                                                          \
 {                                                                                           \
-    if(node == PIMMX(ptr)->max)                                                             \
+    if(node == PIMX(ptr)->max)                                                              \
     {                                                                                       \
-        PIMMX(ptr)->max = immx_prev(PIMMX(ptr));                                            \
+        PIMX(ptr)->max = imx_prev(PIMX(ptr));                                               \
     }                                                                                       \
-    if(node == PIMMX(ptr)->min)                                                             \
+    if(node == PIMX(ptr)->min)                                                              \
     {                                                                                       \
-        PIMMX(ptr)->min = immx_next(PIMMX(ptr));                                            \
+        PIMX(ptr)->min = imx_next(PIMX(ptr));                                               \
     }                                                                                       \
 }while(0)
 
@@ -180,48 +180,48 @@ do                                                                              
 #define IMMX_PUSH_NODE(ptr, node)                                                           \
 do                                                                                          \
 {                                                                                           \
-    memset(node, 0, sizeof(IMMXNODE));                                                      \
-    if(PIMMX(ptr)->tail)                                                                    \
+    memset(node, 0, sizeof(IMXNODE));                                                       \
+    if(PIMX(ptr)->tail)                                                                     \
     {                                                                                       \
-        PIMMX(ptr)->tail->rbe_parent = node;                                                \
-        PIMMX(ptr)->tail = node;                                                            \
+        PIMX(ptr)->tail->rbe_parent = node;                                                 \
+        PIMX(ptr)->tail = node;                                                             \
     }                                                                                       \
     else                                                                                    \
     {                                                                                       \
-        PIMMX(ptr)->head = PIMMX(ptr)->tail = node;                                         \
+        PIMX(ptr)->head = PIMX(ptr)->tail = node;                                           \
     }                                                                                       \
-    PIMMX(ptr)->free_count++;                                                               \
+    PIMX(ptr)->free_count++;                                                                \
 }while(0)
 
 /* pop node from freelist */
 #define IMMX_POP_NODE(ptr, node)                                                            \
 do                                                                                          \
 {                                                                                           \
-    if(PIMMX(ptr)->head)                                                                    \
+    if(PIMX(ptr)->head)                                                                     \
     {                                                                                       \
-        node = PIMMX(ptr)->head;                                                            \
-        PIMMX(ptr)->head = PIMMX(ptr)->head->rbe_parent;                                    \
-        if(PIMMX(ptr)->head == NULL) PIMMX(ptr)->tail = NULL;                               \
-        memset(node, 0, sizeof(IMMXNODE));                                                  \
-        PIMMX(ptr)->free_count--;                                                           \
+        node = PIMX(ptr)->head;                                                             \
+        PIMX(ptr)->head = PIMX(ptr)->head->rbe_parent;                                      \
+        if(PIMX(ptr)->head == NULL) PIMX(ptr)->tail = NULL;                                 \
+        memset(node, 0, sizeof(IMXNODE));                                                   \
+        PIMX(ptr)->free_count--;                                                            \
     }                                                                                       \
     else                                                                                    \
     {                                                                                       \
-        if(PIMMX(ptr)->nfreelist < IMMX_LINE_MAX)                                           \
+        if(PIMX(ptr)->nfreelist < IMX_LINE_MAX)                                             \
         {                                                                                   \
-            if((PIMMX(ptr)->tmp = (IMMXNODE *)xmm_new(sizeof(IMMXNODE) * IMMX_LINE_NUM)))   \
+            if((PIMX(ptr)->tmp = (IMXNODE *)xmm_new(sizeof(IMXNODE) * IMX_LINE_NUM)))       \
             {                                                                               \
-                PIMMX(ptr)->freelist[PIMMX(ptr)->nfreelist] = PIMMX(ptr)->tmp;              \
-                PIMMX(ptr)->nfreelist++;                                                    \
-                node = &(PIMMX(ptr)->tmp[0]);                                               \
-                memset(node, 0, sizeof(IMMXNODE));                                          \
-                PIMMX(ptr)->loop = 1;                                                       \
-                PIMMX(ptr)->total += IMMX_LINE_NUM;                                         \
-                while(PIMMX(ptr)->loop < IMMX_LINE_NUM)                                     \
+                PIMX(ptr)->freelist[PIMX(ptr)->nfreelist] = PIMX(ptr)->tmp;                 \
+                PIMX(ptr)->nfreelist++;                                                     \
+                node = &(PIMX(ptr)->tmp[0]);                                                \
+                memset(node, 0, sizeof(IMXNODE));                                           \
+                PIMX(ptr)->loop = 1;                                                        \
+                PIMX(ptr)->total += IMX_LINE_NUM;                                           \
+                while(PIMX(ptr)->loop < IMX_LINE_NUM)                                       \
                 {                                                                           \
-                    PIMMX(ptr)->xtmp = &(PIMMX(ptr)->tmp[PIMMX(ptr)->loop]);                \
-                    IMMX_PUSH_NODE(ptr, PIMMX(ptr)->xtmp);                                  \
-                    PIMMX(ptr)->loop++;                                                     \
+                    PIMX(ptr)->xtmp = &(PIMX(ptr)->tmp[PIMX(ptr)->loop]);                   \
+                    IMMX_PUSH_NODE(ptr, PIMX(ptr)->xtmp);                                   \
+                    PIMX(ptr)->loop++;                                                      \
                 }                                                                           \
             }                                                                               \
         }                                                                                   \
@@ -234,21 +234,21 @@ do                                                                              
 {                                                                                           \
     if(ptr)                                                                                 \
     {                                                                                       \
-        IMMX_POP_NODE(ptr, PIMMX(ptr)->p);                                                  \
-        if((PIMMX(ptr)->pp = PIMMX(ptr)->p))                                                \
+        IMMX_POP_NODE(ptr, PIMX(ptr)->p);                                                   \
+        if((PIMX(ptr)->pp = PIMX(ptr)->p))                                                  \
         {                                                                                   \
-            PIMMX(ptr)->p->key = nkey;                                                      \
-            PIMMX(ptr)->p->data = 1;                                                        \
-            PIMMX(ptr)->old = immx_insert(PIMMX(ptr), PIMMX(ptr)->p);                       \
-            if(PIMMX(ptr)->old)                                                             \
+            PIMX(ptr)->p->key = nkey;                                                       \
+            PIMX(ptr)->p->data = 1;                                                         \
+            PIMX(ptr)->old = imx_insert(PIMX(ptr), PIMX(ptr)->p);                           \
+            if(PIMX(ptr)->old)                                                              \
             {                                                                               \
-                PIMMX(ptr)->old->data++;                                                    \
-                IMMX_PUSH_NODE(ptr, PIMMX(ptr)->pp);                                        \
+                PIMX(ptr)->old->data++;                                                     \
+                IMMX_PUSH_NODE(ptr, PIMX(ptr)->pp);                                         \
             }                                                                               \
             else                                                                            \
             {                                                                               \
-                IMMX_MINMAX_ADD(ptr, PIMMX(ptr)->pp);                                       \
-                PIMMX(ptr)->count++;                                                        \
+                IMMX_MINMAX_ADD(ptr, PIMX(ptr)->pp);                                        \
+                PIMX(ptr)->count++;                                                         \
             }                                                                               \
         }                                                                                   \
     }                                                                                       \
@@ -260,12 +260,12 @@ do                                                                              
 {                                                                                           \
     if(ptr)                                                                                 \
     {                                                                                       \
-        PIMMX(ptr)->node.key = nkey;                                                        \
-        PIMMX(ptr)->bnode = &(PIMMX(ptr)->node);                                            \
-        PIMMX(ptr)->p = immx_find(PIMMX(ptr), PIMMX(ptr)->bnode);                           \
-        if(PIMMX(ptr)->p)                                                                   \
+        PIMX(ptr)->node.key = nkey;                                                         \
+        PIMX(ptr)->bnode = &(PIMX(ptr)->node);                                              \
+        PIMX(ptr)->p = imx_find(PIMX(ptr), PIMX(ptr)->bnode);                               \
+        if(PIMX(ptr)->p)                                                                    \
         {                                                                                   \
-            ret = PIMMX(ptr)->p->data;                                                      \
+            ret = PIMX(ptr)->p->data;                                                       \
         }                                                                                   \
     }                                                                                       \
 }while(0)
@@ -276,14 +276,14 @@ do                                                                              
 {                                                                                           \
     if(ptr)                                                                                 \
     {                                                                                       \
-        PIMMX(ptr)->node.key = nkey;                                                        \
-        PIMMX(ptr)->bnode = &(PIMMX(ptr)->node);                                            \
-        PIMMX(ptr)->old = immx_remove(PIMMX(ptr), PIMMX(ptr)->bnode);                       \
-        if(PIMMX(ptr)->old)                                                                 \
+        PIMX(ptr)->node.key = nkey;                                                         \
+        PIMX(ptr)->bnode = &(PIMX(ptr)->node);                                              \
+        PIMX(ptr)->old = imx_remove(PIMX(ptr), PIMX(ptr)->bnode);                           \
+        if(PIMX(ptr)->old)                                                                  \
         {                                                                                   \
-            IMMX_PUSH_NODE(ptr, PIMMX(ptr)->old);                                           \
-            PIMMX(ptr)->count--;                                                            \
-            ret = PIMMX(ptr)->old->data;                                                    \
+            IMMX_PUSH_NODE(ptr, PIMX(ptr)->old);                                            \
+            PIMX(ptr)->count--;                                                             \
+            ret = PIMX(ptr)->old->data;                                                     \
         }                                                                                   \
     }                                                                                       \
 }while(0)
@@ -294,14 +294,14 @@ do                                                                              
 {                                                                                           \
     if(ptr)                                                                                 \
     {                                                                                       \
-        if(PIMMX(ptr)->min)                                                                 \
+        if(PIMX(ptr)->min)                                                                  \
         {                                                                                   \
-            nkey = PIMMX(ptr)->min->key;                                                    \
-            ret  = PIMMX(ptr)->min->data;                                                   \
-            PIMMX(ptr)->p = PIMMX(ptr)->min;                                                \
-            PIMMX(ptr)->old = immx_remove(PIMMX(ptr), PIMMX(ptr)->p);                       \
-            IMMX_PUSH_NODE(ptr, PIMMX(ptr)->old);                                           \
-            PIMMX(ptr)->count--;                                                            \
+            nkey = PIMX(ptr)->min->key;                                                     \
+            ret  = PIMX(ptr)->min->data;                                                    \
+            PIMX(ptr)->p = PIMX(ptr)->min;                                                  \
+            PIMX(ptr)->old = imx_remove(PIMX(ptr), PIMX(ptr)->p);                           \
+            IMMX_PUSH_NODE(ptr, PIMX(ptr)->old);                                            \
+            PIMX(ptr)->count--;                                                             \
         }                                                                                   \
     }                                                                                       \
 }while(0)
@@ -312,14 +312,14 @@ do                                                                              
 {                                                                                           \
     if(ptr)                                                                                 \
     {                                                                                       \
-        if(PIMMX(ptr)->max)                                                                 \
+        if(PIMX(ptr)->max)                                                                  \
         {                                                                                   \
-            nkey = PIMMX(ptr)->max->key;                                                    \
-            ret  = PIMMX(ptr)->max->data;                                                   \
-            PIMMX(ptr)->p = PIMMX(ptr)->max;                                                \
-            PIMMX(ptr)->old = immx_remove(PIMMX(ptr), PIMMX(ptr)->p);                       \
-            IMMX_PUSH_NODE(ptr, PIMMX(ptr)->old);                                           \
-            PIMMX(ptr)->count--;                                                            \
+            nkey = PIMX(ptr)->max->key;                                                     \
+            ret  = PIMX(ptr)->max->data;                                                    \
+            PIMX(ptr)->p = PIMX(ptr)->max;                                                  \
+            PIMX(ptr)->old = imx_remove(PIMX(ptr), PIMX(ptr)->p);                           \
+            IMMX_PUSH_NODE(ptr, PIMX(ptr)->old);                                            \
+            PIMX(ptr)->count--;                                                             \
         }                                                                                   \
     }                                                                                       \
 }while(0)
@@ -330,17 +330,17 @@ do                                                                              
 {                                                                                           \
     if(ptr)                                                                                 \
     {                                                                                       \
-        if(PIMMX(ptr)->max)                                                                 \
+        if(PIMX(ptr)->max)                                                                  \
         {                                                                                   \
-            PIMMX(ptr)->bnode = NULL;                                                       \
-            PIMMX(ptr)->bnode = IMMX_MAX(PIMMX(ptr));                                       \
-            if(PIMMX(ptr)->bnode)                                                           \
+            PIMX(ptr)->bnode = NULL;                                                        \
+            PIMX(ptr)->bnode = IMX_MAX(PIMX(ptr));                                          \
+            if(PIMX(ptr)->bnode)                                                            \
             {                                                                               \
-                nkey = PIMMX(ptr)->bnode->key;                                              \
-                ret = PIMMX(ptr)->bnode->data;                                              \
-                PIMMX(ptr)->old = immx_remove(PIMMX(ptr), PIMMX(ptr)->bnode);               \
-                IMMX_PUSH_NODE(ptr, PIMMX(ptr)->old);                                       \
-                PIMMX(ptr)->count--;                                                        \
+                nkey = PIMX(ptr)->bnode->key;                                               \
+                ret = PIMX(ptr)->bnode->data;                                               \
+                PIMX(ptr)->old = imx_remove(PIMX(ptr), PIMX(ptr)->bnode);                   \
+                IMMX_PUSH_NODE(ptr, PIMX(ptr)->old);                                        \
+                PIMX(ptr)->count--;                                                         \
             }                                                                               \
         }                                                                                   \
     }                                                                                       \
@@ -352,17 +352,17 @@ do                                                                              
 {                                                                                           \
     if(ptr)                                                                                 \
     {                                                                                       \
-        if(PIMMX(ptr)->min)                                                                 \
+        if(PIMX(ptr)->min)                                                                  \
         {                                                                                   \
-            PIMMX(ptr)->bnode = NULL;                                                       \
-            PIMMX(ptr)->bnode = IMMX_MIN(PIMMX(ptr));                                       \
-            if(PIMMX(ptr)->bnode)                                                           \
+            PIMX(ptr)->bnode = NULL;                                                        \
+            PIMX(ptr)->bnode = IMX_MIN(PIMX(ptr));                                          \
+            if(PIMX(ptr)->bnode)                                                            \
             {                                                                               \
-                nkey = PIMMX(ptr)->bnode->key;                                              \
-                ret = PIMMX(ptr)->bnode->data;                                              \
-                PIMMX(ptr)->old = immx_remove(PIMMX(ptr), PIMMX(ptr)->bnode);               \
-                IMMX_PUSH_NODE(ptr, PIMMX(ptr)->old);                                       \
-                PIMMX(ptr)->count--;                                                        \
+                nkey = PIMX(ptr)->bnode->key;                                               \
+                ret = PIMX(ptr)->bnode->data;                                               \
+                PIMX(ptr)->old = imx_remove(PIMX(ptr), PIMX(ptr)->bnode);                   \
+                IMMX_PUSH_NODE(ptr, PIMX(ptr)->old);                                        \
+                PIMX(ptr)->count--;                                                         \
             }                                                                               \
         }                                                                                   \
     }                                                                                       \
@@ -374,12 +374,12 @@ do                                                                              
 {                                                                                           \
     if(ptr)                                                                                 \
     {                                                                                       \
-        PIMMX(ptr)->p = NULL;                                                               \
-        while((PIMMX(ptr)->p = IMMX_MAX(PIMMX(ptr))))                                       \
+        PIMX(ptr)->p = NULL;                                                                \
+        while((PIMX(ptr)->p = IMX_MAX(PIMX(ptr))))                                          \
         {                                                                                   \
-            PIMMX(ptr)->old = immx_remove(PIMMX(ptr), PIMMX(ptr)->p);                       \
-            IMMX_PUSH_NODE(ptr, PIMMX(ptr)->old);                                           \
-            PIMMX(ptr)->count--;                                                            \
+            PIMX(ptr)->old = imx_remove(PIMX(ptr), PIMX(ptr)->p);                           \
+            IMMX_PUSH_NODE(ptr, PIMX(ptr)->old);                                            \
+            PIMX(ptr)->count--;                                                             \
         }                                                                                   \
     }                                                                                       \
 }while(0)
@@ -390,12 +390,12 @@ do                                                                              
 {                                                                                           \
     if(ptr)                                                                                 \
     {                                                                                       \
-        PIMMX(ptr)->loop = 0;                                                               \
-        while(PIMMX(ptr)->loop < PIMMX(ptr)->nfreelist)                                     \
+        PIMX(ptr)->loop = 0;                                                                \
+        while(PIMX(ptr)->loop < PIMX(ptr)->nfreelist)                                       \
         {                                                                                   \
-            PIMMX(ptr)->tmp = PIMMX(ptr)->freelist[PIMMX(ptr)->loop];                       \
-            xmm_free(PIMMX(ptr)->tmp, sizeof(IMMXNODE) * IMMX_LINE_NUM);                    \
-            PIMMX(ptr)->loop++;                                                             \
+            PIMX(ptr)->tmp = PIMX(ptr)->freelist[PIMX(ptr)->loop];                          \
+            xmm_free(PIMX(ptr)->tmp, sizeof(IMXNODE) * IMX_LINE_NUM);                       \
+            PIMX(ptr)->loop++;                                                              \
         }                                                                                   \
         xmm_free(ptr, sizeof(IMMX));                                                        \
         ptr = NULL;                                                                         \
