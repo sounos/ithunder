@@ -558,51 +558,51 @@ int ibase_set_double_index(IBASE *ibase, int double_index_from, int double_field
     return -1;
 }
 
-/* push immx */
-void ibase_push_immx(IBASE *ibase, void *immx)
+/* push mmx */
+void ibase_push_mmx(IBASE *ibase, void *mmx)
 {
     int x = 0;
 
-    if(ibase && immx)
+    if(ibase && mmx)
     {
         MUTEX_LOCK(ibase->mutex_mmx);
-        if(ibase->nqimmxs < IB_MMX_MAX)
+        if(ibase->nqmmxs < IB_MMX_MAX)
         {
-            IMMX_RESET(immx);
-            x = ibase->nqimmxs++;
-            ibase->qimmxs[x] = immx;
+            IMMX_RESET(mmx);
+            x = ibase->nqmmxs++;
+            ibase->qmmxs[x] = mmx;
         }
         else
         {
-            IMMX_CLEAN(immx);
+            IMMX_CLEAN(mmx);
         }
         MUTEX_UNLOCK(ibase->mutex_mmx);
     }
     return ;
 }
 
-/* ibase pop immx */
-void *ibase_pop_immx(IBASE *ibase)
+/* ibase pop mmx */
+void *ibase_pop_mmx(IBASE *ibase)
 {
-    void *immx = NULL;
+    void *mmx = NULL;
     int x = 0;
 
     if(ibase)
     {
         MUTEX_LOCK(ibase->mutex_mmx);
-        if(ibase->nqimmxs > 0)
+        if(ibase->nqmmxs > 0)
         {
-            x = --(ibase->nqimmxs);
-            immx = ibase->qimmxs[x];
-            ibase->qimmxs[x] = NULL;
+            x = --(ibase->nqmmxs);
+            mmx = ibase->qmmxs[x];
+            ibase->qmmxs[x] = NULL;
         }
         else
         {
-            immx = IMMX_INIT();
+            mmx = IMMX_INIT();
         }
         MUTEX_UNLOCK(ibase->mutex_mmx);
     }
-    return immx;
+    return mmx;
 }
 
 /* push stree */
@@ -1672,7 +1672,7 @@ void ibase_clean(IBASE *ibase)
         for(i = 0; i < ibase->nqiterms; i++){xmm_free(ibase->qiterms[i], sizeof(ITERM) * IB_QUERY_MAX);}
         for(i = 0; i < ibase->nqxmaps; i++){xmm_free(ibase->qxmaps[i], sizeof(XMAP));}
         for(i = 0; i < ibase->nqstrees; i++){mtree64_clean((MTR64(ibase->qstrees[i])));}
-        for(i = 0; i < ibase->nqimmxs; i++){IMMX_CLEAN(ibase->qimmxs[i]);}
+        for(i = 0; i < ibase->nqmmxs; i++){IMMX_CLEAN(ibase->qmmxs[i]);}
         for(i = 0; i < ibase->nqchunks; i++){xmm_free(ibase->qchunks[i], sizeof(ICHUNK));}
 #ifdef HAVE_SCWS
         for(i = 0; i < ibase->nqsegmentors; i++)

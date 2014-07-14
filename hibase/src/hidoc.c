@@ -1700,7 +1700,7 @@ int hidoc_genindex(HIDOC *hidoc, HINDEX *hindex, FHEADER *fheader, IFIELD *field
             return -1;
         }
         to = nfields;
-        if(nfields > IB_INDEX_MAX) to = IB_INDEX_MAX;
+        if(nfields > IB_FIELDS_MAX) to = IB_FIELDS_MAX;
         i = 0;
         while(i < to)
         {

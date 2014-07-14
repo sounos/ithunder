@@ -207,7 +207,7 @@ typedef struct BTERM
     int  id;
 }BTERM;
 /* field */
-#define  IB_INDEX_MAX           32
+#define  IB_INDEX_MAX           160
 #define  IB_DATE_MAX            64
 #define  IB_DATATYPE_INT        0x01
 #define  IB_DATATYPE_DOUBLE     0x02
@@ -460,6 +460,10 @@ typedef struct _IOPERATOR
 #define IB_SORT_BY_INT      0x01
 #define IB_SORT_BY_LONG     0x02
 #define IB_SORT_BY_DOUBLE   0x03
+#define IB_GROUPBY_INT      0x01
+#define IB_GROUPBY_LONG     0x02
+#define IB_GROUPBY_DOUBLE   0x03
+
 /* query */
 typedef struct _IQUERY
 {
@@ -673,9 +677,7 @@ typedef struct _IBASE
     int nqiterms;
     int nqxmaps; 
     int nqstrees;
-    int nqimmxs;
-    int nqlmmxs;
-    int nqdmmxs;
+    int nqmmxs;
     int nqchunks;
     int nsegmentors;
     void *mutex;
@@ -697,9 +699,7 @@ typedef struct _IBASE
     ITERM *qiterms[IB_QITERMS_MAX];
     XMAP *qxmaps[IB_XMAPS_MAX];
     void *qstrees[IB_STREES_MAX];
-    void *qimmxs[IB_MMX_MAX];
-    void *qlmmxs[IB_MMX_MAX];
-    void *qdmmxs[IB_MMX_MAX];
+    void *qmmxs[IB_MMX_MAX];
     ICHUNK  *qchunks[IB_CHUNKS_MAX];
     void *index; /* index db */
     void *mmtree; /* int tree */
@@ -839,6 +839,9 @@ char *ibase_pop_block(IBASE *ibase);
 void ibase_push_stree(IBASE *ibase, void *stree);
 /* ibase pop mtree */
 void *ibase_pop_stree(IBASE *ibase);
+/* pop/push mmx */
+void ibase_push_mmx(IBASE *ibase, void *mmx);
+void *ibase_pop_mmx(IBASE *ibase);
 /* bound items */
 int ibase_bound_items(IBASE *ibase, int count);
 /* read items */

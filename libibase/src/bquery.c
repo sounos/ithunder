@@ -337,17 +337,17 @@ void ibase_unindex(IBASE *ibase, ITERM *itermlist, XMAP *_xmap_,
 ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query)
 {
     int i = 0, x = 0, n = 0, mm = 0, nn = 0, k = 0, z = 0, *np = NULL, nqterms = 0, nquerys = 0, 
-        is_query_phrase =  0, docid = 0, ifrom = -1, is_sort_reverse = 0, 
+        is_query_phrase =  0, docid = 0, ifrom = -1, is_sort_reverse = 0, gid = 0, 
         max = 0, int_index_from = 0, int_index_to = 0, ito = -1, double_index_from = 0, 
         xno = 0, min = 0,double_index_to = 0, range_flag = 0, prev = 0, last = -1, 
-        no = 0, next = 0, fid = 0, nxrecords = 0, is_field_sort = 0, scale = 0, 
+        no = 0, next = 0, fid = 0, nxrecords = 0, is_field_sort = 0, scale = 0, is_groupby = 0, 
         total = 0, ignore_rank = 0, long_index_from = 0, long_index_to = 0, nx = 0, 
         kk = 0, prevnext = 0, ii = 0, jj = 0, imax = 0, imin = 0, xint = 0, bithit = 0;
     double score = 0.0, p1 = 0.0, p2 = 0.0, dfrom = 0.0,
            tf = 1.0, Py = 0.0, Px = 0.0, dto = 0.0, xdouble = 0.0;
     int64_t bits = 0, lfrom = 0, lto = 0, base_score = 0, 
             doc_score = 0, old_score = 0, xdata = 0, xlong = 0;
-    void *timer = NULL, *topmap = NULL, *fmap = NULL;//, *dp = NULL, *olddp = NULL;
+    void *timer = NULL, *topmap = NULL, *fmap = NULL, *groupby = NULL;
     IRECORD *record = NULL, *records = NULL, xrecords[IB_NTOP_MAX];
     IHEADER *headers = NULL; ICHUNK *chunk = NULL;
     XMAP *xmap = NULL; XNODE *xnode = NULL;
@@ -371,14 +371,9 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query)
         }
         xmap = ibase_pop_xmap(ibase);
         itermlist = ibase_pop_itermlist(ibase);
-        //topmap = ibase_pop_smap(ibase);
-        //fmap = ibase_pop_smap(ibase);
         topmap = ibase_pop_stree(ibase);
         fmap = ibase_pop_stree(ibase);
         headers = (IHEADER *)(ibase->headersio.map);
-        //intidx = (int *)(ibase->intidxio.map);
-        //longidx = (int64_t *)(ibase->longidxio.map);
-        //doubleidx = (double *)(ibase->doubleidxio.map);
         if((p1 = query->ravgdl) <= 0.0) p1 = 1.0;
         if((query->flag & IB_QUERY_RSORT)) is_sort_reverse = 1;        
         else if((query->flag & IB_QUERY_SORT)) is_sort_reverse = 0;
@@ -416,6 +411,26 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query)
             fid += IB_DOUBLE_OFF;
             if(ibase->state->mfields[fid]) is_field_sort = IB_SORT_BY_DOUBLE;
         }
+        gid = query->groupby;
+        if(gid >= int_index_from && gid < int_index_to)
+        {
+            gid -= int_index_from;
+            gid += IB_INT_OFF;
+            if(ibase->state->mfields[gid]) is_groupby  = IB_GROUPBY_INT;
+        }
+        else if(gid >= long_index_from && gid < long_index_to)
+        {
+            gid -= long_index_from;
+            gid += IB_LONG_OFF;
+            if(ibase->state->mfields[gid]) is_groupby  = IB_GROUPBY_LONG;
+        }
+        else if(gid >= double_index_from && gid < double_index_to)
+        {
+            gid -= double_index_from;
+            gid += IB_DOUBLE_OFF;
+            if(ibase->state->mfields[gid]) is_groupby  = IB_GROUPBY_DOUBLE;
+        }
+        if(gid > 0){groupby = ibase_pop_mmx(ibase);};
         TIMER_INIT(timer);
         //read index 
         for(i = 0; i < nqterms; i++)
@@ -777,6 +792,22 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query)
             if(ignore_rank == 0 && (query->flag & IB_QUERY_RANK)) 
                 doc_score += IBLONG((headers[docid].rank*(double)(query->base_rank)));
             ACCESS_LOGGER(ibase->logger, "docid:%d/%lld base_score:%lld rank:%f base_rank:%lld doc_score:%lld", docid, IBLL(headers[docid].globalid), IBLL(base_score), headers[docid].rank, IBLL(query->base_rank), IBLL(doc_score));
+            /* group by */
+            if(groupby && gid > 0)
+            {
+                if(is_groupby == IB_GROUPBY_INT)
+                {
+                    
+                }
+                if(is_groupby == IB_GROUPBY_LONG)
+                {
+
+                }
+                if(is_groupby == IB_GROUPBY_DOUBLE)
+                {
+
+                }
+            }
             if(is_field_sort)
             {
                 //WARN_LOGGER(ibase->logger, "docid:%d/%lld base_score:%lld rank:%f base_rank:%lld doc_score:%lld fid:%d", docid, IBLL(headers[docid].globalid), IBLL(base_score), headers[docid].rank, IBLL(query->base_rank), IBLL(doc_score), fid);
@@ -882,6 +913,7 @@ end:
         if(res) res->doctotal = ibase->state->dtotal;
         if(xmap) ibase_push_xmap(ibase, xmap);
         if(fmap) ibase_push_stree(ibase, fmap);
+        if(groupby) ibase_push_mmx(ibase, groupby);
         if(topmap) ibase_push_stree(ibase, topmap);
         TIMER_CLEAN(timer);
     }

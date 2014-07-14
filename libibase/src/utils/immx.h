@@ -6,12 +6,12 @@
 #include "xmm.h"
 typedef struct _IMXNODE
 {
-    int  key;
+    int64_t  key;
     int data;
+    int rbe_color;         
     struct _IMXNODE *rbe_left;     
     struct _IMXNODE *rbe_right;    
     struct _IMXNODE *rbe_parent;   
-    int rbe_color;         
 }IMXNODE;
 #define IMX_LINE_MAX     1024
 #define IMX_LINE_NUM     1024
@@ -168,11 +168,11 @@ do                                                                              
 {                                                                                           \
     if(node == PIMX(ptr)->max)                                                              \
     {                                                                                       \
-        PIMX(ptr)->max = imx_prev(PIMX(ptr)->max);                                          \
+        PIMX(ptr)->max = imx_prev(node);                                                    \
     }                                                                                       \
     if(node == PIMX(ptr)->min)                                                              \
     {                                                                                       \
-        PIMX(ptr)->min = imx_next(PIMX(ptr)->min);                                          \
+        PIMX(ptr)->min = imx_next(node);                                                    \
     }                                                                                       \
 }while(0)
 
