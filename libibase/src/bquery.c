@@ -12,6 +12,7 @@
 #include "imap.h"
 #include "lmap.h"
 #include "dmap.h"
+#include "immx.h"
 /* push XMAP */
 void ibase_push_xmap(IBASE *ibase, XMAP *xmap)
 {

@@ -168,11 +168,11 @@ do                                                                              
 {                                                                                           \
     if(node == PIMX(ptr)->max)                                                              \
     {                                                                                       \
-        PIMX(ptr)->max = imx_prev(PIMX(ptr));                                               \
+        PIMX(ptr)->max = imx_prev(PIMX(ptr)->max);                                          \
     }                                                                                       \
     if(node == PIMX(ptr)->min)                                                              \
     {                                                                                       \
-        PIMX(ptr)->min = imx_next(PIMX(ptr));                                               \
+        PIMX(ptr)->min = imx_next(PIMX(ptr)->min);                                          \
     }                                                                                       \
 }while(0)
 

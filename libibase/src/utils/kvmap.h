@@ -168,11 +168,11 @@ do                                                                              
 {                                                                                           \
     if(node == PKV(ptr)->max)                                                               \
     {                                                                                       \
-        PKV(ptr)->max = kv_prev(PKV(ptr));                                                  \
+        PKV(ptr)->max = kv_prev(PKV(ptr)->max);                                             \
     }                                                                                       \
     if(node == PKV(ptr)->min)                                                               \
     {                                                                                       \
-        PKV(ptr)->min = kv_next(PKV(ptr));                                                  \
+        PKV(ptr)->min = kv_next(PKV(ptr)->min);                                                  \
     }                                                                                       \
 }while(0)
 

@@ -342,35 +342,35 @@ IMXNODE *imx_minmax(IMMX *map, int val)
 
 int main()
 {
-    void *map = NULL, *timer = NULL, *dp = NULL, *olddp = NULL;
-    long i = 0, key = 0, count = 10000;
+    int i = 0, key = 0, count = 10000, ret = 0;
+    void *map = NULL, *timer = NULL;
 
     if((map = IMMX_INIT()))
     {
         TIMER_INIT(timer);
-        while(i < count)
+        while(i++ < count)
         {
             key = random()%count;
-            dp = (void *)++i;
-            IMMX_ADD(map, key, dp, olddp);
+            IMMX_ADD(map, key);
             //if(olddp)fprintf(stdout, "old[%d:%08x]\n", key, olddp);
         }
         TIMER_SAMPLE(timer);
         fprintf(stdout, "insert %d nodes count:%d free:%d total:%d time used:%lld\n", count,  PIMX(map)->count, PIMX(map)->free_count, PIMX(map)->total, PT_LU_USEC(timer));
         i = 0;
-        while(i < count)
+        while(i++ < count)
         {
-            key = i++;
-            dp = NULL;
-            IMMX_GET(map, key, dp);
-            //if(dp)fprintf(stdout, "%ld:[%ld]\n", key, (long)dp);
+            key = random()%count;
+            ret = 0;
+            IMMX_GET(map, key, ret);
+            if(ret) fprintf(stdout, "%d:[%d]\n", key, ret);
         }
         TIMER_SAMPLE(timer);
         fprintf(stdout, "get %d nodes count:%d free:%d total:%d time used:%lld\n", count,  PIMX(map)->count, PIMX(map)->free_count, PIMX(map)->total, PT_LU_USEC(timer));
         do
         {
-            IMMX_POP_MIN(map, key, dp);
-            //if(dp) fprintf(stdout, "%ld:[%ld]\n", key, (long)dp); 
+            ret = 0;
+            IMMX_POP_MIN(map, key, ret);
+            if(ret) fprintf(stdout, "%d:[%d]\n", key, ret); 
         }while(IMX_ROOT(map));
         TIMER_SAMPLE(timer);
         fprintf(stdout, "pop min(%d) node count:%d free:%d total:%d time used:%lld\n", count,  PIMX(map)->count, PIMX(map)->free_count, PIMX(map)->total, PT_LU_USEC(timer));
@@ -378,23 +378,21 @@ int main()
         while(i < count)
         {
             key = random()%count;
-            dp = (void *)i;
-            IMMX_ADD(map, key, dp, olddp);
+            IMMX_ADD(map, key);
             ++i;
         }
         TIMER_SAMPLE(timer);
         fprintf(stdout, "insert %d nodes count:%d free:%d total:%d time used:%lld\n", count,  PIMX(map)->count, PIMX(map)->free_count, PIMX(map)->total, PT_LU_USEC(timer));
         do
         {
-            IMMX_POP_MAX(map, key, dp);
-            //if(dp) fprintf(stdout, "%ld:[%ld]\n", key, (long)dp); 
+            ret = 0;
+            IMMX_POP_MAX(map, key, ret);
+            if(ret) fprintf(stdout, "%d:[%d]\n", key, ret); 
         }while(IMX_ROOT(map));
         TIMER_SAMPLE(timer);
         fprintf(stdout, "pop max(%d) nodes count:%d free:%d total:%d time used:%lld\n", count,  PIMX(map)->count, PIMX(map)->free_count, PIMX(map)->total, PT_LU_USEC(timer));
         TIMER_SAMPLE(timer);
         TIMER_CLEAN(timer);
-        /*
-        */
         IMMX_CLEAN(map);
     }
 }
