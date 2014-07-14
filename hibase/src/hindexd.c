@@ -145,7 +145,8 @@ static char *e_argvs[] =
 #define E_ARGV_DBID         39
     ""
 };
-#define  E_ARGV_NUM         41
+#define  E_ARGV_NUM         40
+IBASE *ibase_init_db(int dbid);
 int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query);
 /* packet reader for indexd */
 int indexd_packet_reader(CONN *conn, CB_DATA *buffer)
@@ -200,7 +201,7 @@ err_end:
 /* index  handler */
 int indexd_index_handler(CONN *conn)
 {
-    char *p = NULL, *end = NULL, path[IB_PATH_MAX];
+    char *p = NULL, *end = NULL;// path[IB_PATH_MAX];
     CB_DATA *chunk = NULL, *packet = NULL;
     int i = 0, count = 0, dbid = 0;
     DOCHEADER *docheader = NULL;
@@ -240,9 +241,7 @@ int indexd_index_handler(CONN *conn)
                         dbid = (int)docheader->dbid;
                         if(pools[dbid] == NULL)
                         {
-                            pools[dbid] = ibase_init();
-                            sprintf(path, "%s/%d", ibase_basedir, dbid);
-                            ibase_set_basedir(pools[dbid], path, ibase_used_for, ibase_mmsource_status);
+                            pools[dbid] = ibase_init_db(dbid);
                         }
                         db = pools[dbid];
                     }
@@ -375,7 +374,7 @@ int indexd_data_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *ch
                                 {
                                     n = sizeof(IHEAD) + presp->length;
                                     conn->push_chunk(conn, (char *)ichunk, n);
-                                    ibase_push_chunk(ibase, ichunk);
+                                    ibase_push_chunk(db, ichunk);
                                     return 0;
                                 }
                                 else resp.status = IB_STATUS_ERR;
@@ -389,7 +388,7 @@ int indexd_data_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *ch
                         resp.cmd = req->cmd + 1;
                         resp.length = sizeof(IRES);
                         xres.qid = pquery->qid;
-                        xres.doctotal = ibase->state->dtotal;
+                        xres.doctotal = db->state->dtotal;
                         conn->push_chunk(conn, &resp, sizeof(IHEAD));
                         conn->push_chunk(conn, &xres, sizeof(IRES));
                         return conn->over_session(conn);
@@ -569,9 +568,10 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
         orderby = 0, order = 0, field_id = 0, int_index_from = 0, int_index_to = 0, 
         long_index_from = 0, long_index_to = 0, double_index_from = 0, double_index_to = 0, 
         xint = 0, op = 0, need_rank = 0, usecs = 0, flag = 0, nkeys = 0;
-    int64_t xlong = 0;
     struct timeval tv = {0};
     double xdouble = 0.0;
+    int64_t xlong = 0;
+    IBASE *db = NULL;
 
     if(httpRQ && query)
     {
@@ -857,12 +857,17 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                 if(p == last)break;
             }
         }
-        int_index_from = ibase->state->int_index_from;
-        int_index_to = int_index_from + ibase->state->int_index_fields_num;
-        long_index_from = ibase->state->long_index_from;
-        long_index_to = long_index_from + ibase->state->long_index_fields_num;
-        double_index_from = ibase->state->double_index_from;
-        double_index_to = double_index_from + ibase->state->double_index_fields_num;
+        db = pools[0];
+        if(ibase_used_for == IB_USED_FOR_INDEXD && query->dbid > 0)
+        {
+            db = pools[query->dbid];
+        }
+        int_index_from = db->state->int_index_from;
+        int_index_to = int_index_from + db->state->int_index_fields_num;
+        long_index_from = db->state->long_index_from;
+        long_index_to = long_index_from + db->state->long_index_fields_num;
+        double_index_from = db->state->double_index_from;
+        double_index_to = double_index_from + db->state->double_index_fields_num;
         if((p = in))
         {
             while(*p != '\0')
@@ -1183,7 +1188,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
             {
                 if(keyslist[i] || notlist[i])
                 {
-                    ret = ibase_qparser(ibase, i, keyslist[i], notlist[i], query);
+                    ret = ibase_qparser(db, i, keyslist[i], notlist[i], query);
                     //fprintf(stdout, "%s:%s\n", keyslist[i], notlist[i]);
                 }
             }
@@ -1195,8 +1200,9 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
             fprintf(stdout, "%s::%d flag:%d nquerys:%d\n", __FILE__, __LINE__, query->flag&IB_QUERY_FIELDS, query->nquerys);
             */
         }
-        if(query_str && *query_str) ret = ibase_qparser(ibase, -1, query_str, not_str, query);
+        if(query_str && *query_str) ret = ibase_qparser(db, -1, query_str, not_str, query);
         else ret = 0;
+        //fprintf(stdout, "db:%p dbid:%d query_str:%s state:%p ret:%d query:%p\n", db, query->dbid, query_str, db->termstateio.map, ret, query);
     }
     return ret;
 }
@@ -1249,7 +1255,7 @@ int httpd_query_handler(CONN *conn, IQUERY *query)
                     memcpy(qset.displaylist, query->display, sizeof(IDISPLAY) * IB_FIELDS_MAX); 
                     memcpy(&(qset.res), res, sizeof(IRES));
                     records = &(ichunk->records[x]);
-                    if((n = ibase_read_summary(ibase, &qset, records, summary, 
+                    if((n = ibase_read_summary(db, &qset, records, summary, 
                                     highlight_start, highlight_end)) > 0)
                     {
                         //fprintf(stdout, "%s::%d ntop:%d from:%d count:%d n:%d summary:%s\n", __FILE__, __LINE__, query->ntop, query->from, query->count, n, summary);
@@ -1267,7 +1273,7 @@ int httpd_query_handler(CONN *conn, IQUERY *query)
                         ret = -1;
                     }
                 }
-                ibase_push_chunk(ibase, ichunk);
+                ibase_push_chunk(db, ichunk);
                 if(ret == -1) goto err_end;
                 return 0;
             }
@@ -1480,10 +1486,33 @@ int httpd_oob_handler(CONN *conn, CB_DATA *oob)
     return -1;
 }
 
+IBASE *ibase_init_db(int dbid)
+{
+    char *p = NULL, *charset = NULL, *rules = NULL, path[IB_PATH_MAX];
+    IBASE *db = NULL;
+
+    if(dbid >= 0 && (db = ibase_init()))
+    {
+        sprintf(path, "%s/%d", ibase_basedir, dbid);
+        ibase_set_basedir(db, path, ibase_used_for, ibase_mmsource_status);
+        if((p = iniparser_getstr(dict, "IBASE:dict_file")) 
+                && (charset = iniparser_getstr(dict, "IBASE:dict_charset")))
+        {
+            rules = iniparser_getstr(dict, "IBASE:dictrules");
+            ibase_set_dict(db, charset, p, rules);
+        }
+        db->set_index_status(db, iniparser_getint(dict, "IBASE:index_status", 0));
+        db->set_phrase_status(db, iniparser_getint(dict, "IBASE:phrase_status", 0));
+        db->set_compression_status(db, iniparser_getint(dict, "IBASE:compression_status", 0));
+        db->set_log_level(db, iniparser_getint(dict, "IBASE:log_level", 0));
+        pools[dbid] = db;
+    }
+    return db;
+}
 /* Initialize from ini file */
 int sbase_initialize(SBASE *sbase, char *conf)
 {
-    char *s = NULL, *p = NULL, *charset = NULL, *rules = NULL, line[256], path[IB_PATH_MAX];
+    char *s = NULL, *p = NULL, line[256], path[IB_PATH_MAX];
     int i = 0, n = 0, pidfd = 0;
     struct stat st = {0};
 
@@ -1532,31 +1561,18 @@ int sbase_initialize(SBASE *sbase, char *conf)
         _exit(-1);
     }
     memset(pools, 0, sizeof(IBASE *) * IBASE_DB_MAX);
-    sprintf(path, "%s/%d", ibase_basedir, 0);
-    pools[0] = ibase_init();
-    ibase_set_basedir(pools[0], path, ibase_used_for, ibase_mmsource_status);
+    pools[0] = ibase_init_db(0);
     for(i = 1; i < IBASE_DB_MAX; i++)
     {
         sprintf(path, "%s/%d", ibase_basedir, i);
         if(lstat(path, &st) == 0 && S_ISDIR(st.st_mode))
         {
-            pools[i] = ibase_init();
-            ibase_set_basedir(pools[i], path, ibase_used_for, ibase_mmsource_status);
+            pools[i] = ibase_init_db(i);
         }
     }
     ibase = pools[0];
-    if((p = iniparser_getstr(dict, "IBASE:dict_file")) 
-            && (charset = iniparser_getstr(dict, "IBASE:dict_charset")))
-    {
-        rules = iniparser_getstr(dict, "IBASE:dictrules");
-        ibase_set_dict(ibase, charset, p, rules);
-    }
     LOGGER_ROTATE_INIT(logger, iniparser_getstr(dict, "IBASE:query_log"), LOG_ROTATE_DAY);
     LOGGER_SET_LEVEL(logger, iniparser_getint(dict, "IBASE:query_log_level", 0));
-    ibase->set_index_status(ibase, iniparser_getint(dict, "IBASE:index_status", 0));
-    ibase->set_phrase_status(ibase, iniparser_getint(dict, "IBASE:phrase_status", 0));
-    ibase->set_compression_status(ibase, iniparser_getint(dict, "IBASE:compression_status", 0));
-    ibase->set_log_level(ibase, iniparser_getint(dict, "IBASE:log_level", 0));
     if((p = iniparser_getstr(dict, "IBASE:highlight_start"))) highlight_start = p;
     if((p = iniparser_getstr(dict, "IBASE:highlight_end"))) highlight_end = p;
     /* httpd */

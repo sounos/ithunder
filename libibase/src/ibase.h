@@ -23,6 +23,7 @@ extern "C" {
 #define  IB_SECURITY_OK         0x01
 #define  IB_SECURITY_FORBIDDEN  0xffffffff
 #define  IB_CATEGORY_MAX        64
+#define  IB_GROUP_MAX           1024
 #define  IB_SLEVEL_MAX          32
 #define  IB_BITSCAT_MAX         4
 #define  IB_TOPK_NUM            2000
@@ -543,6 +544,11 @@ typedef struct _IRECORD
     int64_t         globalid;
     int64_t         score;
 }IRECORD, *PIRECORD;
+typedef struct _IKEYV
+{
+    int64_t key;
+    int64_t count;
+}IKEYV;
 /* hits */
 typedef struct _IHITS
 {
@@ -553,15 +559,17 @@ typedef struct _IHITS
 /* result */
 typedef struct _IRES
 {
-    int status;
+    short status;
+    short count;
+    short ncatgroups;
+    short ngroups; 
     int qid;
-    int doctotal;
-    int total;
-    int count;
     int io_time;
     int sort_time;
-    int ncatgroups;
+    u_int32_t doctotal;
+    u_int32_t total;
     int catgroups[IB_CATEGORY_MAX];
+    IKEYV groups[IB_GROUP_MAX];
 }IRES;
 typedef struct _IBIO
 {

@@ -826,7 +826,7 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
     if(ibase && query_str && query && (termstates = ((TERMSTATE *)ibase->termstateio.map)))
     {
         nqterms = query->nqterms;
-        ACCESS_LOGGER(ibase->logger, "Ready parse(query_str:%s nsegs:%d)", query_str, ibase->nqsegmentors);
+        WARN_LOGGER(ibase->logger, "Ready parse(query_str:%s nsegs:%d)", query_str, ibase->nqsegmentors);
         if((segmentor = (scws_t)ibase_pop_segmentor(ibase)))
         {
             ACCESS_LOGGER(ibase->logger, "starting parse(query_str:%s nsegs:%d)", query_str, ibase->nqsegmentors);
@@ -1160,10 +1160,8 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
         }
         return query->nqterms;
     }
-#else
-    return ibase_qparser_X(ibase, query_str, not_str, query);
 #endif
-    return 0;
+    return -2;
 }
 
 /* set index status */

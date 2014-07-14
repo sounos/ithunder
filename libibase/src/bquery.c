@@ -797,16 +797,17 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query)
             {
                 if(is_groupby == IB_GROUPBY_INT)
                 {
-                    
+                   xlong = (int64_t)IMAP_GET(ibase->state->mfields[fid], docid); 
                 }
-                if(is_groupby == IB_GROUPBY_LONG)
+                else if(is_groupby == IB_GROUPBY_LONG)
                 {
-
+                    xlong = LMAP_GET(ibase->state->mfields[fid], docid);
                 }
-                if(is_groupby == IB_GROUPBY_DOUBLE)
+                else if(is_groupby == IB_GROUPBY_DOUBLE)
                 {
-
+                    xlong = IB_LONG_SCORE(DMAP_GET(ibase->state->mfields[fid], docid));
                 }
+                IMMX_ADD(groupby, xlong);
             }
             if(is_field_sort)
             {
