@@ -438,13 +438,13 @@ int qres_merge(CONN *conn, IRES *res, IRECORD *records)
             recs = (IRECORD *)(buf + sizeof(IHEAD) + sizeof(IQSET)); 
             memset(buf, 0, Q_LINE_SIZE);
         }
-        LOG_ACCESS("READY_MERGE_RES[%d]{qid:%d pid:%d rid:%d n:%d}", conn->xids[3], conn->xids[1], conn->xids[2], conn->xids[4], n);
+        LOG_ACCESS("READY_MERGE_RES[%d]{qid:%d pid:%d rid:%d n:%d ngroups:%d}", conn->xids[3], conn->xids[1], conn->xids[2], conn->xids[4], n, res->ngroups);
         if(mmdb_merge(mmdb, conn->xids[1], conn->xids[3], res, records, 
                     pid, &cqres, qset, recs, &n, &error) == 0)
         {
             LOG_ACCESS("OVER_QUERY[%d]{qid:%d pid:%d rid:%d n:%d}", conn->xids[3], conn->xids[1], conn->xids[2], conn->xids[4], n);
             if(error == 0) mmdb_set_cqres(mmdb, &cqres);
-            LOG_ACCESS("OVER_SET_CACHE[%d]{qid:%d pid:%d rid:%d recid:%d count:%d}", conn->xids[3], conn->xids[1], conn->xids[2], conn->xids[4], cqres.recid, cqres.qset.res.count);
+            LOG_ACCESS("OVER_SET_CACHE[%d]{qid:%d pid:%d rid:%d recid:%d count:%d ngroups:%d}", conn->xids[3], conn->xids[1], conn->xids[2], conn->xids[4], cqres.recid, cqres.qset.res.count, cqres.qset.res.ngroups);
             if(pid > 0 && (xconn = httpd->findconn(httpd, conn->xids[0])) 
                     && xconn->fd == conn->xids[5] && xconn->xids[2] > 0 && xconn->xids[2] == pid)
             {

@@ -839,6 +839,25 @@ int mmdb_over_merge(MMDB *mmdb, int qid, int pid, CQRES *cqres,
             }
             ++i;
         }
+        if((groupby = qtasks[qid].groupby)
+            && (cqres->qset.res.ngroups = PIMX(groupby)->count) > 0)
+        {
+            i = 0;
+            do
+            {
+                IMMX_POP_MIN(groupby, xlong, xdata);
+                if(i < IB_GROUP_MAX)
+                {
+                    cqres->qset.res.groups[i].key = xlong;
+                    cqres->qset.res.groups[i].val = xdata;
+                }
+                ++i;
+            }while(PIMX(groupby)->count > 0);
+            if(cqres->qset.res.ngroups > IB_GROUP_MAX)
+            {
+                WARN_LOGGER(mmdb->logger, "large groups[%d] qid:%d", cqres->qset.res.ngroups, qid);
+            }
+        }
         if(i > 0)
         {
             if(i > IB_TOPK_NUM) i = IB_TOPK_NUM;
@@ -859,26 +878,7 @@ int mmdb_over_merge(MMDB *mmdb, int qid, int pid, CQRES *cqres,
                 }
             }
         }
-        if((groupby = qtasks[qid].groupby)
-            && (cqres->qset.res.ngroups = PIMX(groupby)->count) > 0)
-        {
-            i = 0;
-            do
-            {
-                IMMX_POP_MIN(groupby, xlong, xdata);
-                if(i < IB_GROUP_MAX)
-                {
-                    cqres->qset.res.groups[i].key = xlong;
-                    cqres->qset.res.groups[i].val = xdata;
-                }
-                ++i;
-            }while(PIMX(groupby)->count > 0);
-            if(cqres->qset.res.ngroups > IB_GROUP_MAX)
-            {
-                WARN_LOGGER(mmdb->logger, "large groups[%d] qid:%d", cqres->qset.res.ngroups, qid);
-            }
-        }
-        mmdb_push_qres(mmdb, qtasks[qid].qres);
+                mmdb_push_qres(mmdb, qtasks[qid].qres);
         mmdb_push_stree(mmdb, qtasks[qid].map);
         mmdb_push_mmx(mmdb, qtasks[qid].groupby);
         qtasks[qid].qres = NULL;
