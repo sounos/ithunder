@@ -388,7 +388,7 @@ int indexd_data_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *ch
                         resp.cmd = req->cmd + 1;
                         resp.length = sizeof(IRES);
                         xres.qid = pquery->qid;
-                        xres.doctotal = db->state->dtotal;
+                        if(db) xres.doctotal = db->state->dtotal;
                         conn->push_chunk(conn, &resp, sizeof(IHEAD));
                         conn->push_chunk(conn, &xres, sizeof(IRES));
                         return conn->over_session(conn);
