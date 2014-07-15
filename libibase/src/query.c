@@ -262,7 +262,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query)
         }
         TIMER_SAMPLE(timer);
         res->io_time = (int)PT_LU_USEC(timer);
-        ACCESS_LOGGER(ibase->logger, "reading range fields[%d] data:%p ndata:%d qid:%d time used :%lld", min_set_fid, docs, ndocs, query->qid, PT_LU_USEC(timer));
+        DEBUG_LOGGER(ibase->logger, "reading range fields[%d] data:%p ndata:%d qid:%d time used :%lld", min_set_fid, docs, ndocs, query->qid, PT_LU_USEC(timer));
         res->total = 0;
         while(off < ndocs)
         {
@@ -449,7 +449,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query)
             if(query->category_filter != 0 && (query->category_filter & headers[docid].category) == 0)
                 goto next;
 
-            ACCESS_LOGGER(ibase->logger, "catgroup docid:%d/%lld category:%lld ", docid, IBLL(headers[docid].globalid), IBLL(headers[docid].category));
+            DEBUG_LOGGER(ibase->logger, "catgroup docid:%d/%lld category:%lld ", docid, IBLL(headers[docid].globalid), IBLL(headers[docid].category));
             /* bitxcat */
             if(headers[docid].category != 0)
             {
@@ -569,7 +569,7 @@ next:
                         docid = (int)record->globalid;
                         records[i].score = doc_score;
                         records[i].globalid = (int64_t)headers[docid].globalid;
-                        ACCESS_LOGGER(ibase->logger, "top[%d/%d] docid:%d/%lld score:%lld", i, MTREE64_TOTAL(topmap), docid, IBLL(headers[docid].globalid), IBLL(doc_score));
+                        DEBUG_LOGGER(ibase->logger, "top[%d/%d] docid:%d/%lld score:%lld", i, MTREE64_TOTAL(topmap), docid, IBLL(headers[docid].globalid), IBLL(doc_score));
                     }
                     ++i;
                 }while(MTREE64_TOTAL(topmap) > 0);
@@ -658,8 +658,7 @@ next:
                 res->ngroups = IB_GROUP_MAX;
             }
         }
-        ACCESS_LOGGER(ibase->logger, "bsort(%d) %d documents res:%d time used:%lld ncatgroups:%d ngroups:%d", query->qid, res->total, MTREE64_TOTAL(topmap), PT_LU_USEC(timer),  res->ncatgroups, res->ngroups);
-
+        ACCESS_LOGGER(ibase->logger, "bsort(%d) %d documents res:%d time used:%lld sortTime:%lld ncatgroups:%d ngroups:%d", query->qid, res->total, res->count, PT_USEC_U(timer), IBLL(res->sort_time),res->ncatgroups, res->ngroups);
 end:
         if(docs) db_free_data(PDB(ibase->index), (char *)docs, docs_size);
         if(res) res->doctotal = ibase->state->dtotal;

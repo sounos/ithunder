@@ -466,7 +466,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query)
         }
         TIMER_SAMPLE(timer);
         res->io_time = (int)PT_LU_USEC(timer);
-        ACCESS_LOGGER(ibase->logger, "reading index data qid:%d terms:%d vqterms:%d querys:%d bytes:%d time used :%lld", query->qid, query->nqterms, query->nvqterms, query->nquerys, total, PT_LU_USEC(timer));
+        DEBUG_LOGGER(ibase->logger, "reading index data qid:%d terms:%d vqterms:%d querys:%d bytes:%d time used :%lld", query->qid, query->nqterms, query->nvqterms, query->nquerys, total, PT_LU_USEC(timer));
         res->total = 0;
         while((xnode = xmap_pop(ibase, xmap)))
         {
@@ -512,7 +512,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query)
             }
             if(nquerys > 0 && xnode->nvhits == 0) goto next;
             if(!(query->flag & IB_QUERY_BOOLAND) && nquerys > 0 && ((xnode->nvhits * 100) / nquerys) < scale) goto next;
-            ACCESS_LOGGER(ibase->logger, "docid:%d/%lld nvhits:%d nquerys:%d/%d scale:%d int[%d/%d] catgroup:%d", docid, LL(headers[docid].globalid), xnode->nvhits, query->nqterms, nquerys, scale, query->int_range_count, query->int_bits_count, query->catgroup_filter);
+            DEBUG_LOGGER(ibase->logger, "docid:%d/%lld nvhits:%d nquerys:%d/%d scale:%d int[%d/%d] catgroup:%d", docid, LL(headers[docid].globalid), xnode->nvhits, query->nqterms, nquerys, scale, query->int_range_count, query->int_bits_count, query->catgroup_filter);
             /* in/range filter */
             if((jj = query->in_int_fieldid) > 0 && query->in_int_num > 0
                 && (jj += (IB_INT_OFF - int_index_from)) > 0 
@@ -675,13 +675,13 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query)
             if(query->category_filter != 0 && (query->category_filter & headers[docid].category) == 0)
                 goto next;
 
-            ACCESS_LOGGER(ibase->logger, "catgroup docid:%d/%lld category:%lld nbits:%d nhitsfields:%d", docid, IBLL(headers[docid].globalid), IBLL(headers[docid].category), xnode->nhits, xnode->nhitfields);
+            DEBUG_LOGGER(ibase->logger, "catgroup docid:%d/%lld category:%lld nbits:%d nhitsfields:%d", docid, IBLL(headers[docid].globalid), IBLL(headers[docid].category), xnode->nhits, xnode->nhitfields);
             /* hits/fields hits */
             base_score += IBLONG((xnode->nhits + xnode->nvhits) * query->base_hits);
             base_score += IBLONG(xnode->nhitfields * query->base_fhits);
             mm = xnode->nhits - 1;
             nn = 0;
-            ACCESS_LOGGER(ibase->logger, "docid:%d/%lld base_score:%lld score:%f doc_score:%lld min:%d max:%d", docid, IBLL(headers[docid].globalid), IBLL(base_score), score, IBLL(doc_score), nn, mm);
+            DEBUG_LOGGER(ibase->logger, "docid:%d/%lld base_score:%lld score:%f doc_score:%lld min:%d max:%d", docid, IBLL(headers[docid].globalid), IBLL(base_score), score, IBLL(doc_score), nn, mm);
             /* scoring */
             i = --(xnode->nhits);
             do
@@ -759,7 +759,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query)
                     Py = itermlist[x].idf * tf * IB_BM25_P1;
                     Px = tf + IB_BM25_K1 - IB_BM25_P2 + IB_BM25_P2 * p2;
                     score += (Py/Px);
-                    ACCESS_LOGGER(ibase->logger, "i:%d term:%d docid:%d/%lld p1:%f p2:%f ttotal:%d tf:%f idf:%f score:%f", i, itermlist[x].termid, docid, IBLL(headers[docid].globalid), p1, p2, headers[docid].terms_total, tf, itermlist[x].idf, score);
+                    DEBUG_LOGGER(ibase->logger, "i:%d term:%d docid:%d/%lld p1:%f p2:%f ttotal:%d tf:%f idf:%f score:%f", i, itermlist[x].termid, docid, IBLL(headers[docid].globalid), p1, p2, headers[docid].terms_total, tf, itermlist[x].idf, score);
                 }
                 base_score += IBLONG(query->qterms[x].size * query->base_nterm);
                 if(itermlist[x].weight)
@@ -771,7 +771,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query)
                 ibase_unindex(ibase, itermlist, xmap, is_query_phrase, query->qfhits, x);
                 //UNINDEX(ibase, is_query_phrase, itermlist, xmap, x, n, np);
             }while(--i >= 0);
-            ACCESS_LOGGER(ibase->logger, "docid:%d/%lld base_score:%lld score:%f doc_score:%lld", docid, IBLL(headers[docid].globalid), IBLL(base_score), score, IBLL(doc_score));
+            DEBUG_LOGGER(ibase->logger, "docid:%d/%lld base_score:%lld score:%f doc_score:%lld", docid, IBLL(headers[docid].globalid), IBLL(base_score), score, IBLL(doc_score));
             /* bitxcat */
             if(headers[docid].category != 0)
             {
@@ -787,11 +787,11 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query)
                 }
             }
             doc_score = IB_LONG_SCORE(((double)base_score+(double)score));
-            ACCESS_LOGGER(ibase->logger, "docid:%d/%lld base_score:%lld score:%f doc_score:%lld", docid, IBLL(headers[docid].globalid), IBLL(base_score), score, IBLL(doc_score));
+            DEBUG_LOGGER(ibase->logger, "docid:%d/%lld base_score:%lld score:%f doc_score:%lld", docid, IBLL(headers[docid].globalid), IBLL(base_score), score, IBLL(doc_score));
             /* rank */
             if(ignore_rank == 0 && (query->flag & IB_QUERY_RANK)) 
                 doc_score += IBLONG((headers[docid].rank*(double)(query->base_rank)));
-            ACCESS_LOGGER(ibase->logger, "docid:%d/%lld base_score:%lld rank:%f base_rank:%lld doc_score:%lld", docid, IBLL(headers[docid].globalid), IBLL(base_score), headers[docid].rank, IBLL(query->base_rank), IBLL(doc_score));
+            DEBUG_LOGGER(ibase->logger, "docid:%d/%lld base_score:%lld rank:%f base_rank:%lld doc_score:%lld", docid, IBLL(headers[docid].globalid), IBLL(base_score), headers[docid].rank, IBLL(query->base_rank), IBLL(doc_score));
             /* group by */
             if(groupby && gid > 0)
             {
@@ -894,7 +894,7 @@ next:
                     docid = (int)record->globalid;
                     records[i].score = doc_score;
                     records[i].globalid = (int64_t)headers[docid].globalid;
-                    ACCESS_LOGGER(ibase->logger, "top[%d/%d] docid:%d/%lld score:%lld", i, MTREE64_TOTAL(topmap), docid, IBLL(headers[docid].globalid), IBLL(doc_score));
+                    DEBUG_LOGGER(ibase->logger, "top[%d/%d] docid:%d/%lld score:%lld", i, MTREE64_TOTAL(topmap), docid, IBLL(headers[docid].globalid), IBLL(doc_score));
                 }
                 ++i;
             }while(MTREE64_TOTAL(topmap) > 0);
@@ -920,7 +920,7 @@ next:
                 res->ngroups = IB_GROUP_MAX;
             }
         }
-        ACCESS_LOGGER(ibase->logger, "bsort(%d) %d documents res:%d time used:%lld ncatgroups:%d ngroups:%d", query->qid, res->total, MTREE64_TOTAL(topmap), PT_LU_USEC(timer),  res->ncatgroups, res->ngroups);
+        ACCESS_LOGGER(ibase->logger, "bsort(%d) %d documents res:%d time used:%lld sortTime:%lld ncatgroups:%d ngroups:%d", query->qid, res->total, res->count, PT_USEC_U(timer), IBLL(res->sort_time),res->ncatgroups, res->ngroups);
 end:
         //free db blocks
         if(itermlist)
