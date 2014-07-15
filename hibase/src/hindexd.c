@@ -862,6 +862,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
         {
             db = pools[query->dbid];
         }
+        if(db == NULL) return ret;
         int_index_from = db->state->int_index_from;
         int_index_to = int_index_from + db->state->int_index_fields_num;
         long_index_from = db->state->long_index_from;
@@ -926,13 +927,6 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                 }
                 if(p == last)break;
             }
-            /*
-            for(i = 0; i < query->in_int_num; i++)
-            {
-                fprintf(stdout, "%d:%d\n", i, query->in_int_list[i]);
-            }
-            fprintf(stdout, "%s::%d in:%s in_int_field:%d/%d in_long_field:%d/%d in_double_feild:%d/%d\n", __FILE__, __LINE__, in, query->in_int_fieldid, query->in_int_num, query->in_long_fieldid, query->in_long_num, query->in_double_fieldid, query->in_double_num);
-            */
         }
         /* display */
         if((p = display))
@@ -973,7 +967,6 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
         {
             query->orderby = orderby;
         }
-        //DEBUG_LOGGER(logger, "int_from:%d int_to:%d long_from:%d long_to:%d  double_from:%d double_to:%d orderby:%d/%d", int_index_from, int_index_to, long_index_from, long_index_to, double_index_from, double_index_to, orderby, query->double_order_field);
         /* range */
         if((p = range_filter))
         {
@@ -1018,7 +1011,6 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                         query->int_range_list[k].to = query->int_range_list[k].from;
                         query->int_range_list[k].from = xint;
                     }
-                    //fprintf(stdout, "from:%s to:%s\n", range_from, range_to);
                 }
                 else if(field_id >= long_index_from && field_id < long_index_to 
                         && query->long_range_count < IB_LONG_INDEX_MAX)
@@ -1042,7 +1034,6 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                         query->long_range_list[k].to = query->long_range_list[k].from;
                         query->long_range_list[k].from = xlong;
                     }
-                    //fprlongf(stdout, "from:%s to:%s\n", range_from, range_to);
                 }
                 else if(field_id >= double_index_from && field_id < double_index_to)
                 {
@@ -1068,12 +1059,6 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                 }
                 if(p == last)break;
             }
-            /*
-            for(i = 0; i < query->int_range_count; i++)
-            {
-                fprintf(stdout, "%d:[from:%d,to:%d][%d]\n", i, query->int_range_list[i].from, query->int_range_list[i].to, query->int_range_list[i].flag);
-            }
-            */
         }
         if((p = geofilter))
         {
@@ -1093,7 +1078,6 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                 while(*p == 0x20)++p;
                 xint  = 0;
                 xlong = 0;
-                //fprintf(stdout, "%s::%d fieldid:%d  int_index_from:%d/%d\n", __FILE__, __LINE__, field_id, int_index_from, int_index_to);
                 if(field_id >= int_index_from && field_id < int_index_to 
                         && query->int_bits_count < IB_INT_INDEX_MAX)
                 {
@@ -1227,7 +1211,6 @@ int httpd_query_handler(CONN *conn, IQUERY *query)
             db = pools[query->dbid];
             if(query->nqterms > 0) ichunk = ibase_bquery(db, query);
             else ichunk = ibase_query(db, query);
-            //fprintf(stdout, "%s::%d query:%s OK\n", __FILE__, __LINE__, query_str);
             if(ichunk)
             {
                 res     = &(ichunk->res);

@@ -117,7 +117,7 @@ am_himasterd_OBJECTS = himasterd-himasterd.$(OBJEXT) \
 	himasterd-mtrie.$(OBJEXT) himasterd-stime.$(OBJEXT) \
 	himasterd-base64.$(OBJEXT) himasterd-md5.$(OBJEXT) \
 	himasterd-iqueue.$(OBJEXT) himasterd-xmm.$(OBJEXT) \
-	himasterd-mtree64.$(OBJEXT)
+	himasterd-mtree64.$(OBJEXT) himasterd-immx.$(OBJEXT)
 himasterd_OBJECTS = $(am_himasterd_OBJECTS)
 himasterd_LDADD = $(LDADD)
 himasterd_LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(himasterd_LDFLAGS) \
@@ -282,7 +282,8 @@ himasterd_SOURCES = himasterd.c utils/http.c utils/http.h iniparser.c iniparser.
 	base64masterdhtml.h mmdb.h mmdb.c utils/mmtrie.h utils/mmtrie.c utils/db.c utils/db.h \
 	utils/logger.h utils/logger.c utils/mutex.h utils/timer.h utils/mtrie.h utils/mtrie.c \
 	utils/stime.h utils/stime.c utils/base64.h utils/base64.c utils/md5.h utils/md5.c \
-	utils/iqueue.h utils/iqueue.c utils/xmm.h utils/xmm.c utils/mtree64.h utils/mtree64.c
+	utils/iqueue.h utils/iqueue.c utils/xmm.h utils/xmm.c utils/mtree64.h utils/mtree64.c \
+	utils/immx.h utils/immx.c
 
 himasterd_CPPFLAGS = -I utils/ -D_FILE_OFFSET_BITS=64 -Wall
 himasterd_LDFLAGS = -lz -lsbase
@@ -468,6 +469,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/himasterd-db.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/himasterd-himasterd.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/himasterd-http.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/himasterd-immx.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/himasterd-iniparser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/himasterd-iqueue.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/himasterd-logger.Po@am__quote@
@@ -948,6 +950,20 @@ himasterd-mtree64.obj: utils/mtree64.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='utils/mtree64.c' object='himasterd-mtree64.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(himasterd_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o himasterd-mtree64.obj `if test -f 'utils/mtree64.c'; then $(CYGPATH_W) 'utils/mtree64.c'; else $(CYGPATH_W) '$(srcdir)/utils/mtree64.c'; fi`
+
+himasterd-immx.o: utils/immx.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(himasterd_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT himasterd-immx.o -MD -MP -MF $(DEPDIR)/himasterd-immx.Tpo -c -o himasterd-immx.o `test -f 'utils/immx.c' || echo '$(srcdir)/'`utils/immx.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/himasterd-immx.Tpo $(DEPDIR)/himasterd-immx.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='utils/immx.c' object='himasterd-immx.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(himasterd_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o himasterd-immx.o `test -f 'utils/immx.c' || echo '$(srcdir)/'`utils/immx.c
+
+himasterd-immx.obj: utils/immx.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(himasterd_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT himasterd-immx.obj -MD -MP -MF $(DEPDIR)/himasterd-immx.Tpo -c -o himasterd-immx.obj `if test -f 'utils/immx.c'; then $(CYGPATH_W) 'utils/immx.c'; else $(CYGPATH_W) '$(srcdir)/utils/immx.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/himasterd-immx.Tpo $(DEPDIR)/himasterd-immx.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='utils/immx.c' object='himasterd-immx.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(himasterd_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o himasterd-immx.obj `if test -f 'utils/immx.c'; then $(CYGPATH_W) 'utils/immx.c'; else $(CYGPATH_W) '$(srcdir)/utils/immx.c'; fi`
 
 hindexd-hindexd.o: hindexd.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hindexd_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT hindexd-hindexd.o -MD -MP -MF $(DEPDIR)/hindexd-hindexd.Tpo -c -o hindexd-hindexd.o `test -f 'hindexd.c' || echo '$(srcdir)/'`hindexd.c

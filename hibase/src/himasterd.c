@@ -488,6 +488,25 @@ int qres_merge(CONN *conn, IRES *res, IRECORD *records)
                         --p;
                         p += sprintf(p, "},");
                     }
+                    if(res->ngroups > 0)
+                    {
+                        p += sprintf(p, "\"groups\":{");
+                        for(i = 0; i < res->ngroups; i++)
+                        {
+                            if(res->flag & IB_GROUPBY_DOUBLE)
+                            {
+                                p += sprintf(p, "\"%f\":\"%lld\",", 
+                                    IB_LONG2FLOAT(res->groups[i].val), LL64(res->groups[i].val));
+                            }
+                            else
+                            {
+                                p += sprintf(p, "\"%lld\":\"%lld\",", 
+                                    LL64(res->groups[i].key), LL64(res->groups[i].val));
+                            }
+                        }
+                        --p;
+                        p += sprintf(p, "},");
+                    }
                     p += sprintf(p, "\"records\":{");
                     for(i = 0; i < n; i++)
                     {
@@ -703,6 +722,25 @@ int httpd_summary(int pid, int cid, int uid)
                 {
                     if((x = res->catgroups[i]) > 0)
                         p += sprintf(p, "\"%d\":\"%d\",", i, x);
+                }
+                --p;
+                p += sprintf(p, "},");
+            }
+            if(res->ngroups > 0)
+            {
+                p += sprintf(p, "\"groups\":{");
+                for(i = 0; i < res->ngroups; i++)
+                {
+                    if(res->flag & IB_GROUPBY_DOUBLE)
+                    {
+                        p += sprintf(p, "\"%f\":\"%lld\",", 
+                                IB_LONG2FLOAT(res->groups[i].val), LL64(res->groups[i].val));
+                    }
+                    else
+                    {
+                        p += sprintf(p, "\"%lld\":\"%lld\",", 
+                                LL64(res->groups[i].key), LL64(res->groups[i].val));
+                    }
                 }
                 --p;
                 p += sprintf(p, "},");

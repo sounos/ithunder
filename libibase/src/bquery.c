@@ -797,15 +797,15 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query)
             {
                 if(is_groupby == IB_GROUPBY_INT)
                 {
-                   xlong = (int64_t)IMAP_GET(ibase->state->mfields[fid], docid); 
+                    xlong = (int64_t)IMAP_GET(ibase->state->mfields[gid], docid); 
                 }
                 else if(is_groupby == IB_GROUPBY_LONG)
                 {
-                    xlong = LMAP_GET(ibase->state->mfields[fid], docid);
+                    xlong = LMAP_GET(ibase->state->mfields[gid], docid);
                 }
                 else if(is_groupby == IB_GROUPBY_DOUBLE)
                 {
-                    xlong = IB_LONG_SCORE(DMAP_GET(ibase->state->mfields[fid], docid));
+                    xlong = IB_LONG_SCORE(DMAP_GET(ibase->state->mfields[gid], docid));
                 }
                 IMMX_ADD(groupby, xlong);
             }
@@ -915,6 +915,11 @@ next:
                 ++i;
             }while(PIMX(groupby)->count > 0);
             res->flag |= is_groupby;
+            if(res->ngroups > IB_GROUP_MAX) 
+            {
+                WARN_LOGGER(ibase->logger, "large groups[%d] qid:%d", res->groups, query->qid);
+                res->ngroups = IB_GROUP_MAX;
+            }
         }
 end:
         //free db blocks

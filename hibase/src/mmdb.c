@@ -16,6 +16,7 @@
 #include "md5.h"
 #include "mmdb.h"
 #include "xmm.h"
+#include "immx.h"
 #include "mtree64.h"
 #define  M_QMAP_NAME    "mmdb.qmap"
 #define  M_LOG_NAME     "mmdb.log"
@@ -219,6 +220,54 @@ int mmdb_set_log_level(MMDB *mmdb, int log_level)
     }
     return -1;
 }
+
+/* push mmx */
+void mmdb_push_mmx(MMDB *mmdb, void *mmx)
+{
+    int x = 0;
+
+    if(mmdb && mmx)
+    {
+        MUTEX_LOCK(mmdb->mutex_mmx);
+        if(mmdb->nqmmxs < IB_MMX_MAX)
+        {
+            IMMX_RESET(mmx);
+            x = mmdb->nqmmxs++;
+            mmdb->qmmxs[x] = mmx;
+        }
+        else
+        {
+            IMMX_CLEAN(mmx);
+        }
+        MUTEX_UNLOCK(mmdb->mutex_mmx);
+    }
+    return ;
+}
+
+/* mmdb pop mmx */
+void *mmdb_pop_mmx(MMDB *mmdb)
+{
+    void *mmx = NULL;
+    int x = 0;
+
+    if(mmdb)
+    {
+        MUTEX_LOCK(mmdb->mutex_mmx);
+        if(mmdb->nqmmxs > 0)
+        {
+            x = --(mmdb->nqmmxs);
+            mmx = mmdb->qmmxs[x];
+            mmdb->qmmxs[x] = NULL;
+        }
+        else
+        {
+            mmx = IMMX_INIT();
+        }
+        MUTEX_UNLOCK(mmdb->mutex_mmx);
+    }
+    return mmx;
+}
+
 
 /* mmdb set cache life time (seconds) */
 int mmdb_set_cache_life_time(MMDB *mmdb, int cache_life_time)
@@ -766,11 +815,11 @@ int mmdb_set_query(MMDB *mmdb, int qid, IQUERY *query, int nquerys,
 int mmdb_over_merge(MMDB *mmdb, int qid, int pid, CQRES *cqres, 
         IQSET *qset, IRECORD *recs, int *nrecs, int error)
 {
+    int64_t score = 0, id = 0, xlong = 0, xdata = 0;
+    void *map = NULL, *groupby = NULL;
     int i = 0, x = 0, n = 0, to = 0; 
-    int64_t score = 0, id = 0;
     QTASK *qtasks = NULL;
     QPAGE *qpages = NULL;
-    void *map = NULL;
 
     if(mmdb && qid > 0 && (qtasks = (QTASK *)(mmdb->qtaskio.map)) 
             && (map = qtasks[qid].map) && cqres)
@@ -810,10 +859,31 @@ int mmdb_over_merge(MMDB *mmdb, int qid, int pid, CQRES *cqres,
                 }
             }
         }
+        if((groupby = qtasks[qid].groupby)
+            && (cqres->qset.res.ngroups = PIMX(groupby)->count) > 0)
+        {
+            i = 0;
+            do
+            {
+                IMMX_POP_MIN(groupby, xlong, xdata);
+                if(i < IB_GROUP_MAX)
+                {
+                    cqres->qset.res.groups[i].key = xlong;
+                    cqres->qset.res.groups[i].val = xdata;
+                }
+                ++i;
+            }while(PIMX(groupby)->count > 0);
+            if(cqres->qset.res.ngroups > IB_GROUP_MAX)
+            {
+                WARN_LOGGER(mmdb->logger, "large groups[%d] qid:%d", cqres->qset.res.ngroups, qid);
+            }
+        }
         mmdb_push_qres(mmdb, qtasks[qid].qres);
         mmdb_push_stree(mmdb, qtasks[qid].map);
+        mmdb_push_mmx(mmdb, qtasks[qid].groupby);
         qtasks[qid].qres = NULL;
         qtasks[qid].map = NULL;
+        qtasks[qid].groupby = NULL;
         if(error) qtasks[qid].mod_time = 0;
         else qtasks[qid].mod_time = time(NULL);
         qtasks[qid].status = M_STATUS_FREE;
@@ -830,6 +900,7 @@ int mmdb_merge(MMDB *mmdb, int qid, int nodeid, IRES *res, IRECORD *records,
     int i = 0, ret = -1;
     QTASK *qtasks = NULL;
     QRES *qres = NULL;
+    void *groupby = NULL;
     //int64_t score = 0;
 
     if(mmdb && qid > 0 && res)
@@ -844,6 +915,8 @@ int mmdb_merge(MMDB *mmdb, int qid, int nodeid, IRES *res, IRECORD *records,
         {
             if((map = qtasks[qid].map) == NULL)
                 qtasks[qid].map = map = mmdb_pop_stree(mmdb);
+            if((groupby = qtasks[qid].groupby) == NULL)
+                qtasks[qid].groupby = groupby = mmdb_pop_mmx(mmdb);
             if((qres = qtasks[qid].qres) == NULL)
             {
                 qtasks[qid].qres = qres = mmdb_pop_qres(mmdb);
@@ -920,6 +993,14 @@ int mmdb_merge(MMDB *mmdb, int qid, int nodeid, IRES *res, IRECORD *records,
                         qres->qset.res.catgroups[i] += res->catgroups[i];
                     }
                 }
+            }
+            if(res->ngroups > 0)
+            {
+                for(i = 0; i < res->ngroups; i++)
+                {
+                    IMMX_SUM(groupby, (res->groups[i].key), (res->groups[i].val));
+                }
+                qres->qset.res.flag |= res->flag;
             }
             if(qres && qres->ntasks > 0 && qres->nerrors > 0) 
             {
@@ -1179,6 +1260,7 @@ void mmdb_clean(MMDB *mmdb)
     {
         if(mmdb->queue){iqueue_clean(mmdb->queue);}
         MUTEX_DESTROY(mmdb->mutex);
+        MUTEX_DESTROY(mmdb->mutex_mmx);
         MUTEX_DESTROY(mmdb->mutex_state);
         MUTEX_DESTROY(mmdb->mutex_stree);
         MUTEX_DESTROY(mmdb->mutex_qres);
@@ -1191,6 +1273,10 @@ void mmdb_clean(MMDB *mmdb)
         for(i = 0; i < mmdb->nqstrees; i++)
         {
             if(mmdb->qstrees[i]) MTREE64_CLEAN(mmdb->qstrees[i]);
+        }
+        for(i = 0; i < mmdb->nqmmxs; i++)
+        {
+            if(mmdb->qmmxs[i]) IMMX_CLEAN(mmdb->qmmxs[i]);
         }
         for(i = 0; i < mmdb->nqqres; i++)
         {
@@ -1227,6 +1313,7 @@ MMDB *mmdb_init()
         mmdb->clean         = mmdb_clean;
         mmdb->queue         = iqueue_init();
         MUTEX_INIT(mmdb->mutex);
+        MUTEX_INIT(mmdb->mutex_mmx);
         MUTEX_INIT(mmdb->mutex_state);
         MUTEX_INIT(mmdb->mutex_stree);
         MUTEX_INIT(mmdb->mutex_qres);

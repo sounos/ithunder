@@ -11,6 +11,7 @@
 #define M_MAPS_MAX          2048
 #define M_STREE_MAX         2048
 #define M_QRES_MAX          2048
+#define M_MMXS_MAX          2048
 #define M_BUF_SIZE          65536
 #define M_LINE_SIZE         1024
 #define M_QTASK_MAX         200000000   
@@ -81,6 +82,7 @@ typedef struct _QTASK
     time_t  mod_time;
     QRES    *qres;
     void    *map;
+    void    *groupby;
 }QTASK;
 typedef struct _QPAGE
 {
@@ -101,8 +103,10 @@ typedef struct _MMDB
     void    *qmap;
     void    *qstrees[M_STREE_MAX];
     void    *qqres[M_QRES_MAX];
-    int     nqstrees;
-    int     nqqres;
+    void    *qmmxs[M_MMXS_MAX];
+    short     nqstrees;
+    short    nqqres;
+    int     nqmmxs;
     int     stree_total;
     int     qres_total;
     void    *rdb;
@@ -110,6 +114,7 @@ typedef struct _MMDB
     void    *queue;
     void    *logger;
     MUTEX   *mutex;
+    MUTEX   *mutex_mmx;
     MUTEX   *mutex_state;
     MUTEX   *mutex_stree;
     MUTEX   *mutex_qres;

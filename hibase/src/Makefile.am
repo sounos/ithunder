@@ -4,7 +4,8 @@ himasterd_SOURCES = himasterd.c utils/http.c utils/http.h iniparser.c iniparser.
 	base64masterdhtml.h mmdb.h mmdb.c utils/mmtrie.h utils/mmtrie.c utils/db.c utils/db.h \
 	utils/logger.h utils/logger.c utils/mutex.h utils/timer.h utils/mtrie.h utils/mtrie.c \
 	utils/stime.h utils/stime.c utils/base64.h utils/base64.c utils/md5.h utils/md5.c \
-	utils/iqueue.h utils/iqueue.c utils/xmm.h utils/xmm.c utils/mtree64.h utils/mtree64.c
+	utils/iqueue.h utils/iqueue.c utils/xmm.h utils/xmm.c utils/mtree64.h utils/mtree64.c \
+	utils/immx.h utils/immx.c
 himasterd_CPPFLAGS = -I utils/ -D_FILE_OFFSET_BITS=64 -Wall
 himasterd_LDFLAGS = -lz -lsbase
 
