@@ -456,14 +456,12 @@ typedef struct _IOPERATOR
     int bitsand;
     int bitsnot;
 }IOPERATOR;
-#define IB_QFUNC_BQUERY     0x01
-#define IB_QFUNC_XQUERY     0x02
 #define IB_SORT_BY_INT      0x01
 #define IB_SORT_BY_LONG     0x02
-#define IB_SORT_BY_DOUBLE   0x03
-#define IB_GROUPBY_INT      0x01
-#define IB_GROUPBY_LONG     0x02
-#define IB_GROUPBY_DOUBLE   0x03
+#define IB_SORT_BY_DOUBLE   0x04
+#define IB_GROUPBY_INT      0x08
+#define IB_GROUPBY_LONG     0x10
+#define IB_GROUPBY_DOUBLE   0x20
 
 /* query */
 typedef struct _IQUERY
@@ -547,7 +545,7 @@ typedef struct _IRECORD
 typedef struct _IKEYV
 {
     int64_t key;
-    int64_t count;
+    int64_t val;
 }IKEYV;
 /* hits */
 typedef struct _IHITS
@@ -563,6 +561,7 @@ typedef struct _IRES
     short count;
     short ncatgroups;
     short ngroups; 
+    int flag;
     int qid;
     int io_time;
     int sort_time;

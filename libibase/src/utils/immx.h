@@ -254,6 +254,31 @@ do                                                                              
     }                                                                                       \
 }while(0)
 
+#define IMMX_SUM(ptr, nkey, ndata)                                                          \
+do                                                                                          \
+{                                                                                           \
+    if(ptr)                                                                                 \
+    {                                                                                       \
+        IMMX_POP_NODE(ptr, PIMX(ptr)->p);                                                   \
+        if((PIMX(ptr)->pp = PIMX(ptr)->p))                                                  \
+        {                                                                                   \
+            PIMX(ptr)->p->key = nkey;                                                       \
+            PIMX(ptr)->p->data = ndata;                                                     \
+            PIMX(ptr)->old = imx_insert(PIMX(ptr), PIMX(ptr)->p);                           \
+            if(PIMX(ptr)->old)                                                              \
+            {                                                                               \
+                PIMX(ptr)->old->data += ndata;                                              \
+                IMMX_PUSH_NODE(ptr, PIMX(ptr)->pp);                                         \
+            }                                                                               \
+            else                                                                            \
+            {                                                                               \
+                IMMX_MINMAX_ADD(ptr, PIMX(ptr)->pp);                                        \
+                PIMX(ptr)->count++;                                                         \
+            }                                                                               \
+        }                                                                                   \
+    }                                                                                       \
+}while(0)
+
 /* get val(dp) of nkey */
 #define IMMX_GET(ptr, nkey, ret)                                                            \
 do                                                                                          \

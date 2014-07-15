@@ -899,8 +899,23 @@ next:
                 }
                 ++i;
             }while(MTREE64_TOTAL(topmap) > 0);
+            res->flag |= is_field_sort;
         }
-
+        if(groupby && (res->ngroups = (PIMX(groupby)->count)) > 0)
+        {
+            i = 0;
+            do
+            {
+                IMMX_POP_MIN(groupby, xlong, xdata);
+                if(i < IB_GROUP_MAX)
+                {
+                    res->groups[i].key = xlong;
+                    res->groups[i].val = xdata;
+                }
+                ++i;
+            }while(PIMX(groupby)->count > 0);
+            res->flag |= is_groupby;
+        }
 end:
         //free db blocks
         if(itermlist)
