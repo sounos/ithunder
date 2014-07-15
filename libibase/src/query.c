@@ -12,21 +12,22 @@
 #include "imap.h"
 #include "lmap.h"
 #include "dmap.h"
+#include "immx.h"
  
 /* binary list merging */
 ICHUNK *ibase_query(IBASE *ibase, IQUERY *query)
 {
     int i = 0, n = 0, k = 0,min_set_num = -1, docid = 0, ifrom = -1, is_sort_reverse = 0, 
         min_set_fid = 0, int_index_from = 0, int_index_to = 0, ito = -1, 
-        double_index_from = 0, double_index_to = 0, range_flag = 0,
-        fid = 0, nxrecords = 0, is_field_sort = 0, ignore_rank = 0, 
+        double_index_from = 0, double_index_to = 0, range_flag = 0, is_groupby = 0,
+        fid = 0, nxrecords = 0, is_field_sort = 0, ignore_rank = 0, gid = 0, 
         long_index_from = 0, long_index_to = 0, ii = 0, jj = 0, imax = 0, imin = 0, 
         xint = 0, off = 0, irangefrom = 0, irangeto = 0, query_range = 0;
     uint32_t *docs = NULL, docs_size = 0, ndocs = 0;
     double dfrom = 0.0, dto = 0.0, drangefrom = 0.0, drangeto = 0.0,xdouble = 0.0;
     int64_t bits = 0, lfrom = 0, lto = 0, base_score = 0, lrangefrom = 0, lrangeto = 0, 
             doc_score = 0, old_score = 0, xdata = 0, xlong = 0;
-    void *timer = NULL, *topmap = NULL;
+    void *timer = NULL, *topmap = NULL, *groupby = NULL;
     IRECORD *record = NULL, *records = NULL, xrecords[IB_NTOP_MAX];
     IHEADER *headers = NULL; ICHUNK *chunk = NULL;
     IRES *res = NULL;
@@ -76,6 +77,26 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query)
             fid += IB_DOUBLE_OFF;
             if(ibase->state->mfields[fid]) is_field_sort = IB_SORT_BY_DOUBLE;
         }
+        gid = query->groupby;
+        if(gid >= int_index_from && gid < int_index_to)
+        {
+            gid -= int_index_from;
+            gid += IB_INT_OFF;
+            if(ibase->state->mfields[gid]) is_groupby  = IB_GROUPBY_INT;
+        }
+        else if(gid >= long_index_from && gid < long_index_to)
+        {
+            gid -= long_index_from;
+            gid += IB_LONG_OFF;
+            if(ibase->state->mfields[gid]) is_groupby  = IB_GROUPBY_LONG;
+        }
+        else if(gid >= double_index_from && gid < double_index_to)
+        {
+            gid -= double_index_from;
+            gid += IB_DOUBLE_OFF;
+            if(ibase->state->mfields[gid]) is_groupby  = IB_GROUPBY_DOUBLE;
+        }
+        if(gid > 0){groupby = ibase_pop_mmx(ibase);};
         TIMER_INIT(timer);
         min_set_fid = 0;
         if((k = query->in_int_fieldid) > 0 && query->in_int_num > 0)
@@ -465,6 +486,24 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query)
                     doc_score = IB_LONG_SCORE(xdouble);
                 }
             }
+            /* group by */
+            if(groupby && gid > 0)
+            {
+                if(is_groupby == IB_GROUPBY_INT)
+                {
+                    xlong = (int64_t)IMAP_GET(ibase->state->mfields[gid], docid);
+                }
+                else if(is_groupby == IB_GROUPBY_LONG)
+                {
+                    xlong = LMAP_GET(ibase->state->mfields[gid], docid);
+                }
+                else if(is_groupby == IB_GROUPBY_DOUBLE)
+                {
+                    xlong = IB_LONG_SCORE(DMAP_GET(ibase->state->mfields[gid], docid));
+                }
+                IMMX_ADD(groupby, xlong);
+                DEBUG_LOGGER(ibase->logger, "docid:%d/%lld gid:%d key:%lld count:%d", docid, IBLL(headers[docid].globalid), gid, IBLL(xlong), PIMX(groupby)->count);
+            }
             /* sorting */
             if(min_set_fid != fid)
             {
@@ -514,7 +553,6 @@ next:
         }
         TIMER_SAMPLE(timer);
         res->sort_time = (int)PT_LU_USEC(timer);
-        WARN_LOGGER(ibase->logger, "bsort(%d) %d documents res:%d time used:%lld", query->qid, res->total, MTREE64_TOTAL(topmap), PT_LU_USEC(timer));
         if(min_set_fid != fid)
         {
             if((res->count = MTREE64_TOTAL(topmap)) > 0)
@@ -600,10 +638,33 @@ next:
                 }
             }
         }
+        if(groupby && (res->ngroups = (PIMX(groupby)->count)) > 0)
+        {
+            i = 0;
+            do
+            {
+                IMMX_POP_MIN(groupby, xlong, xdata);
+                if(i < IB_GROUP_MAX)
+                {
+                    res->groups[i].key = xlong;
+                    res->groups[i].val = xdata;
+                }
+                ++i;
+            }while(PIMX(groupby)->count > 0);
+            res->flag |= is_groupby;
+            if(res->ngroups > IB_GROUP_MAX)
+            {
+                WARN_LOGGER(ibase->logger, "large groups[%d] qid:%d", res->groups, query->qid);
+                res->ngroups = IB_GROUP_MAX;
+            }
+        }
+        ACCESS_LOGGER(ibase->logger, "bsort(%d) %d documents res:%d time used:%lld ncatgroups:%d ngroups:%d", query->qid, res->total, MTREE64_TOTAL(topmap), PT_LU_USEC(timer),  res->ncatgroups, res->ngroups);
+
 end:
         if(docs) db_free_data(PDB(ibase->index), (char *)docs, docs_size);
         if(res) res->doctotal = ibase->state->dtotal;
         if(topmap) ibase_push_stree(ibase, topmap);
+        if(groupby) ibase_push_mmx(ibase, groupby);
         TIMER_CLEAN(timer);
     }
     return chunk;
