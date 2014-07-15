@@ -808,10 +808,10 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query)
                     xlong = IB_LONG_SCORE(DMAP_GET(ibase->state->mfields[gid], docid));
                 }
                 IMMX_ADD(groupby, xlong);
+                DEBUG_LOGGER(ibase->logger, "docid:%d/%lld gid:%d key:%lld count:%d", docid, IBLL(headers[docid].globalid), gid, IBLL(xlong), PIMX(groupby)->count);
             }
             if(is_field_sort)
             {
-                //WARN_LOGGER(ibase->logger, "docid:%d/%lld base_score:%lld rank:%f base_rank:%lld doc_score:%lld fid:%d", docid, IBLL(headers[docid].globalid), IBLL(base_score), headers[docid].rank, IBLL(query->base_rank), IBLL(doc_score), fid);
                 if(is_field_sort == IB_SORT_BY_INT)
                 {
                     //i = fid + ibase->state->int_index_fields_num * docid;
@@ -880,7 +880,6 @@ next:
         }
         TIMER_SAMPLE(timer);
         res->sort_time = (int)PT_LU_USEC(timer);
-        ACCESS_LOGGER(ibase->logger, "bsort(%d) %d documents res:%d time used:%lld", query->qid, res->total, MTREE64_TOTAL(topmap), PT_LU_USEC(timer));
         if((res->count = MTREE64_TOTAL(topmap)) > 0)
         {
             i = 0;
@@ -921,6 +920,7 @@ next:
                 res->ngroups = IB_GROUP_MAX;
             }
         }
+        ACCESS_LOGGER(ibase->logger, "bsort(%d) %d documents res:%d time used:%lld ncatgroups:%d ngroups:%d", query->qid, res->total, MTREE64_TOTAL(topmap), PT_LU_USEC(timer),  res->ncatgroups, res->ngroups);
 end:
         //free db blocks
         if(itermlist)

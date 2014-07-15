@@ -395,6 +395,25 @@ int ibase_read_summary(IBASE *ibase, IQSET *qset, IRECORD *records, char *summar
                 --p;
                 p += sprintf(p, "},");
             }
+            if(res->ngroups > 0)
+            {
+                p += sprintf(p, "\"groups\":{");
+                for(i = 0; i < res->ngroups; i++)
+                {
+                    if(res->flag & IB_GROUPBY_DOUBLE)
+                    {
+                        p += sprintf(p, "\"%f\":\"%lld\",",
+                                IB_LONG2FLOAT(res->groups[i].val), IBLL(res->groups[i].val));
+                    }
+                    else
+                    {
+                        p += sprintf(p, "\"%lld\":\"%lld\",",
+                                IBLL(res->groups[i].key), IBLL(res->groups[i].val));
+                    }
+                }
+                --p;
+                p += sprintf(p, "},");
+            }
             p += sprintf(p, "\"records\":{");
             pp = p;
             MTREE64_RESET(hitsmap);
