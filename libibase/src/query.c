@@ -130,7 +130,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query)
                     ifrom = query->int_range_list[i].from;
                     ito = query->int_range_list[i].to;
                     k -= int_index_from;
-                    k += IB_LONG_OFF;
+                    k += IB_INT_OFF;
                     if(!ibase->state->mfields[k]) continue;
                     if((range_flag & (IB_RANGE_FROM|IB_RANGE_TO)))
                     {
