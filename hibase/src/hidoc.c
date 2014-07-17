@@ -945,9 +945,9 @@ int hidoc_push_index(HIDOC *hidoc, IFIELD *fields, int flag, IBDATA *block)
             if(mid >= hidoc->state->xindextotal){hidoc->state->xindextotal = mid+1;newid = mid;}
             ACCESS_LOGGER(hidoc->logger, "globalid:%lld id:%d total:%d", docheader->globalid, mid, hidoc->state->xindextotal);
             CHECK_XINDEXIO(hidoc);
-            CHECK_XINTIO(hidoc);
-            CHECK_XLONGIO(hidoc);
-            CHECK_XDOUBLEIO(hidoc);
+            //CHECK_XINTIO(hidoc);
+            //CHECK_XLONGIO(hidoc);
+            //CHECK_XDOUBLEIO(hidoc);
             //if(hidoc->state->xindextotal <= 0) hidoc->state->xindextotal = 1;
             if(newid)
             {
@@ -989,6 +989,7 @@ int hidoc_push_index(HIDOC *hidoc, IFIELD *fields, int flag, IBDATA *block)
                 xindexs[mid].category = docheader->category;
             }
             p = (char *)docheader;
+            /*
             if(docheader->intblock_size > 0 && hidoc->state->int_index_count > 0 && (x = hidoc->state->int_index_from) >= 0 
                     && docheader->intblock_off > 0 && (int_index = (int *)hidoc->xintio.map))
             {
@@ -1001,7 +1002,6 @@ int hidoc_push_index(HIDOC *hidoc, IFIELD *fields, int flag, IBDATA *block)
                         int_index[id+i] = intidx[i];
                     }
                 }
-                //memcpy(&(int_index[id]), p + docheader->intblock_off, docheader->intblock_size);
             }
             if(docheader->longblock_size > 0 && hidoc->state->long_index_count > 0 && (x = hidoc->state->long_index_from) >= 0 
                     && docheader->longblock_off > 0 && (long_index = (int64_t *)hidoc->xlongio.map))
@@ -1030,12 +1030,6 @@ int hidoc_push_index(HIDOC *hidoc, IFIELD *fields, int flag, IBDATA *block)
                     }
                 }
                 //memcpy(&(double_index[id]), p + docheader->doubleblock_off, docheader->doubleblock_size);
-            }
-            /*
-            if(xindexs[mid].globalid != (int64_t)docheader->globalid || docheader->size != block->ndata)
-            {
-                FATAL_LOGGER(hidoc->logger, "Invalid document:%lld/%lld size:%d/%d", LL64(xindexs[mid].globalid), LL64(docheader->globalid), docheader->size, block->ndata);
-                _exit(-1);
             }
             */
             db_set_data(PDB(hidoc->db), mid, block->data, block->ndata);
@@ -1182,6 +1176,7 @@ int hidoc_read_index(HIDOC *hidoc, int taskid, char *data, int *len, int *count)
                             //update int/double index
                             if(nodes[nodeid].type != HI_NODE_PARSERD)
                             {
+                                /*
                                 if(docheader->intblock_size > 0 && docheader->intblock_off >= 0
                                         && hidoc->state->int_index_count > 0
                                         && (int_index = (int *)(hidoc->xintio.map)))
@@ -1203,6 +1198,7 @@ int hidoc_read_index(HIDOC *hidoc, int taskid, char *data, int *len, int *count)
                                     z = hidoc->state->double_index_count * id;
                                     memcpy(p+docheader->doubleblock_off, &(double_index[z]), docheader->doubleblock_size);
                                 }
+                                */
                             }
                             //DEBUG_LOGGER(hidoc->logger, "read-index{status:%d node:%d type:%d task[%s:%d] gloablid:%d mid:%d rank:%f}", xindexs[id].status, nodeid, nodes[nodeid].type, tasks[k].ip, tasks[k].port, docheader->globalid, id, xindexs[id].rank);
                             *px = n;
@@ -2770,6 +2766,7 @@ int hidoc_read_upindex(HIDOC *hidoc, int taskid, char *data, int *len, int *coun
                             //update int/double index
                             if(nodes[nodeid].type != HI_NODE_PARSERD)
                             {
+                                /*
                                 if(docheader->intblock_size > 0 && docheader->intblock_off >= 0
                                         && hidoc->state->int_index_count > 0
                                         && (int_index = (int *)(hidoc->xintio.map)))
@@ -2791,6 +2788,7 @@ int hidoc_read_upindex(HIDOC *hidoc, int taskid, char *data, int *len, int *coun
                                     z = hidoc->state->double_index_count * mid;
                                     memcpy(p+docheader->doubleblock_off, &(double_index[z]), docheader->doubleblock_size);
                                 }
+                                */
                             }
                             left -= n + sizeof(int);
                             p += n;
@@ -2864,9 +2862,9 @@ int hidoc__set__category(HIDOC *hidoc, int64_t globalid, int flag, int64_t categ
             && (mid = hidoc_checkid(hidoc, globalid)) > 0 && mid < hidoc->state->xindextotal)
     {
         CHECK_XINDEXIO(hidoc);
-        CHECK_XINTIO(hidoc);
-        CHECK_XLONGIO(hidoc);
-        CHECK_XDOUBLEIO(hidoc);
+        //CHECK_XINTIO(hidoc);
+        //CHECK_XLONGIO(hidoc);
+        //CHECK_XDOUBLEIO(hidoc);
         if(flag == 0)
         {
             xindexs[mid].category = category;
@@ -2894,9 +2892,9 @@ int hidoc__set__rank(HIDOC *hidoc, int64_t globalid, double rank)
             && (mid = hidoc_checkid(hidoc, globalid)) > 0 && mid < hidoc->state->xindextotal)
     {
         CHECK_XINDEXIO(hidoc);
-        CHECK_XINTIO(hidoc);
-        CHECK_XLONGIO(hidoc);
-        CHECK_XDOUBLEIO(hidoc);
+        //CHECK_XINTIO(hidoc);
+        //CHECK_XLONGIO(hidoc);
+        //CHECK_XDOUBLEIO(hidoc);
         xindexs[mid].rank = rank;
         hidoc_update(hidoc, mid, 0);
     }
@@ -2913,9 +2911,9 @@ int hidoc__set__idx__status(HIDOC *hidoc, int64_t globalid, int status)
             && (mid = hidoc_checkid(hidoc, globalid)) > 0 && mid < hidoc->state->xindextotal)
     {
         CHECK_XINDEXIO(hidoc);
-        CHECK_XINTIO(hidoc);
-        CHECK_XLONGIO(hidoc);
-        CHECK_XDOUBLEIO(hidoc);
+        //CHECK_XINTIO(hidoc);
+        //CHECK_XLONGIO(hidoc);
+        //CHECK_XDOUBLEIO(hidoc);
         xindexs[mid].status = status;
         hidoc_update(hidoc, mid, 0);
     }
@@ -3138,7 +3136,7 @@ int hidoc_set_all_int_fields(HIDOC *hidoc, int64_t globalid, int *list)
             && (no = (hidoc->state->int_index_count * mid)) >= 0
             && (int_index = (int *)hidoc->xintio.map))
         {
-            memcpy(&(int_index[no]), list, sizeof(int) * hidoc->state->int_index_count);
+            //memcpy(&(int_index[no]), list, sizeof(int) * hidoc->state->int_index_count);
             hidoc_update(hidoc, mid, 0);
         }
         else mid = -1;
@@ -3160,7 +3158,7 @@ int hidoc_set_all_long_fields(HIDOC *hidoc, int64_t globalid, int64_t *list)
             && (no = (hidoc->state->long_index_count * mid)) >= 0
             && (long_index = (int64_t *)hidoc->xlongio.map))
         {
-            memcpy(&(long_index[no]), list, sizeof(int64_t) * hidoc->state->long_index_count);
+            //memcpy(&(long_index[no]), list, sizeof(int64_t) * hidoc->state->long_index_count);
             hidoc_update(hidoc, mid, 0);
         }
         else mid = -1;
@@ -3182,7 +3180,7 @@ int hidoc_set_all_double_fields(HIDOC *hidoc, int64_t globalid, double *list)
             && (no = (hidoc->state->double_index_count * mid)) >= 0
             && (double_index = (double *)hidoc->xdoubleio.map))
         {
-            memcpy(&(double_index[no]), list, sizeof(double) * hidoc->state->double_index_count);
+            //memcpy(&(double_index[no]), list, sizeof(double) * hidoc->state->double_index_count);
             hidoc_update(hidoc, mid, 0);
         }
         else mid = -1;
