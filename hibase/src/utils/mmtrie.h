@@ -7,7 +7,7 @@ extern "C" {
 #define MMTRIE_PATH_MAX             256
 #define MMTRIE_LINE_MAX             256
 #define MMTRIE_BASE_NUM             1000000
-#define MMTRIE_NODES_MAX            1000000000
+#define MMTRIE_NODES_MAX            2000000000
 #define MMTRIE_WORD_MAX             4096
 typedef struct _MMTRLIST
 {
