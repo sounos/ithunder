@@ -97,8 +97,8 @@ extern "C" {
 #define  IB_HEADERS_BASE         1000000
 #define  IB_TERMSTATE_BASE       1000000
 #define  IB_NUMERIC_BASE         1000000
-#define  IB_TERMSTATE_MAX        100000000
-#define  IB_HEADERS_MAX          400000000
+#define  IB_TERMSTATE_MAX        2000000000
+#define  IB_HEADERS_MAX          2000000000
 #ifndef  IB_PATH_MAX
 #define  IB_PATH_MAX             1024
 #define  IB_CHARSET_MAX          256
@@ -597,8 +597,8 @@ typedef struct _IBSTATE
     int     long_index_fields_num;
     int     double_index_from;
     int     double_index_fields_num;
-    off_t   ttotal;
-    off_t   dtotal;
+    int64_t   ttotal;
+    int64_t   dtotal;
     void    *mfields[IB_FIELDS_MAX];
 }IBSTATE;
 

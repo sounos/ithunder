@@ -201,7 +201,7 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
     if((docheader = (DOCHEADER *)block->data) && ibase_check_index_state(ibase, docheader) == 0)
     {
         ibase->state->dtotal++;
-        ibase->state->ttotal += (off_t)docheader->terms_total;
+        ibase->state->ttotal += (int64_t)docheader->terms_total;
         if(ibase->state->used_for == IB_USED_FOR_INDEXD)
         {
             /* add to source */
