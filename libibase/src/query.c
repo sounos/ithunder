@@ -132,7 +132,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query)
                     k -= int_index_from;
                     k += IB_INT_OFF;
                     if(!ibase->state->mfields[k]) continue;
-                    if((range_flag & (IB_RANGE_FROM|IB_RANGE_TO)))
+                    if((range_flag & (IB_RANGE_FROM|IB_RANGE_TO)) == (IB_RANGE_FROM|IB_RANGE_TO))
                     {
                         n = imap_range(ibase->state->mfields[k], ifrom, ito, NULL);
                         if(min_set_num == -1 || n < min_set_num)
@@ -165,7 +165,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query)
                     k -= long_index_from;
                     k += IB_LONG_OFF;
                     if(!ibase->state->mfields[k]) continue;
-                    if((range_flag & (IB_RANGE_FROM|IB_RANGE_TO)))
+                    if((range_flag & (IB_RANGE_FROM|IB_RANGE_TO)) == (IB_RANGE_FROM|IB_RANGE_TO))
                     {
                         n = lmap_range(ibase->state->mfields[k], lfrom, lto, NULL);
                         if(min_set_num == -1 || n < min_set_num)
@@ -198,7 +198,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query)
                     k -= double_index_from;
                     k += IB_DOUBLE_OFF;
                     if(!ibase->state->mfields[k]) continue;
-                    if((range_flag & (IB_RANGE_FROM|IB_RANGE_TO)))
+                    if((range_flag & (IB_RANGE_FROM|IB_RANGE_TO)) == (IB_RANGE_FROM|IB_RANGE_TO))
                     {
                         n = dmap_range(ibase->state->mfields[k], dfrom, dto, NULL);
                         if(min_set_num == -1 || n < min_set_num)
