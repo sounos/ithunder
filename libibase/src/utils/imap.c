@@ -530,6 +530,7 @@ int imap_range(IMAP *imap, int32_t from, int32_t to, u32_t *list)
 
     if(imap && imap->state)
     {
+        if(from == to) return imap_in(imap, from, list);
         RWLOCK_RDLOCK(imap->rwlock);
         k = imap_find_slot(imap, from);
         kk = imap_find_slot2(imap, to);

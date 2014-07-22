@@ -530,6 +530,7 @@ int lmap_range(LMAP *lmap, int64_t from, int64_t to, u32_t *list)
 
     if(lmap && lmap->state)
     {
+        if(from == to) return lmap_in(lmap, from, list);
         RWLOCK_RDLOCK(lmap->rwlock);
         k = lmap_find_slot(lmap, from);
         kk = lmap_find_slot2(lmap, to);

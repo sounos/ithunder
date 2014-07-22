@@ -530,6 +530,7 @@ int dmap_range(DMAP *dmap, double from, double to, u32_t *list)
 
     if(dmap && dmap->state)
     {
+        if(from == to) return dmap_in(dmap, from, list);
         RWLOCK_RDLOCK(dmap->rwlock);
         k = dmap_find_slot(dmap, from);
         kk = dmap_find_slot2(dmap, to);
