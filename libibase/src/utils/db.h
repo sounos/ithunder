@@ -10,7 +10,7 @@
 #define DB_PATH_MAX         1024
 #define DB_DIR_FILES        64
 #define DB_BUF_SIZE         4096
-#define DB_XBLOCKS_MAX      14
+#define DB_XBLOCKS_MAX      15
 #define DB_MBLOCKS_MAX      1024
 #define DB_MBLOCK_BASE      4096
 #define DB_MBLOCK_MAX       67108864
