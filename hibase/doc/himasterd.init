@@ -14,7 +14,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 DAEMON=/usr/sbin/himasterd
 NAME=himasterd
 DESC=himasterd
-DAEMON_OPTS="-d -c /etc/himasterd.ini"
+DAEMON_OPTS="-d -c /usr/local/etc/himasterd.ini"
 
 
 # Include himasterd defaults if available

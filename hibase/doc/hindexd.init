@@ -14,7 +14,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 DAEMON=/usr/sbin/hindexd
 NAME=hindexd
 DESC=hindexd
-DAEMON_OPTS="-d -c /etc/hindexd.ini"
+DAEMON_OPTS="-d -c /usr/local/etc/hindexd.ini"
 
 
 # Include hindexd defaults if available

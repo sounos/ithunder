@@ -14,7 +14,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 DAEMON=/usr/sbin/hidocd
 NAME=hidocd
 DESC=hidocd
-DAEMON_OPTS="-d -c /etc/hidocd.ini"
+DAEMON_OPTS="-d -c /usr/local/etc/hidocd.ini"
 
 
 # Include hidocd defaults if available

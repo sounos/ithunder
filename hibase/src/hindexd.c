@@ -345,7 +345,7 @@ int indexd_data_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *ch
                         {
                             pquery = (IQUERY *)chunk->data; 
                             db = pools[pquery->dbid];
-                            if(pquery->nqterms > 0) 
+                            if(pquery->nquerys > 0) 
                                 ichunk = ibase_bquery(db, pquery);
                             else 
                                 ichunk = ibase_query(db, pquery);
@@ -1209,7 +1209,7 @@ int httpd_query_handler(CONN *conn, IQUERY *query)
         if(query && query->from < query->ntop && query->count > 0)
         {
             db = pools[query->dbid];
-            if(query->nqterms > 0) ichunk = ibase_bquery(db, query);
+            if(query->nquerys > 0) ichunk = ibase_bquery(db, query);
             else ichunk = ibase_query(db, query);
             if(ichunk)
             {
