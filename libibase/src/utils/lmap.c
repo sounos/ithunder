@@ -315,8 +315,9 @@ int lmap_remove(LMAP *lmap, u32_t no)
         {
             n = --(lmap->slots[slotid].count);
             lmap->slots[slotid].min = kvs[0].key;
-            lmap->slots[slotid].max = kvs[n - 1].key;
+            if(n > 0) lmap->slots[slotid].max = kvs[n - 1].key;
         }
+        lmap->vmap[no].off = -1;
     }
     return ret;
 }

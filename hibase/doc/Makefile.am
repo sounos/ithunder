@@ -10,7 +10,7 @@ install: install-ini
 conftodir = "`echo $(sysconfdir)|sed -e 's|/usr/etc|/etc|'`"
 
 initdir = "$(DESTDIR)$(conftodir)/init.d"
-rcdir = "$(DESTDIR)$(conftodir)/rc.d/init.d"
+rcdir = "$(conftodir)/rc.d/init.d"
 
 sysconftodir = "$(DESTDIR)$(conftodir)"
 
@@ -39,7 +39,6 @@ install-ini:
 	@echo install hindexd.ini hidocd.ini to $(sysconftodir)
 	@test -d $(sysconftodir) || mkdir -p $(sysconftodir)
 	@test -d $(initdir) || mkdir -p $(initdir)
-	@test -f $(initdir)/functions  || ln -sf $(rcdir)/functions $(initdir)/functions
 	@test -f $(sysconftodir)/hindexd.ini \
 		|| cp -p rc.hindexd.ini $(sysconftodir)/hindexd.ini
 	@test -f $(sysconftodir)/hiqparserd.ini \
@@ -96,6 +95,7 @@ install-ini:
 			|| cp -p rc.hindexd $(initdir)/hiqparserd;\
 		test -f $(initdir)/hiqdocd \
 			|| cp -p rc.hindexd $(initdir)/hiqdocd;\
+		test -f $(initdir)/functions  || ln -sf $(rcdir)/functions $(initdir)/functions;\
 	fi
 	@perl -i -p -e  "s/hindex/hiqparser/g" $(initdir)/hiqparserd
 	@perl -i -p -e  "s/HINDEX/HIQPARSER/g" $(initdir)/hiqparserd

@@ -315,8 +315,9 @@ int imap_remove(IMAP *imap, u32_t no)
         {
             n = --(imap->slots[slotid].count);
             imap->slots[slotid].min = kvs[0].key;
-            imap->slots[slotid].max = kvs[n - 1].key;
+            if(n > 0) imap->slots[slotid].max = kvs[n - 1].key;
         }
+        imap->vmap[no].off = -1;
     }
     return ret;
 }
