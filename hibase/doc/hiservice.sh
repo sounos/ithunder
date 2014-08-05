@@ -50,6 +50,7 @@ genservice()
     perl -i -p -e "s|service_port = 3721|service_port = $indexd_query_port|g" /etc/"${indexd}.ini"
     perl -i -p -e "s|service_port = 4728|service_port = $indexd_index_port|g" /etc/"${indexd}.ini"
     perl -i -p -e "s/is_inside_html = 1/is_inside_html = 0/g" /etc/"${indexd}.ini"
+    perl -i -p -e "s/mmsource_status = 1/mmsource_status = 2/g" /etc/"${indexd}.ini"
 #parser
     /bin/cp -f /etc/hiqparserd.ini /etc/"${parserd}.ini"
     perl -i -p -e "s|service_port = 2510|service_port = $parserd_http_port|g" /etc/"${parserd}.ini"
