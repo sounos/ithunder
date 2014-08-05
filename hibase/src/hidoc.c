@@ -1576,11 +1576,13 @@ int scws_segment(HIDOC *hidoc, HINDEX *hindex, char *base, char *start, char *en
         {
             while (cur != NULL)
             {
+                /*
                 if(cur->attr && cur->attr[0] == 'u' && cur->attr[1] == 'n')
                 {
                     cur = cur->next;
                     continue;
                 }
+                */
                 pp = s = start + cur->off;
                 nterm = cur->len;
                 epp = s + nterm;

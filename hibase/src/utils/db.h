@@ -129,7 +129,7 @@ int db_xget_data_len(DB *db, char *key, int nkey);
 /* check key dataid/len */
 int db_xcheck(DB *db, char *key, int nkey, int *len, time_t *mod_time);
 /* truncate block */
-void *cdb_truncate_block(CDB *db, int id, int ndata);
+void *db_truncate_block(DB *db, int id, int ndata);
 /* get data block address and len */
 int db_exists_block(DB *db, int id, char **ptr);
 /* read data */

@@ -336,8 +336,11 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
         }
         if(ibase->state->used_for != IB_USED_FOR_QPARSERD)
         {
-            docheader->size = docheader->prevnext_off;
-            ret = db_set_data(PDB(ibase->source), docid, block->data, docheader->size);
+            if(ibase->state->mmsource_status != IB_MMSOURCE_NULL)
+            {
+                docheader->size = docheader->prevnext_off;
+                ret = db_set_data(PDB(ibase->source), docid, block->data, docheader->size);
+            }
         }
         ret = 0;
     }

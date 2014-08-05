@@ -657,6 +657,7 @@ typedef struct _IQSET
 #define IB_CACHE_DISABLED       0x01
 #define IB_MMSOURCE_ENABLED     0x00
 #define IB_MMSOURCE_DISABLED    0x01
+#define IB_MMSOURCE_NULL        0x02
 #define IB_MAPS_MAX             2048
 #define IB_QITERMS_MAX          2048
 #define IB_CHUNKS_MAX           2048
