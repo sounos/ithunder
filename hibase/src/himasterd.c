@@ -146,7 +146,7 @@ do                                                                              
     }                                                                                   \
 }while(0)
 /* httpd out summary */
-int httpd_push_summary(CONN *conn, char *summary, int nsummary)
+int httpd_push_summary(CONN *conn, char *summary, int nsummary, int ret_count)
 {
     char buf[Q_LINE_SIZE], *p = NULL;
     struct timeval tv = {0};
@@ -159,7 +159,7 @@ int httpd_push_summary(CONN *conn, char *summary, int nsummary)
                 "Content-Length: %d\r\nETag:%d\r\nConnection: Keep-Alive\r\n\r\n", 
                 http_default_charset, nsummary, conn->xids[4]);
         STATE_QUERY(conn, tv, usecs);
-        XLOG("OUT_SUMMARY{index:%d qid:%d pid:%d rid:%d fd:%d length:%d time:%lld remote[%s:%d] via %d}", conn->xids[0], conn->xids[1], conn->xids[2], conn->xids[4], conn->xids[5], nsummary, (long long)usecs, conn->remote_ip, conn->remote_port, conn->fd);
+        XLOG("OUT_SUMMARY{index:%d qid:%d pid:%d rid:%d fd:%d length:%d count:%d time:%lld remote[%s:%d] via %d}", conn->xids[0], conn->xids[1], conn->xids[2], conn->xids[4], conn->xids[5], nsummary, ret_count, (long long)usecs, conn->remote_ip, conn->remote_port, conn->fd);
         //fprintf(stdout, "%s\n", buf);
         conn->reset_xids(conn);
         conn->push_chunk(conn, buf, p - buf);
@@ -468,6 +468,7 @@ int qres_merge(CONN *conn, IRES *res, IRECORD *records)
                         dconn->xids[6] = conn->xids[6];
                         dconn->xids[9] = conn->xids[9];
                         dconn->xids[10] = conn->xids[10];
+                        dconn->xids[11] = n;
                         dconn->wait_evstate(dconn);
                         dconn->set_timeout(dconn, summary_timeout);
                         return dconn->push_chunk(dconn, buf, len);
@@ -518,7 +519,7 @@ int qres_merge(CONN *conn, IRES *res, IRECORD *records)
                     *p++ = '}';
                     *p++ = ')';
                     *p = '\0';
-                    return httpd_push_summary(xconn, line, p - line);
+                    return httpd_push_summary(xconn, line, p - line, n);
                 }
                 else 
                 {
@@ -577,7 +578,7 @@ int request_page_cache(CONN *conn, int pid)
             *p++ = '}';
             *p++ = ')';
             *p = '\0';
-            return  httpd_push_summary(conn, line, p - line);
+            return  httpd_push_summary(conn, line, p - line, qset->count);
         }
         else
         {
@@ -657,7 +658,7 @@ int request_summary(CONN *conn, int pid)
                 *p++ = '}';
                 *p++ = ')';
                 *p = '\0';
-                return  httpd_push_summary(conn, line, p - line);
+                return  httpd_push_summary(conn, line, p - line, qset->count);
             }
 
         }
@@ -756,7 +757,7 @@ int httpd_summary(int pid, int cid, int uid)
             *p++ = '}';
             *p++ = ')';
             *p = '\0';
-            return  httpd_push_summary(conn, line, p - line);
+            return  httpd_push_summary(conn, line, p - line, qset->count);
         }
         else
         {
@@ -1036,7 +1037,7 @@ int dservice_data_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *
                 {
                     xconn->over_evstate(xconn);
                     xconn->over_cstate(xconn);
-                    httpd_push_summary(xconn, chunk->data, chunk->ndata);
+                    httpd_push_summary(xconn, chunk->data, chunk->ndata,  conn->xids[11]);
                 }
                 ret = mmdb_set_summary(mmdb, head->id, chunk->data, chunk->ndata);
             }
@@ -1196,7 +1197,7 @@ int httpd_packet_handler(CONN *conn, CB_DATA *packet)
                             if((summary = xmm_new(nsummary)))
                             {
                                 if(mmdb_read_summary(mmdb, pid, summary) > 0)
-                                    httpd_push_summary(conn, summary, nsummary);
+                                    httpd_push_summary(conn, summary, nsummary, count);
                                 else 
                                     request_server_error(conn);
                                 xmm_free(summary, nsummary);
