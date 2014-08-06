@@ -1372,11 +1372,12 @@ err_end:
 int httpd_data_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *chunk)
 {
     char *p = NULL, *s = NULL, *end = NULL, line[HTTP_LINE_SIZE]; 
+    int ret = -1, n = 0, i = 0, len = 0, dbid = 0;
     HTTP_REQ httpRQ = {0}, *http_req = NULL;
-    int ret = -1, n = 0, i = 0, len = 0;
     int64_t list[X_KEY_MAX]; 
     struct timeval tv = {0};
     CB_DATA *block = NULL;
+    IBASE *db = NULL;
     IQUERY query;
 
     if(conn && packet && cache && chunk && chunk->ndata > 0)
@@ -1392,6 +1393,11 @@ int httpd_data_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *chu
                         && strncmp(p+4, "&key=", 5) == 0)
                 {
                     s = p + 9;  
+                    if((p = strstr(s, "&dbid=")))
+                    {
+                        dbid = atoi(p + 6);
+                        end = p;
+                    }
                     i = 0;
                     while(s < end && i < X_KEY_MAX)
                     {
@@ -1403,12 +1409,14 @@ int httpd_data_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *chu
                         while(*s != ',' && *s != ';' && s < end)++s;
                         ++s;
                     }
-                    if((n = i) > 0 && (len = ibase_bound_items(ibase, n)) > 0)
+                    if(dbid > 0 && dbid < IBASE_DB_MAX) db = pools[dbid];
+                    else db = ibase;
+                    if((n = i) > 0 && (len = ibase_bound_items(db, n)) > 0)
                     {
                         if((block = conn->newchunk(conn, len)))
                         {
                             p = block->data;
-                            if((len = ibase_read_items(ibase, list, n, p)) > 0)
+                            if((len = ibase_read_items(db, list, n, p)) > 0)
                             {
                                 n = sprintf(line, "HTTP/1.0 200 OK\r\nContent-Type:text/html;"
                                         "charset=%s\r\nContent-Length: %d\r\n\r\n", 
