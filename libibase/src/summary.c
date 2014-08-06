@@ -465,9 +465,9 @@ int ibase_read_summary(IBASE *ibase, IQSET *qset, IRECORD *records, char *summar
                     termlist = (STERM *)((char *)fields + sizeof(XFIELD) * docheader->nfields);
                     //posting = (char *)termlist + sizeof(STERM) * docheader->nterms; 
                     p += sprintf(p, "\"%d\":{\"id\":\"%lld\", \"rank\":\"%f\", "
-                            "\"category\":\"%lld\", \"slevel\":\"%d\","
+                            "\"dbid\":\"%d\",\"category\":\"%lld\", \"slevel\":\"%d\","
                             "\"score\":\"%lld\", \"summary\":{", i, IBLL(docheader->globalid), 
-                            docheader->rank, LLI(docheader->category), 
+                            docheader->rank, docheader->dbid, LLI(docheader->category), 
                             docheader->slevel, IBLL(records[i].score));
                     memset(&hits, 0, sizeof(IHITS));
                     TIMER_SAMPLE(timer);
@@ -578,7 +578,8 @@ int ibase_read_items(IBASE *ibase, int64_t *list, int count, char *out)
                     fields = (XFIELD *)(source + sizeof(DOCHEADER));
                     p += sprintf(p, "\"%lld\":{\"status\":\"%d\", \"crc\":\"%d\", \"rank\":\"%f\", "
                             "\"category\":\"%lld\", \"slevel\":\"%d\", \"nfields\":\"%d\", "
-                            "\"fields\":{", IBLL(docheader->globalid), docheader->status, 
+                            "\"dbid\":\"%d\",\"fields\":{", docheader->dbid,
+                            IBLL(docheader->globalid), docheader->status, 
                             docheader->crc, docheader->rank, LLI(docheader->category), 
                             docheader->slevel, docheader->nfields);
                     for(j = 0; j < docheader->nfields; j++)
