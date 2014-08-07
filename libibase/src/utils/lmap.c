@@ -677,6 +677,7 @@ int lmap_get(LMAP *lmap, u32_t no, u32_t *val)
         if((n = (lmap->vsize/sizeof(LMMV))) > 0 && no < n)
         {
             if(val) *val = lmap->vmap[no].val;
+            ret = 0;
         }
         RWLOCK_UNLOCK(lmap->rwlock);
     }

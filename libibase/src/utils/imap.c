@@ -677,6 +677,7 @@ int imap_get(IMAP *imap, u32_t no, u32_t *val)
         if((n = (imap->vsize/sizeof(IMMV))) > 0 && no < n)
         {
             if(val) *val = imap->vmap[no].val;
+            ret = 0;
         }
         RWLOCK_UNLOCK(imap->rwlock);
     }

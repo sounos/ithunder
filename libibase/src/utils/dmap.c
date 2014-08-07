@@ -677,6 +677,7 @@ int dmap_get(DMAP *dmap, u32_t no, u32_t *val)
         if((n = (dmap->vsize/sizeof(DMMV))) > 0 && no < n)
         {
             if(val) *val = dmap->vmap[no].val;
+            ret = 0;
         }
         RWLOCK_UNLOCK(dmap->rwlock);
     }
