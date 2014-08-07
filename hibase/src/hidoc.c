@@ -1680,7 +1680,6 @@ int hidoc_genindex(HIDOC *hidoc, HINDEX *hindex, FHEADER *fheader, IFIELD *field
     int64_t nl = 0, *npl = NULL;
     XFIELD *xfields = NULL;
     size_t nzcontent = 0;
-    unsigned int un = 0;
     void *timer = NULL;
     double *npf = NULL;
 
@@ -2084,10 +2083,9 @@ int hidoc_genindex(HIDOC *hidoc, HINDEX *hindex, FHEADER *fheader, IFIELD *field
             to = i + index_int_num;
             do{
                 s = content + fields[i].offset;
-                un = 0;
-                if(*s >= '0' && *s <= '9') un = (unsigned int)atoi(s);
+                n = (int)atoi(s);
                 //fprintf(stdout, "%d:{n:%d,s:%.*s}\n", i, n, fields[i].length, s);
-                *np++ = un;
+                *np++ = n;
             }while(++i < to);
             p = (char *)np;
             docheader->intindex_from = index_int_from;
@@ -2106,8 +2104,7 @@ int hidoc_genindex(HIDOC *hidoc, HINDEX *hindex, FHEADER *fheader, IFIELD *field
             do
             {
                 s = content + fields[i].offset;
-                nl = 0;
-                if(*s >= '0' && *s <= '9') nl = (int64_t)atoll(s);
+                nl = (int64_t)atoll(s);
                 *npl++ = nl;
             }while(++i < to);
             p = (char *)npl;

@@ -881,8 +881,8 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                 while(*p != '\0' && *p != ']')
                 {
                     while(*p == 0x20)++p;
-                    if(*p >= '0' && *p <= '9') in_ptr = p;
-                    while((*p >= '0' && *p <= '9') || *p == '.')++p;
+                    if((*p >= '0' && *p <= '9') || *p == '-') in_ptr = p;
+                    while((*p >= '0' && *p <= '9') || *p == '-' || *p == '.')++p;
                     while(*p == 0x20)++p;
                     if(*p == ',' || *p == ';')++p;
                     if(field_id >= int_index_from && field_id < int_index_to) 
@@ -980,12 +980,12 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                 while(*p != '[' && *p != '\0')++p;
                 if(*p != '\0')++p;
                 while(*p == 0x20)++p;
-                if(*p >= '0' && *p <= '9') range_from = p;
-                while((*p >= '0' && *p <= '9') || *p == '.')++p;
+                if((*p >= '0' && *p <= '9') || *p == '-') range_from = p;
+                while((*p >= '0' && *p <= '9') || *p == '-' || *p == '.')++p;
                 while(*p == 0x20)++p;
                 if(*p == ',' || *p == ';')++p;
                 while(*p == 0x20)++p;
-                if(*p >= '0' && *p <= '9') range_to = p;
+                if((*p >= '0' && *p <= '9') || *p == '-') range_to = p;
                 while(*p != ']' && *p != '\0')++p;
                 while(*p != ',' && *p != ';' && *p != '\0')++p;
                 if(*p != '\0')++p;
