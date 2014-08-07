@@ -288,6 +288,7 @@ int imap_remove(IMAP *imap, u32_t no)
     {
         rootid = (nodeid / IMM_SLOT_NUM);
         slotid = imap->roots[rootid];
+        if((int32_t)slotid < 0) return ret;
         i = nodeid % IMM_SLOT_NUM;
         kvs = imap->map + imap->slots[slotid].nodeid;    
         while(i < imap->slots[slotid].count)
@@ -748,9 +749,9 @@ void imap_close(IMAP *imap)
 int main()
 {
     IMAP *imap = NULL;
-    int i = 0, j = 0, n = 0, total = 0, stat[MASK], stat2[MASK];
+    int i = 0, j = 0, n = 0, total = 0, no = 0, stat[MASK], stat2[MASK];
     int32_t val = 0, from = 0, to = 0, *res = NULL;
-    int32_t inputs[256], last[256];
+    int32_t inputs[256], nos[256], last[256];
     int32_t all = 0;
     time_t stime = 0, etime = 0;
     void *timer = NULL;
@@ -767,14 +768,20 @@ int main()
         n = 256;
         for(i = 0; i < n; i++)
         {
-            inputs[i] = rand()%MASK;
+            no = (rand()%MASK);
+            nos[i] = no;
+            if((i % 3) == 0)
+                inputs[i] = no * -1;
+            else
+                inputs[i] = no;
         }
         TIMER_RESET(timer);
-        for(i = 1; i < 40000000; i++)
+        for(i = 1; i < 20000000; i++)
         {
            j = (rand()%n);
            val = inputs[j];
-           stat[val]++;
+           no = nos[j];
+           stat[no]++;
            imap_set(imap, i, val);
            last[j] = i;
         }
@@ -791,7 +798,8 @@ int main()
         for(i = 0; i < n; i++)
         {
             val = inputs[i];
-            stat2[val] = imap_in(imap, val, res);
+            no = nos[i];
+            stat2[no] = imap_in(imap, val, res);
         }
         TIMER_SAMPLE(timer);
         fprintf(stdout, "in() time used:%lld\n", PT_LU_USEC(timer));
@@ -805,9 +813,9 @@ int main()
         fprintf(stdout, "ins(keys, res:%p) total:%d time used:%lld\n", res, total, PT_LU_USEC(timer));
         for(i = 0; i < n; i++)
         {
-            j = inputs[i];
+            j = nos[i];
             if(stat[j] != stat2[j])
-                fprintf(stdout, "%d:%d/%d\n", j, stat[j], stat2[j]);
+                fprintf(stdout, "%d:%d/%d::%d\n", j, stat[j], stat2[j], inputs[i]);
         }
 #ifdef OUT_ALL
         for(i = 0; i < total; i++)
