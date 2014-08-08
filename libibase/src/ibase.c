@@ -1153,11 +1153,11 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
             }
             //MUTEX_UNLOCK(ibase->mutex_termstate);
             query->nqterms = nqterms;
-            query->nquerys = query->nqterms + nxqterms;
             //if(nxqterms > query->nqterms)
             //query->nquerys = query->nqterms;
             ACCESS_LOGGER(ibase->logger, "over state-idf(query_str:%s nsegs:%d)", query_str, ibase->nqsegmentors);
         }
+        query->nquerys = query->nqterms + nxqterms;
         return query->nqterms;
     }
 #endif

@@ -1184,7 +1184,11 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
             fprintf(stdout, "%s::%d flag:%d nquerys:%d\n", __FILE__, __LINE__, query->flag&IB_QUERY_FIELDS, query->nquerys);
             */
         }
-        if(query_str && *query_str) ret = ibase_qparser(db, -1, query_str, not_str, query);
+        if(query_str && *query_str)
+        {
+            ret = ibase_qparser(db, -1, query_str, not_str, query);
+            //fprintf(stdout, "%s::%d nquerys:%d nqterms:%d\n", __FILE__, __LINE__, query->nquerys, query->nqterms);
+        }
         else ret = 0;
         //fprintf(stdout, "db:%p dbid:%d query_str:%s state:%p ret:%d query:%p\n", db, query->dbid, query_str, db->termstateio.map, ret, query);
     }
