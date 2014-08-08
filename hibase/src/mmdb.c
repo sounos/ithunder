@@ -1047,8 +1047,9 @@ int mmdb_set_cqres(MMDB *mmdb, CQRES *cqres)
         if(cqres->qset.res.count > 0)
             return db_set_data(PDB(mmdb->rdb), cqres->recid, (char *)cqres, sizeof(CQRES));
         else
-            return db_update_modtime(PDB(mmdb->rdb), cqres->recid);
-        
+        {
+            return db_del_data(PDB(mmdb->rdb), cqres->recid);
+        }
     }
     return -1;
 }

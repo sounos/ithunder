@@ -578,10 +578,10 @@ int ibase_read_items(IBASE *ibase, int64_t *list, int count, char *out)
                     fields = (XFIELD *)(source + sizeof(DOCHEADER));
                     p += sprintf(p, "\"%lld\":{\"status\":\"%d\", \"crc\":\"%d\", \"rank\":\"%f\", "
                             "\"category\":\"%lld\", \"slevel\":\"%d\", \"nfields\":\"%d\", "
-                            "\"dbid\":\"%d\",\"fields\":{", docheader->dbid,
+                            "\"dbid\":\"%d\",\"fields\":{", 
                             IBLL(docheader->globalid), docheader->status, 
                             docheader->crc, docheader->rank, LLI(docheader->category), 
-                            docheader->slevel, docheader->nfields);
+                            docheader->slevel, docheader->nfields, docheader->dbid);
                     for(j = 0; j < docheader->nfields; j++)
                     {
                         pp = content + fields[j].from;

@@ -721,7 +721,7 @@ int db_update_modtime(DB *db, int id)
     {
         if((dbx = (DBX *)(db->dbxio.map)))
         {
-            dbx[id].mod_time = time(NULL);
+            dbx[id].mod_time = (int)time(NULL);
         }
     }
     return ret;
@@ -1139,13 +1139,16 @@ int db_del_data(DB *db, int id)
         if((dbx = (DBX *)(db->dbxio.map)))
         {
             ACCESS_LOGGER(db->logger, "push_block() dbxid:%d blockid:%d index:%d block_size:%d",id, dbx[id].blockid, dbx[id].index, dbx[id].block_size);
-            db_push_block(db, dbx[id].index, dbx[id].blockid, dbx[id].block_size);
-            db_mutex_wrlock(db, id);
-            dbx[id].block_size = 0;
-            dbx[id].blockid = 0;
-            dbx[id].ndata = 0;
-            dbx[id].mod_time = 0;
-            db_mutex_unlock(db, id);
+            if(dbx[id].block_size > 0)
+            {
+                db_push_block(db, dbx[id].index, dbx[id].blockid, dbx[id].block_size);
+                db_mutex_wrlock(db, id);
+                dbx[id].block_size = 0;
+                dbx[id].blockid = 0;
+                dbx[id].ndata = 0;
+                db_mutex_unlock(db, id);
+            }
+            dbx[id].mod_time = (int)time(NULL);
             ret = id;
         }
     }
@@ -1164,13 +1167,16 @@ int db_xdel_data(DB *db, char *key, int nkey)
                 && (dbx = (DBX *)(db->dbxio.map)))
         {
             ACCESS_LOGGER(db->logger, "push_block() dbxid:%d blockid:%d index:%d block_size:%d",id, dbx[id].blockid, dbx[id].index, dbx[id].block_size);
-            db_push_block(db, dbx[id].index, dbx[id].blockid, dbx[id].block_size);
-            db_mutex_wrlock(db, id);
-            dbx[id].block_size = 0;
-            dbx[id].blockid = 0;
-            dbx[id].ndata = 0;
-            dbx[id].mod_time = 0;
-            db_mutex_unlock(db, id);
+            if(dbx[id].block_size > 0)
+            {
+                db_push_block(db, dbx[id].index, dbx[id].blockid, dbx[id].block_size);
+                db_mutex_wrlock(db, id);
+                dbx[id].block_size = 0;
+                dbx[id].blockid = 0;
+                dbx[id].ndata = 0;
+                db_mutex_unlock(db, id);
+            }
+            dbx[id].mod_time = (int)time(NULL);
             ret = id;
         }
     }
