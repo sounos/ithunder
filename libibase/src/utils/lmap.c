@@ -331,6 +331,7 @@ int lmap_find_slot(LMAP *lmap, int64_t key)
         max = n - 1;
         min = 0;
         if(key <= lmap->slots[min].max) ret = min;
+        else if(key > lmap->slots[max].min) ret = max;
         else
         {
             while(max > min)
@@ -369,6 +370,7 @@ int lmap_find_slot2(LMAP *lmap, int64_t key)
         max = n - 1;
         min = 0;
         if(key >= lmap->slots[max].min) ret = max;
+        else if(key < lmap->slots[min].max) ret = min;
         else
         {
             while(max > min)

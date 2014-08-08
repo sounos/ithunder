@@ -1,4 +1,4 @@
-EXTRA_DIST = iheaders.h
+EXTRA_DIST = iheaders.h utils/gen.sh 
 lib_LTLIBRARIES = libibase.la
 libibase_la_SOURCES = ibase.c \
 ibase.h \

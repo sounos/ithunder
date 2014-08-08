@@ -331,6 +331,7 @@ int dmap_find_slot(DMAP *dmap, double key)
         max = n - 1;
         min = 0;
         if(key <= dmap->slots[min].max) ret = min;
+        else if(key > dmap->slots[max].min) ret = max;
         else
         {
             while(max > min)
@@ -369,6 +370,7 @@ int dmap_find_slot2(DMAP *dmap, double key)
         max = n - 1;
         min = 0;
         if(key >= dmap->slots[max].min) ret = max;
+        else if(key < dmap->slots[min].max) ret = min;
         else
         {
             while(max > min)
