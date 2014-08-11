@@ -844,6 +844,12 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                     while (cur != NULL)
                     {
                         pp = s = query_str + cur->off;
+                        if(cur->attr && cur->attr[0] == 'u' && cur->attr[1] == 'n'
+                                && !ISNUM(s) && !ISCHAR(s))
+                        {
+                            cur = cur->next;
+                            continue;
+                        }
                         nterm = cur->len;
                         if(last == cur->off) prevnext = 1;
                         else prevnext = 0;

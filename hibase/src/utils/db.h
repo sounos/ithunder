@@ -2,7 +2,7 @@
 #ifndef _DB_H_
 #define _DB_H_
 #include <pthread.h>
-#define DB_LNK_MAX          2097152
+#define DB_LNK_MAX          8388608
 #define DB_LNK_INCREMENT    65536
 #define DB_DBX_MAX          2000000000
 #define DB_DBX_BASE         1000000
@@ -31,7 +31,7 @@
 //#define DB_MFILE_SIZE       268435456  //256M
 #define DB_MFILE_SIZE     536870912  //512M
 //#define DB_MFILE_SIZE       1073741824 //1G
-#define DB_MFILE_MAX        8129
+#define DB_MFILE_MAX        8192
 #define DB_BLOCK_INCRE_LEN      0x0
 #define DB_BLOCK_INCRE_DOUBLE   0x1
 typedef struct _DBX
@@ -128,8 +128,6 @@ int db_xget_data(DB *db, char *key, int nkey, char **data, int *ndata);
 int db_xget_data_len(DB *db, char *key, int nkey);
 /* check key dataid/len */
 int db_xcheck(DB *db, char *key, int nkey, int *len, time_t *mod_time);
-/* truncate block */
-void *db_truncate_block(DB *db, int id, int ndata);
 /* get data block address and len */
 int db_exists_block(DB *db, int id, char **ptr);
 /* read data */

@@ -471,7 +471,7 @@ int db_pop_block(DB *db, int blocks_count, XLNK *lnk)
     XLNK *links = NULL, *plink = NULL, link = {0};
     char path[DB_PATH_MAX];
 
-    if(db && (x = blocks_count) > 0 && lnk)
+    if(db && (x = blocks_count) > 0 && x < DB_LNK_MAX && lnk)
     {
         RWLOCK_WRLOCK(db->mutex_lnk);
         if((links = (XLNK *)(db->lnkio.map)) && links[x].count > 0 
@@ -598,7 +598,8 @@ int db__set__data(DB *db, int id, char *data, int ndata)
     XLNK lnk = {0}, old = {0};
     DBX *dbx = NULL;
 
-    if(db && id >= 0 && data && ndata > 0 && db->status == 0 && (dbx = (DBX *)(db->dbxio.map)))
+    if(db && id >= 0 && id < DB_DBX_MAX && data && ndata > 0 
+            && db->status == 0 && (dbx = (DBX *)(db->dbxio.map)))
     {
         RWLOCK_WRLOCK(db->mutex_dbx);
         CHECK_DBXIO(db, id);
@@ -748,12 +749,14 @@ time_t db_get_modtime(DB *db, int id)
 /* add data */
 int db__add__data(DB *db, int id, char *data, int ndata)
 {
-    int ret = -1, size = 0,  new_size = 0, blocks_count = 0, x = 0, index = 0, nold = 0;
+    int ret = -1, size = 0,  new_size = 0, blocks_count = 0, 
+        oindex = 0, index = 0, nold = 0;
     char *block = NULL, *old = NULL, *mold = NULL;
     XLNK lnk = {0}, old_lnk = {0};
     DBX *dbx = NULL;
 
-    if(db && id >= 0 && data && ndata > 0 && (dbx = (DBX *)(db->dbxio.map)))
+    if(db && id >= 0 && id < DB_DBX_MAX && data 
+            && ndata > 0 && (dbx = (DBX *)(db->dbxio.map)))
     {
         RWLOCK_WRLOCK(db->mutex_dbx);
         CHECK_DBXIO(db, id);
@@ -778,20 +781,20 @@ int db__add__data(DB *db, int id, char *data, int ndata)
                 FATAL_LOGGER(db->logger, "pop_block(%d) failed, %s", blocks_count, strerror(errno));
                 _exit(-1);
             }
-            if(dbx[id].block_size > 0 && dbx[id].ndata > 0 && (x = old_lnk.index) >= 0 
-                    && (index = lnk.index) >= 0 && db->dbsio[x].fd > 0 && db->dbsio[index].fd > 0)
+            if(dbx[id].block_size > 0 && dbx[id].ndata > 0 && (oindex = old_lnk.index) >= 0 
+                && (index = lnk.index) >= 0 && db->dbsio[oindex].fd > 0 && db->dbsio[index].fd > 0)
             {
                 if(db->state->mode)
                 {
-                    if(db->dbsio[x].map && db->dbsio[index].map)
+                    if(db->dbsio[oindex].map && db->dbsio[index].map)
                     {
-                        mold = (char *)(db->dbsio[x].map) +(off_t)old_lnk.blockid*(off_t)DB_BASE_SIZE;
+                        mold = (char *)(db->dbsio[oindex].map) +(off_t)old_lnk.blockid*(off_t)DB_BASE_SIZE;
                         block = (char *)(db->dbsio[index].map)+lnk.blockid *(off_t)DB_BASE_SIZE;
                         memcpy(block, mold, nold);
                     }
                     else
                     {
-                            FATAL_LOGGER(db->logger, "moving index[%d] dbsio[%d]->ndata:%d data from index[%d]->map:%p to index[%d]->map:%p failed, %s", index, id, nold, x, db->dbsio[x].map, index, db->dbsio[index].map, strerror(errno));
+                            FATAL_LOGGER(db->logger, "moving index[%d] dbsio[%d]->ndata:%d data from index[%d]->map:%p to index[%d]->map:%p failed, %s", index, id, nold, oindex, db->dbsio[oindex].map, index, db->dbsio[index].map, strerror(errno));
                             _exit(-1);
                     }
                 }
@@ -799,13 +802,11 @@ int db__add__data(DB *db, int id, char *data, int ndata)
                 {
                     if((old = db_new_data(db, nold)))
                     {
-                        //if(pread(db->dbsio[x].fd, old, nold, (off_t)old_lnk.blockid*(off_t)DB_BASE_SIZE) <= 0)
-                        if(db_pread(db, index, old, nold, (off_t)(old_lnk.blockid)*(off_t)DB_BASE_SIZE) <= 0)
+                        if(db_pread(db, oindex, old, nold, (off_t)(old_lnk.blockid)*(off_t)DB_BASE_SIZE) <= 0)
                         {
                             FATAL_LOGGER(db->logger, "read index[%d] dbx[%d] nold:%d data failed, %s", index, id, nold, strerror(errno));
                             _exit(-1);
                         }
-                        //if(pwrite(db->dbsio[index].fd, old, nold, (off_t)(lnk.blockid)*(off_t)DB_BASE_SIZE) <= 0)
                         if(db_pwrite(db, index, old, nold, (off_t)(lnk.blockid)*(off_t)DB_BASE_SIZE) <= 0)
                         {
                             FATAL_LOGGER(db->logger, "write fd:%d dbx[%d/%d] dbsio[%d/%d] nold:%d to block[%d] block_size:%d end:%lld failed, %s", db->dbsio[index].fd, id, db->state->db_id_max, index, db->state->last_id, nold, dbx[id].blockid, dbx[id].block_size, LL(db->dbsio[index].end), strerror(errno));

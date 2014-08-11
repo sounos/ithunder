@@ -334,13 +334,11 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
                 //SET_DOUBLE_INDEX(ibase, docid, doublelist, x);
             }
         }
-        if(ibase->state->used_for != IB_USED_FOR_QPARSERD)
+        if(ibase->state->used_for != IB_USED_FOR_QPARSERD 
+                && ibase->state->mmsource_status != IB_MMSOURCE_NULL)
         {
-            if(ibase->state->mmsource_status != IB_MMSOURCE_NULL)
-            {
                 docheader->size = docheader->prevnext_off;
                 ret = db_set_data(PDB(ibase->source), docid, block->data, docheader->size);
-            }
         }
         ret = 0;
     }
@@ -428,7 +426,8 @@ int ibase_update_index(IBASE *ibase, int docid, IBDATA *block)
                 }   
             }
         }
-        if(ibase->state->used_for != IB_USED_FOR_QPARSERD)
+        if(ibase->state->used_for != IB_USED_FOR_QPARSERD 
+                && ibase->state->mmsource_status != IB_MMSOURCE_NULL)
         {
             docheader->size = docheader->prevnext_off;
             ret = db_set_data(PDB(ibase->source), docid, block->data, docheader->size);
@@ -449,7 +448,8 @@ int ibase_del_index(IBASE *ibase, int docid)
         ibase->state->dtotal--;
         ibase->state->ttotal -= iheader->terms_total;
         iheader->status = -1;
-        if(ibase->state->used_for == IB_USED_FOR_INDEXD)
+        if(ibase->state->used_for == IB_USED_FOR_INDEXD 
+                && ibase->state->mmsource_status != IB_MMSOURCE_NULL)
         {
             ret = db_del_data(PDB(ibase->source), docid);
         }
