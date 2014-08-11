@@ -66,7 +66,7 @@ int db_mkdir(char *path)
     }
     return -1;
 }
-
+int db__resize(DB *db, int id, int length);
 /* initialize dbfile */
 DB *db_init(char *dbdir, int mode)
 {
@@ -684,6 +684,22 @@ int db__set__data(DB *db, int id, char *data, int ndata)
     return ret;
 }
 
+/* db xchunk data */
+int db_xchunk_data(DB *db, char *key, int nkey, char *data, int ndata, int length)
+{
+    int id = -1, ret = -1;
+
+    if(db && key && nkey > 0 && data && ndata > 0)
+    {
+        if((id = mmtrie_xadd(MMTR(db->kmap), key, nkey)) > 0)
+        {
+            if(length > 0) db__resize(db, id, length);
+            ret = db__set__data(db, id, data, ndata);
+        }
+    }
+    return ret;
+}
+
 /* db set data */
 int db_xset_data(DB *db, char *key, int nkey, char *data, int ndata)
 {
@@ -695,6 +711,19 @@ int db_xset_data(DB *db, char *key, int nkey, char *data, int ndata)
         {
             ret = db__set__data(db, id, data, ndata);
         }
+    }
+    return ret;
+}
+
+/* db chunk data */
+int db_chunk_data(DB *db, int id, char *data, int ndata, int length)
+{
+    int ret = -1;
+
+    if(db && id >= 0 && data && ndata > 0)
+    {
+        if(length > 0) db__resize(db, id, length);
+        ret = db__set__data(db, id, data, ndata);
     }
     return ret;
 }
@@ -743,8 +772,6 @@ time_t db_get_modtime(DB *db, int id)
     }
     return ret;
 }
-
-
 
 /* add data */
 int db__add__data(DB *db, int id, char *data, int ndata)
@@ -858,6 +885,108 @@ int db__add__data(DB *db, int id, char *data, int ndata)
     return ret;
 }
 
+/* resize */
+int db__resize(DB *db, int id, int length)
+{
+    int ret = -1, size = 0,  new_size = 0, blocks_count = 0, x = 0, index = 0, nold = 0;
+    char *block = NULL, *old = NULL, *mold = NULL;
+    XLNK lnk = {0}, old_lnk = {0};
+    DBX *dbx = NULL;
+
+    if(db && id >= 0 && length > 0 && (dbx = (DBX *)(db->dbxio.map)))
+    {
+        RWLOCK_WRLOCK(db->mutex_dbx);
+        CHECK_DBXIO(db, id);
+        RWLOCK_UNLOCK(db->mutex_dbx);
+        db_mutex_wrlock(db, id);
+        nold = dbx[id].ndata;
+        //check block_size 
+        if((size = length) > dbx[id].block_size)
+        {
+            old_lnk.index = dbx[id].index;
+            old_lnk.blockid = dbx[id].blockid;
+            old_lnk.count = DB_BLOCKS_COUNT(dbx[id].block_size);
+            if((new_size = dbx[id].block_size) > 0 
+                    && db->state->block_incre_mode == DB_BLOCK_INCRE_DOUBLE)
+            {
+                while(size > new_size) new_size *= 2;
+                size = new_size;
+            }
+            blocks_count = DB_BLOCKS_COUNT(size);
+            if(db_pop_block(db, blocks_count, &lnk) != 0)
+            {
+                FATAL_LOGGER(db->logger, "pop_block(%d) failed, %s", blocks_count, strerror(errno));
+                _exit(-1);
+            }
+            if(dbx[id].block_size > 0 && dbx[id].ndata > 0 && (x = old_lnk.index) >= 0 
+                    && (index = lnk.index) >= 0 && db->dbsio[x].fd > 0 && db->dbsio[index].fd > 0)
+            {
+                if(db->state->mode)
+                {
+                    if(db->dbsio[x].map && db->dbsio[index].map)
+                    {
+                        mold = (char *)(db->dbsio[x].map) +(off_t)old_lnk.blockid*(off_t)DB_BASE_SIZE;
+                        block = (char *)(db->dbsio[index].map)+lnk.blockid *(off_t)DB_BASE_SIZE;
+                        memcpy(block, mold, nold);
+                    }
+                    else
+                    {
+                            FATAL_LOGGER(db->logger, "moving index[%d] dbsio[%d]->ndata:%d data from index[%d]->map:%p to index[%d]->map:%p failed, %s", index, id, nold, x, db->dbsio[x].map, index, db->dbsio[index].map, strerror(errno));
+                            _exit(-1);
+                    }
+                }
+                else
+                {
+                    if((old = db_new_data(db, nold)))
+                    {
+                        if(db_pread(db, index, old, nold, (off_t)(old_lnk.blockid)*(off_t)DB_BASE_SIZE) <= 0)
+                        {
+                            FATAL_LOGGER(db->logger, "read index[%d] dbx[%d] nold:%d data failed, %s", index, id, nold, strerror(errno));
+                            _exit(-1);
+                        }
+                        if(db_pwrite(db, index, old, nold, (off_t)(lnk.blockid)*(off_t)DB_BASE_SIZE) <= 0)
+                        {
+                            FATAL_LOGGER(db->logger, "write fd:%d dbx[%d/%d] dbsio[%d/%d] nold:%d to block[%d] block_size:%d end:%lld failed, %s", db->dbsio[index].fd, id, db->state->db_id_max, index, db->state->last_id, nold, dbx[id].blockid, dbx[id].block_size, LL(db->dbsio[index].end), strerror(errno));
+                            _exit(-1);
+                        }
+                        db_free_data(db, old, nold);
+                        old = NULL;
+                    }
+                }
+
+            }
+            dbx[id].index = lnk.index;
+            dbx[id].blockid = lnk.blockid;
+            dbx[id].block_size = lnk.count * DB_BASE_SIZE;
+            ACCESS_LOGGER(db->logger, "pop_block() dbxid:%d blockid:%d index:%d block_count:%d block_size:%d size:%d",id, lnk.blockid, lnk.index, blocks_count, dbx[id].block_size, size);
+        }
+        dbx[id].mod_time = (int)time(NULL);
+        db_mutex_unlock(db, id);
+        if(old_lnk.count > 0)
+        {
+
+            ACCESS_LOGGER(db->logger, "push_block() blockid:%d index:%d block_size:%d", old_lnk.blockid, old_lnk.index, old_lnk.count * DB_BASE_SIZE);
+            db_push_block(db, old_lnk.index, old_lnk.blockid, old_lnk.count * DB_BASE_SIZE);
+        }
+    }
+    return ret;
+}
+
+/* xadd data */
+int db_xresize(DB *db, char *key, int nkey, int length)
+{
+    int id = -1, ret = -1;
+
+    if(db && key && nkey > 0 && length > 0)
+    {
+        if((id = mmtrie_xadd(MMTR(db->kmap), key, nkey)) > 0)
+        {
+            ret = db__resize(db, id, length);
+        }
+    }
+    return ret;
+}
+
 /* xadd data */
 int db_xadd_data(DB *db, char *key, int nkey, char *data, int ndata)
 {
@@ -898,6 +1027,79 @@ int db_xget_data_len(DB *db, char *key, int nkey)
                 && (dbx = (DBX *)db->dbxio.map)) 
         {
             ret = dbx[id].ndata; 
+        }
+    }
+    return ret;
+}
+
+/* truncate block */
+void *db_truncate_block(DB *db, int id, int ndata)
+{
+    int index = 0, blocks_count = 0;
+    XLNK lnk = {0}, old = {0};
+    DBX *dbx = NULL;
+    void *ret = NULL;
+
+    if(db && id >= 0 && ndata > 0 && db->status == 0 && (dbx = (DBX *)(db->dbxio.map)))
+    {
+        RWLOCK_WRLOCK(db->mutex_dbx);
+        CHECK_DBXIO(db, id);
+        RWLOCK_WRLOCK(db->mutex_dbx);
+        db_mutex_rdlock(db, id);
+        if(dbx[id].block_size < ndata)
+        {
+            if(dbx[id].block_size > 0)
+            {
+                old.index = dbx[id].index;
+                old.blockid = dbx[id].blockid;
+                old.count = DB_BLOCKS_COUNT(dbx[id].block_size);
+                dbx[id].block_size = 0;
+                dbx[id].blockid = 0;
+                dbx[id].ndata = 0;
+            }
+            blocks_count = DB_BLOCKS_COUNT(ndata);
+            if(db_pop_block(db, blocks_count, &lnk) == 0)
+            {
+                dbx[id].index = lnk.index;
+                dbx[id].blockid = lnk.blockid;
+                dbx[id].block_size = blocks_count * DB_BASE_SIZE;
+                ACCESS_LOGGER(db->logger, "pop_block() dbxid:%d blockid:%d index:%d block_size:%d ndata:%d",id, lnk.blockid, lnk.index, dbx[id].block_size, ndata);
+                if(ndata > dbx[id].block_size)
+                {
+                    FATAL_LOGGER(db->logger, "Invalid blockid:%d ndata:%d block_count:%d", lnk.blockid, ndata, blocks_count);
+                    _exit(-1);
+                }
+            }
+            else
+            {
+                FATAL_LOGGER(db->logger, "pop_block(%d) failed, %s", blocks_count, strerror(errno));
+                _exit(-1);
+            }
+        }
+        if(dbx[id].block_size >= ndata && (index = dbx[id].index) >= 0 && db->dbsio[index].fd > 0)
+        {
+            if(db->state->mode && dbx[id].blockid >= 0 && db->dbsio[index].map)
+            {
+                ret = (char *)(db->dbsio[index].map)+(off_t)dbx[id].blockid * (off_t)DB_BASE_SIZE;
+                dbx[id].ndata = ndata;
+            }
+            else
+            {
+                ret = NULL;
+            }
+        }
+        else
+        {
+            FATAL_LOGGER(db->logger, "Invalid index[%d] dbx[%d] ndata:%d to block[%d] block_size:%d off:%lld failed, %s", index, id, ndata, dbx[id].blockid, dbx[id].block_size, LL(db->dbxio.end), strerror(errno));
+            _exit(-1);
+        }
+        if(dbx[id].ndata > db->state->data_len_max) db->state->data_len_max = dbx[id].ndata;
+        dbx[id].mod_time = (int)time(NULL);
+        db_mutex_unlock(db, id);
+        if(old.count > 0)
+        {
+            ACCESS_LOGGER(db->logger, "push_block() dbxid:%d blockid:%d index:%d block_size:%d",id, old.blockid, old.index, old.count * DB_BASE_SIZE);
+            db_push_block(db, old.index, old.blockid, old.count * DB_BASE_SIZE);
         }
     }
     return ret;
@@ -1182,6 +1384,85 @@ int db_xdel_data(DB *db, char *key, int nkey)
         }
     }
     return ret;
+}
+
+/* reset */
+void db_reset(DB *db)
+{
+    int ret = 0, i = 0, mode = 0;
+    char path[DB_PATH_MAX];
+
+    if(db)
+    {
+        db->status = -1;
+        RWLOCK_WRLOCK(db->mutex);
+        RWLOCK_WRLOCK(db->mutex_dbx);
+        RWLOCK_WRLOCK(db->mutex_lnk);
+        RWLOCK_WRLOCK(db->mutex_mblock);
+        mmtrie_destroy(db->kmap);
+        /* dbx */
+        if(db->dbxio.map) 
+        {
+            munmap(db->dbxio.map, db->dbxio.size);
+            db->dbxio.map = NULL;
+            db->dbxio.end = 0;
+            db->dbxio.size = 0;
+        }
+        if(db->dbxio.fd > 0)
+        {
+            db->dbxio.end = sizeof(DBX) * DB_DBX_BASE;
+            db->dbxio.size = sizeof(DBX) * DB_DBX_MAX;
+            ret = ftruncate(db->dbxio.fd, db->dbxio.end);
+            if((db->dbxio.map = (char *)mmap(NULL, db->dbxio.size, PROT_READ|PROT_WRITE,
+                MAP_SHARED, db->dbxio.fd, 0)) == NULL || db->dbxio.map == (void *)-1)
+            {
+                FATAL_LOGGER(db->logger,"mmap dbx failed, %s", strerror(errno));
+                _exit(-1);
+            }
+            memset(db->dbxio.map, 0, db->dbxio.end);
+        }
+        /* dbs */
+        for(i = 0; i <= db->state->last_id; i++)
+        {
+            if(db->dbsio[i].map) 
+            {
+                munmap(db->dbsio[i].map, db->dbsio[i].end);
+                db->dbsio[i].map = NULL;
+                db->dbsio[i].end = 0;
+            }
+            RWLOCK_DESTROY(db->dbsio[i].mutex);
+            //db->dbsio[i].mutex = NULL;
+            if(db->dbsio[i].fd > 0)
+            {
+                close(db->dbsio[i].fd);
+                db->dbsio[i].fd = 0;
+            }
+            if(sprintf(path, "%s/base/%d/%d.db", db->basedir, i/DB_DIR_FILES, i))
+            {
+                ret = remove(path);
+                WARN_LOGGER(db->logger, "remove db[%d][%s] => %d", i, path, ret);
+            }
+        }
+        /* link */
+        if(db->lnkio.map)
+            memset(db->lnkio.map, 0, db->lnkio.end);
+        /* state */
+        if(db->stateio.map)
+        {
+            mode = db->state->mode;
+            memset(db->stateio.map, 0, db->stateio.end);
+            db->state->mode = mode;
+        }
+        db->status = 0;
+        db->state->last_id = 0;
+        db->state->last_off = 0;
+        db->state->db_id_max = 0;
+        RWLOCK_UNLOCK(db->mutex);
+        RWLOCK_UNLOCK(db->mutex_lnk);
+        RWLOCK_UNLOCK(db->mutex_dbx);
+        RWLOCK_UNLOCK(db->mutex_mblock);
+    }
+    return ;
 }
 
 /* destroy */

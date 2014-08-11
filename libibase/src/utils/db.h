@@ -106,16 +106,22 @@ DB* db_init(char *dir, int is_mmap);
 int db_set_block_incre_mode(DB *db, int mode);
 /* get data id */
 int db_data_id(DB *db, char *key, int nkey);
+/* chunk data */
+int db_chunk_data(DB *db, int id, char *data, int ndata, int length);
 /* set data return blockid */
 int db_set_data(DB *db, int id, char *data, int ndata);
 /* set mod_time */
 int db_update_modtime(DB *db, int id);
 /* get mod_time */
 time_t db_get_modtime(DB *db, int id);
+/* xchunk data */
+int db_xchunk_data(DB *db, char *key, int nkey, char *data, int ndata, int length);
 /* set data */
 int db_xset_data(DB *db, char *key, int nkey, char *data, int ndata);
 /* add data */
 int db_add_data(DB *db, int id, char *data, int ndata);
+/* resize */
+int db_xresize(DB *db, char *key, int nkey, int length);
 /* xadd data */
 int db_xadd_data(DB *db, char *key, int nkey, char *data, int ndata);
 /* get data */
@@ -128,6 +134,8 @@ int db_xget_data(DB *db, char *key, int nkey, char **data, int *ndata);
 int db_xget_data_len(DB *db, char *key, int nkey);
 /* check key dataid/len */
 int db_xcheck(DB *db, char *key, int nkey, int *len, time_t *mod_time);
+/* truncate block */
+void *db_truncate_block(DB *db, int id, int ndata);
 /* get data block address and len */
 int db_exists_block(DB *db, int id, char **ptr);
 /* read data */
@@ -147,6 +155,8 @@ int db_del_data(DB *db, int id);
 int db_xdel_data(DB *db, char *key, int nkey);
 /* destroy */
 void db_destroy(DB *db);
+/* reset */
+void db_reset(DB *db);
 /* clean db */
 void db_clean(DB *db);
 #define PDB(xxx) ((DB *)xxx)
