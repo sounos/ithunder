@@ -278,8 +278,8 @@ int lmap_insert(LMAP *lmap, u32_t no, int64_t key)
 
 int lmap_remove(LMAP *lmap, u32_t no)
 {
-    u32_t nodeid = 0, rootid = 0, slotid = 0;
-    int ret = -1, i = 0, x = 0, n = 0;
+    int ret = -1, i = 0, x = 0, n = 0, slotid = 0;
+    u32_t nodeid = 0, rootid = 0;
     LMMKV *kvs = NULL;
 
     if(lmap && lmap->state && lmap->vmap 
@@ -287,8 +287,8 @@ int lmap_remove(LMAP *lmap, u32_t no)
             && (nodeid = lmap->vmap[no].off) >= 0)
     {
         rootid = (nodeid / LMM_SLOT_NUM);
-        slotid = lmap->roots[rootid];
-        if((int64_t)slotid < 0) return ret;
+        slotid = (int)lmap->roots[rootid];
+        if(slotid < 0) return ret;
         i = nodeid % LMM_SLOT_NUM;
         kvs = lmap->map + lmap->slots[slotid].nodeid;    
         while(i < lmap->slots[slotid].count)

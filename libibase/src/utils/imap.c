@@ -278,8 +278,8 @@ int imap_insert(IMAP *imap, u32_t no, int32_t key)
 
 int imap_remove(IMAP *imap, u32_t no)
 {
-    u32_t nodeid = 0, rootid = 0, slotid = 0;
-    int ret = -1, i = 0, x = 0, n = 0;
+    int ret = -1, i = 0, x = 0, n = 0, slotid = 0;
+    u32_t nodeid = 0, rootid = 0;
     IMMKV *kvs = NULL;
 
     if(imap && imap->state && imap->vmap 
@@ -287,8 +287,8 @@ int imap_remove(IMAP *imap, u32_t no)
             && (nodeid = imap->vmap[no].off) >= 0)
     {
         rootid = (nodeid / IMM_SLOT_NUM);
-        slotid = imap->roots[rootid];
-        if((int32_t)slotid < 0) return ret;
+        slotid = (int)imap->roots[rootid];
+        if(slotid < 0) return ret;
         i = nodeid % IMM_SLOT_NUM;
         kvs = imap->map + imap->slots[slotid].nodeid;    
         while(i < imap->slots[slotid].count)

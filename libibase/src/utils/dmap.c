@@ -278,8 +278,8 @@ int dmap_insert(DMAP *dmap, u32_t no, double key)
 
 int dmap_remove(DMAP *dmap, u32_t no)
 {
-    u32_t nodeid = 0, rootid = 0, slotid = 0;
-    int ret = -1, i = 0, x = 0, n = 0;
+    int ret = -1, i = 0, x = 0, n = 0, slotid = 0;
+    u32_t nodeid = 0, rootid = 0;
     DMMKV *kvs = NULL;
 
     if(dmap && dmap->state && dmap->vmap 
@@ -287,8 +287,8 @@ int dmap_remove(DMAP *dmap, u32_t no)
             && (nodeid = dmap->vmap[no].off) >= 0)
     {
         rootid = (nodeid / DMM_SLOT_NUM);
-        slotid = dmap->roots[rootid];
-        if((double)slotid < 0) return ret;
+        slotid = (int)dmap->roots[rootid];
+        if(slotid < 0) return ret;
         i = nodeid % DMM_SLOT_NUM;
         kvs = dmap->map + dmap->slots[slotid].nodeid;    
         while(i < dmap->slots[slotid].count)
