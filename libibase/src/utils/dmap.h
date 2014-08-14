@@ -37,7 +37,6 @@ typedef struct _DMMSTATE
     u32_t nleft; /* 空闲桶个数 */
     u32_t count; /* 槽的个数 */
 }DMMSTATE;
-#pragma pack(pop)
 typedef struct _DMAP
 {
     DMMSTATE *state;
@@ -67,4 +66,5 @@ void dmap_close(DMAP *dmap);
 #define DMAP_GET(x, no) ((DMAP *)x)->vmap[no].val
 #define DMAP_SET(x, no, key) dmap_set(((DMAP *)x), no, key)
 #define DMAP_DEL(x, no, key) dmap_del(((DMAP *)x), no)
+#pragma pack(pop)
 #endif

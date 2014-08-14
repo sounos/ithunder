@@ -2166,7 +2166,7 @@ int hidoc_parse_document(HIDOC *hidoc, HINDEX *hindex)
                 || hidoc->state->dump_offset >= st.st_size) 
         {
             hidoc__check__dump(hidoc);
-            //FATAL_LOGGER(hidoc->logger, "Invalid offset:%lld file_size:%lld", (long long)hidoc->state->dump_offset, (long long)st.st_size);
+            FATAL_LOGGER(hidoc->logger, "Invalid offset:%lld file_size:%lld", (long long)hidoc->state->dump_offset, (long long)st.st_size);
             goto end;
         }
         if(lseek(hidoc->dumpfd,  (off_t)hidoc->state->dump_offset, 

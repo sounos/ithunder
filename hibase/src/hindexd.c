@@ -35,17 +35,18 @@
 #define HTTP_NOT_FOUND          "HTTP/1.0 404 Not Found\r\nContent-Length:0\r\n\r\n" 
 #define HTTP_NOT_MODIFIED       "HTTP/1.0 304 Not Modified\r\nContent-Length:0\r\n\r\n"
 #define HTTP_NO_CONTENT         "HTTP/1.0 204 No Content\r\nContent-Length:0\r\n\r\n"
-#define IBASE_DB_MAX  1024
+#define IBASE_DB_MAX  4096
 #ifndef LL64
 #define LL64(xxxx) ((long long int)xxxx)
 #endif
 #define IBASE_TASKS_MAX  1024
+#define IBASE_DBS_MAX  1024
 typedef struct _QTASK
 {
     pthread_mutex_t mutex;
     IQUERY query;
     IHEAD req;
-    int dbs[IBASE_DB_MAX]; 
+    int dbs[IBASE_DBS_MAX]; 
     int qdbs;
     int ndbs;
     int odbs;
@@ -266,6 +267,7 @@ int indexd_index_handler(CONN *conn)
                     if(ibase_used_for == IB_USED_FOR_INDEXD)
                     {
                         dbid = (int)docheader->dbid;
+                        //fprintf(stdout, "%s::%d dbid:%d OK\n", __FILE__, __LINE__, dbid);
                         if(pools[dbid] == NULL)
                         {
                             pools[dbid] = ibase_init_db(dbid);
@@ -593,7 +595,7 @@ int indexd_data_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *ch
                                 pthread_mutex_unlock(&gmutex);
                                 if(qtask)
                                 {
-                                    memcpy(qtask->dbs, alldbs, sizeof(int) * IBASE_DB_MAX);
+                                    memcpy(qtask->dbs, alldbs, sizeof(int) * IBASE_DBS_MAX);
                                     memcpy(&(qtask->query), pquery, sizeof(IQUERY));
                                     memcpy(&(qtask->req), req, sizeof(IHEAD));
                                     qtask->ndbs = qtask->qdbs = nalldbs;
@@ -1756,7 +1758,7 @@ IBASE *ibase_init_db(int dbid)
     char *p = NULL, *charset = NULL, *rules = NULL, path[IB_PATH_MAX];
     IBASE *db = NULL;
 
-    if(dbid >= 0 && (db = ibase_init()))
+    if(dbid >= 0 && nalldbs < IBASE_DBS_MAX && (db = ibase_init()))
     {
         sprintf(path, "%s/%d", ibase_basedir, dbid);
         ibase_set_basedir(db, path, ibase_used_for, ibase_mmsource_status);
@@ -2085,7 +2087,8 @@ int main(int argc, char **argv)
     {
         pthread_mutex_destroy(&(tasks[i].mutex));
         if(tasks[i].map) ibase_push_stree(ibase, tasks[i].map);
-        tasks[i].map = NULL;
+        if(tasks[i].chunk) ibase_push_chunk(ibase, tasks[i].chunk);
+        if(tasks[i].groupby) ibase_push_mmx(ibase, tasks[i].groupby);
     }
     pthread_mutex_destroy(&gmutex);
     xmm_free(tasks, sizeof(QTASK) * IBASE_TASKS_MAX);

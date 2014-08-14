@@ -76,6 +76,7 @@ extern "C" {
 #define  IB_USED_FOR_INDEXD     0x00
 #define  IB_USED_FOR_QDOCD      0x01
 #define  IB_USED_FOR_QPARSERD   0x02
+#define  IB_SEC_MAX             1024
 #define  IBLL(xxx) ((long long int)(xxx))
 /*
  * ;16384=16K 32768=32K 65536=64K 131072=128K 262144=256K 524288=512K 786432=768K 
@@ -288,7 +289,7 @@ typedef struct _DOCHEADER
     short   longblock_size;
     short   doubleblock_size;
     short   dbid;
-    short   bits;
+    short   secid;
     int     terms_total;
     int     crc;
     int     size;
@@ -314,7 +315,7 @@ typedef struct _FHEADER
     short   nfields;
     short   slevel;
     short   dbid;
-    short   bits;
+    short   secid;
     int     crc;
     int     size;
     int64_t globalid;
@@ -597,9 +598,12 @@ typedef struct _IBSTATE
     int     long_index_fields_num;
     int     double_index_from;
     int     double_index_fields_num;
-    int64_t   ttotal;
-    int64_t   dtotal;
-    void    *mfields[IB_FIELDS_MAX];
+    int     bits;
+    int     nsecs;
+    int     secs[IB_SEC_MAX];
+    int64_t ttotal;
+    int64_t dtotal;
+    void    *mfields[IB_SEC_MAX][IB_FIELDS_MAX];
 }IBSTATE;
 
 #define IB_REQ_QPARSE            1
@@ -710,6 +714,7 @@ typedef struct _IBASE
     void *qstrees[IB_STREES_MAX];
     void *qmmxs[IB_MMX_MAX];
     ICHUNK  *qchunks[IB_CHUNKS_MAX];
+    void *mindex[IB_SEC_MAX];
     void *index; /* index db */
     void *mmtree; /* int tree */
     void *mmtree64;/* long tree */
@@ -722,9 +727,9 @@ typedef struct _IBASE
     void *logger;
     
     int     (*set_basedir)(struct _IBASE *ibase, char *basedir, int use_for, int mmsource_status);
-    int     (*set_int_index)(struct _IBASE *ibase, int int_index_from, int int_fields_num);
-    int     (*set_long_index)(struct _IBASE *ibase, int int_index_from, int int_fields_num);
-    int     (*set_double_index)(struct _IBASE *ibase, int double_index_from, int double_fields_num);
+    int     (*set_int_index)(struct _IBASE *ibase, int secid, int int_index_from, int int_fields_num);
+    int     (*set_long_index)(struct _IBASE *ibase, int secid, int int_index_from, int int_fields_num);
+    int     (*set_double_index)(struct _IBASE *ibase, int secid, int double_index_from, int double_fields_num);
     int     (*add_document)(struct _IBASE *ibase, IBDATA *block);
     int     (*update_document)(struct _IBASE *ibase, IBDATA *block);
     int     (*enable_document)(struct _IBASE *ibase, int64_t globalid);
@@ -760,19 +765,20 @@ IBASE *ibase_init();
 int ibase_set_basedir(IBASE *, char *dir, int use_for, int mmsource_status);
 /* set dict file */
 int ibase_set_dict(IBASE *ibase, char *dict_charset, char *dictfile, char *rules);
+void ibase_check_mindex(IBASE *ibase, int secid);
 /* set int index */
-int ibase_set_int_index(IBASE *ibase, int index_from, int index_fields_count);
+int ibase_set_int_index(IBASE *ibase, int secid, int index_from, int index_fields_count);
 /* check int index */
-void ibase_check_int_idx(IBASE *ibase, int no);
+void ibase_check_int_idx(IBASE *ibase, int secid, int no);
 int ibase_check_int_index(IBASE *ibase);
 /* set long index */
-int ibase_set_long_index(IBASE *ibase, int index_from, int index_fields_count);
-void ibase_check_long_idx(IBASE *ibase, int no);
+int ibase_set_long_index(IBASE *ibase, int secid, int index_from, int index_fields_count);
+void ibase_check_long_idx(IBASE *ibase, int secid, int no);
 /* check long index */
 int ibase_check_long_index(IBASE *ibase);
-void ibase_check_double_idx(IBASE *ibase, int no);
+void ibase_check_double_idx(IBASE *ibase, int secid, int no);
 /* set double index */
-int ibase_set_double_index(IBASE *ibase, int index_from, int index_fields_count);
+int ibase_set_double_index(IBASE *ibase, int secid, int index_from, int index_fields_count);
 /* check double index */
 int ibase_check_double_index(IBASE *ibase);
 /* add document */

@@ -137,9 +137,9 @@ int ibase_set_dict(IBASE *ibase, char *dict_charset, char *dict_file, char *dict
 /* resume */
 int ibase_set_basedir(IBASE *ibase, char *dir, int used_for, int mmsource_status)
 {
+    int ret = -1, i = 0, k = 0, x = 0;
     char path[IB_PATH_MAX];
     struct stat st = {0};
-    int ret = -1, i = 0;
     void *timer = NULL;
     off_t size = 0;
 
@@ -266,36 +266,45 @@ int ibase_set_basedir(IBASE *ibase, char *dir, int used_for, int mmsource_status
         if(used_for == IB_USED_FOR_INDEXD)
         {
             /* index db */
-            sprintf(path, "%s/%s", dir, IB_INDEX_DIR);
-            ibase->index = db_init(path, 1);
-            db_set_block_incre_mode(ibase->index, DB_BLOCK_INCRE_DOUBLE);
-        }
-        sprintf(path, "%s/%s/", dir, IB_IDX_DIR);
-        ibase_mkdir(path);
-        for(i = IB_INT_OFF; i < IB_INT_TO; i++)
-        {
-            if(ibase->state->mfields[i])
+            for(k = 0; k < ibase->state->nsecs; k++)
             {
-                sprintf(path, "%s/%s/%d.int", dir, IB_IDX_DIR, i);
-                ibase->state->mfields[i] = imap_init(path);
+                x = ibase->state->secs[k];
+                sprintf(path, "%s/%s/%d", dir, IB_INDEX_DIR, x);
+                ibase->mindex[x] = db_init(path, 1);
+                db_set_block_incre_mode(ibase->mindex[x], DB_BLOCK_INCRE_DOUBLE);
+                sprintf(path, "%s/%s/%d/", dir, IB_IDX_DIR, x);
+                ibase_mkdir(path);
+                for(i = IB_INT_OFF; i < IB_INT_TO; i++)
+                {
+                    if(ibase->state->mfields[x][i])
+                    {
+                        sprintf(path, "%s/%s/%d/%d.int", dir, IB_IDX_DIR, x, i);
+                        ibase->state->mfields[x][i] = imap_init(path);
+                    }
+                }
+                for(i = IB_LONG_OFF; i < IB_LONG_TO; i++)
+                {
+                    if(ibase->state->mfields[x][i])
+                    {
+                        sprintf(path, "%s/%s/%d/%d.long", dir, IB_IDX_DIR, x, i);
+                        ibase->state->mfields[x][i] = lmap_init(path);
+                    }
+                }
+                for(i = IB_DOUBLE_OFF; i < IB_DOUBLE_TO; i++)
+                {
+                    if(ibase->state->mfields[x][i])
+                    {
+                        sprintf(path, "%s/%s/%d/%d.double", dir, IB_IDX_DIR, x, i);
+                        ibase->state->mfields[x][i] = dmap_init(path);
+                    }
+                }
+                /*
+                   ibase->index = db_init(path, 1);
+                   db_set_block_incre_mode(ibase->index, DB_BLOCK_INCRE_DOUBLE);
+                   */
             }
         }
-        for(i = IB_LONG_OFF; i < IB_LONG_TO; i++)
-        {
-            if(ibase->state->mfields[i])
-            {
-                sprintf(path, "%s/%s/%d.long", dir, IB_IDX_DIR, i);
-                ibase->state->mfields[i] = lmap_init(path);
-            }
-        }
-        for(i = IB_DOUBLE_OFF; i < IB_DOUBLE_TO; i++)
-        {
-            if(ibase->state->mfields[i])
-            {
-                sprintf(path, "%s/%s/%d.double", dir, IB_IDX_DIR, i);
-                ibase->state->mfields[i] = dmap_init(path);
-            }
-        }
+
         /* check int/long/double index*/
         /*
         ibase_check_int_index(ibase);
@@ -310,14 +319,35 @@ int ibase_set_basedir(IBASE *ibase, char *dir, int used_for, int mmsource_status
     return ret;
 }
 
-void ibase_check_int_idx(IBASE *ibase, int no)
+/* check index */
+void ibase_check_mindex(IBASE *ibase, int secid)
 {
     char path[IB_PATH_MAX];
 
-    if(ibase && no >= IB_INT_OFF && no < IB_INT_TO && !(ibase->state->mfields[no]))
+    if(ibase && secid >= 0 && secid < IB_SEC_MAX)
     {
-        sprintf(path, "%s/%s/%d.int", ibase->basedir, IB_IDX_DIR, no);
-        ibase->state->mfields[no] = imap_init(path);
+        if(!ibase->mindex[secid])
+        {
+            sprintf(path, "%s/%s/%d", ibase->basedir, IB_INDEX_DIR, secid);
+            ibase->mindex[secid] = db_init(path, 1);
+            ibase->state->secs[ibase->state->nsecs++] = secid;
+            db_set_block_incre_mode(ibase->mindex[secid], DB_BLOCK_INCRE_DOUBLE);
+        }
+    }
+    return ;
+}
+
+/* check int idx */
+void ibase_check_int_idx(IBASE *ibase, int secid, int no)
+{
+    char path[IB_PATH_MAX];
+
+    if(ibase && secid >= 0 && secid < IB_SEC_MAX 
+            && no >= IB_INT_OFF && no < IB_INT_TO 
+            && !(ibase->state->mfields[secid][no]))
+    {
+        sprintf(path, "%s/%s/%d/%d.int", ibase->basedir, IB_IDX_DIR, secid, no);
+        ibase->state->mfields[secid][no] = imap_init(path);
     }
     return ;
 }
@@ -361,7 +391,7 @@ int ibase_check_int_index(IBASE *ibase)
 }
 
 /* ibasee  set numeric index /int/double fields */
-int ibase_set_int_index(IBASE *ibase, int int_index_from, int int_fields_num)
+int ibase_set_int_index(IBASE *ibase, int secid, int int_index_from, int int_fields_num)
 {
     int i = 0, n = 0;
 
@@ -381,7 +411,7 @@ int ibase_set_int_index(IBASE *ibase, int int_index_from, int int_fields_num)
                 n = IB_INT_OFF + int_fields_num;
                 for(i = IB_INT_OFF; i < n; i++)
                 {
-                    ibase_check_int_idx(ibase, i);
+                    ibase_check_int_idx(ibase, secid, i);
                 }
             }
             ibase->state->int_index_from = int_index_from;
@@ -393,14 +423,16 @@ int ibase_set_int_index(IBASE *ibase, int int_index_from, int int_fields_num)
     return -1;
 }
 
-void ibase_check_long_idx(IBASE *ibase, int no)
+void ibase_check_long_idx(IBASE *ibase, int secid, int no)
 {
     char path[IB_PATH_MAX];
 
-    if(ibase && no >= IB_LONG_OFF && no < IB_LONG_TO && !(ibase->state->mfields[no]))
+    if(ibase && secid >= 0 && secid < IB_SEC_MAX 
+        && no >= IB_LONG_OFF && no < IB_LONG_TO 
+        && !(ibase->state->mfields[secid][no]))
     {
-        sprintf(path, "%s/%s/%d.long", ibase->basedir, IB_IDX_DIR, no);
-        ibase->state->mfields[no] = lmap_init(path);
+        sprintf(path, "%s/%s/%d/%d.long", ibase->basedir, IB_IDX_DIR, secid, no);
+        ibase->state->mfields[secid][no] = lmap_init(path);
     }
     return ;
 }
@@ -444,7 +476,7 @@ int ibase_check_long_index(IBASE *ibase)
 } 
 
 /* ibasee  set long index  fields */
-int ibase_set_long_index(IBASE *ibase, int long_index_from, int long_fields_num)
+int ibase_set_long_index(IBASE *ibase, int secid, int long_index_from, int long_fields_num)
 {
     int i = 0, n = 0;
 
@@ -464,7 +496,7 @@ int ibase_set_long_index(IBASE *ibase, int long_index_from, int long_fields_num)
                 n = IB_LONG_OFF + long_fields_num;
                 for(i = IB_LONG_OFF; i < n; i++)
                 {
-                    ibase_check_long_idx(ibase, i);
+                    ibase_check_long_idx(ibase, secid, i);
                 }
             }
             ibase->state->long_index_from = long_index_from;
@@ -476,14 +508,16 @@ int ibase_set_long_index(IBASE *ibase, int long_index_from, int long_fields_num)
     return -1;
 }
 
-void ibase_check_double_idx(IBASE *ibase, int no)
+void ibase_check_double_idx(IBASE *ibase, int secid, int no)
 {
     char path[IB_PATH_MAX];
 
-    if(ibase && no >= IB_DOUBLE_OFF && no < IB_DOUBLE_TO && !(ibase->state->mfields[no]))
+    if(ibase && secid >= 0 && secid < IB_SEC_MAX 
+        && no >= IB_DOUBLE_OFF && no < IB_DOUBLE_TO 
+        && !(ibase->state->mfields[secid][no]))
     {
-        sprintf(path, "%s/%s/%d.double", ibase->basedir, IB_IDX_DIR, no);
-        ibase->state->mfields[no] = dmap_init(path);
+        sprintf(path, "%s/%s/%d/%d.double", ibase->basedir, IB_IDX_DIR, secid, no);
+        ibase->state->mfields[secid][no] = dmap_init(path);
     }
     return ;
 }
@@ -527,7 +561,7 @@ int ibase_check_double_index(IBASE *ibase)
 }
 
 /* ibasee  set numeric index /int/double fields */
-int ibase_set_double_index(IBASE *ibase, int double_index_from, int double_fields_num)
+int ibase_set_double_index(IBASE *ibase, int secid, int double_index_from, int double_fields_num)
 {
     int i = 0, n = 0;
     if(ibase && ibase->state)
@@ -546,7 +580,7 @@ int ibase_set_double_index(IBASE *ibase, int double_index_from, int double_field
                 n = IB_DOUBLE_OFF + double_fields_num;
                 for(i = IB_DOUBLE_OFF; i < n; i++)
                 {
-                    ibase_check_double_idx(ibase, i);
+                    ibase_check_double_idx(ibase, secid, i);
                 }
             }
             ibase->state->double_index_from = double_index_from;
@@ -1632,11 +1666,28 @@ int ibase_set_log_level(IBASE *ibase, int level)
 /* ibase clean */
 void ibase_clean(IBASE *ibase)
 {
-    int i = 0; 
+    int i = 0, k = 0, x = 0; 
 
     if(ibase)
     {
-        if(ibase->index) db_clean(PDB(ibase->index));
+        //if(ibase->index) db_clean(PDB(ibase->index));
+        for(k = 0; k < ibase->state->nsecs; k++)
+        {
+            x = ibase->state->secs[k];
+            if(ibase->mindex[x]) db_clean(PDB(ibase->mindex[x]));
+            for(i = IB_INT_OFF; i < IB_INT_TO; i++)
+            {
+                if(ibase->state->mfields[x][i]) imap_close(ibase->state->mfields[x][i]);
+            }
+            for(i = IB_LONG_OFF; i < IB_LONG_TO; i++)
+            {
+                if(ibase->state->mfields[x][i]) lmap_close(ibase->state->mfields[x][i]);
+            }
+            for(i = IB_DOUBLE_OFF; i < IB_DOUBLE_TO; i++)
+            {
+                if(ibase->state->mfields[x][i]) dmap_close(ibase->state->mfields[x][i]);
+            }
+        }
         /* source */
         if(ibase->source) db_clean(PDB(ibase->source));
         //state
@@ -1656,21 +1707,6 @@ void ibase_clean(IBASE *ibase)
             munmap(ibase->termstateio.map, ibase->termstateio.size);
         }
         if(ibase->termstateio.fd > 0)close(ibase->termstateio.fd);
-        /*
-        if(ibase->intidxio.map)
-        {
-            munmap(ibase->intidxio.map, ibase->intidxio.size);
-        }
-        if(ibase->intidxio.fd > 0)close(ibase->intidxio.fd);
-        if(ibase->doubleidxio.map)
-        {
-            munmap(ibase->doubleidxio.map, ibase->doubleidxio.size);
-        }
-        if(ibase->doubleidxio.fd > 0)close(ibase->doubleidxio.fd);
-        */
-        for(i = IB_INT_OFF; i < IB_INT_TO; i++){if(ibase->state->mfields[i]) imap_close(ibase->state->mfields[i]);}
-        for(i = IB_LONG_OFF; i < IB_LONG_TO; i++){if(ibase->state->mfields[i]) lmap_close(ibase->state->mfields[i]);}
-        for(i = IB_DOUBLE_OFF; i < IB_DOUBLE_TO; i++){if(ibase->state->mfields[i]) dmap_close(ibase->state->mfields[i]);}
         for(i = 0; i < ibase->nqblocks; i++){xmm_free(ibase->qblocks[i], IB_DOCUMENT_MAX);}
         for(i = 0; i < ibase->nqiblocks; i++){xmm_free(ibase->qiblocks[i], sizeof(IBLOCK));}
         for(i = 0; i < ibase->nqiterms; i++){xmm_free(ibase->qiterms[i], sizeof(ITERM) * IB_QUERY_MAX);}
