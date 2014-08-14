@@ -17,6 +17,9 @@
 #include "logger.h"
 #include "timer.h"
 #include "mtrie.h"
+#include "mtree64.h"
+#include "immx.h"
+#include "xmm.h"
 #ifndef HTTP_BUF_SIZE
 #define HTTP_BUF_SIZE           131072
 #endif
@@ -32,10 +35,30 @@
 #define HTTP_NOT_FOUND          "HTTP/1.0 404 Not Found\r\nContent-Length:0\r\n\r\n" 
 #define HTTP_NOT_MODIFIED       "HTTP/1.0 304 Not Modified\r\nContent-Length:0\r\n\r\n"
 #define HTTP_NO_CONTENT         "HTTP/1.0 204 No Content\r\nContent-Length:0\r\n\r\n"
-#define IBASE_DB_MAX  8192
+#define IBASE_DB_MAX  1024
 #ifndef LL64
 #define LL64(xxxx) ((long long int)xxxx)
 #endif
+#define IBASE_TASKS_MAX  1024
+typedef struct _QTASK
+{
+    pthread_mutex_t mutex;
+    IQUERY query;
+    IHEAD req;
+    int dbs[IBASE_DB_MAX]; 
+    int qdbs;
+    int ndbs;
+    int odbs;
+    int index;
+    CONN *conn;
+    void *map;
+    void *groupby;
+    ICHUNK *chunk;
+}QTASK;
+static QTASK *qtasks[IBASE_TASKS_MAX];
+static QTASK *tasks = NULL;
+static int  nqtasks = 0;
+static pthread_mutex_t gmutex;
 static char *http_default_charset = "UTF-8";
 static char *httpd_home = NULL;
 static int is_inside_html = 1;
@@ -44,6 +67,8 @@ static int  nhttpd_index_html_code = 0;
 static SBASE *sbase = NULL;
 static IBASE *ibase = NULL;
 static IBASE *pools[IBASE_DB_MAX];
+static int  alldbs[IBASE_DB_MAX];
+static int  nalldbs = 0;
 static SERVICE *httpd = NULL;
 static SERVICE *indexd = NULL;
 static SERVICE *queryd = NULL;
@@ -147,6 +172,7 @@ static char *e_argvs[] =
 };
 #define  E_ARGV_NUM         40
 IBASE *ibase_init_db(int dbid);
+void indexd_query_handler(void *args);
 int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query);
 /* packet reader for indexd */
 int indexd_packet_reader(CONN *conn, CB_DATA *buffer)
@@ -197,6 +223,7 @@ int indexd_packet_handler(CONN *conn, CB_DATA *packet)
 err_end:
     return conn->close(conn);
 }
+
 
 /* index  handler */
 int indexd_index_handler(CONN *conn)
@@ -275,11 +302,218 @@ err_end:
     return -1;
 }
 
+/* multi query & merge */
+void indexd_query_handler(void *args)
+{
+    int64_t score = 0, id = 0, xlong = 0, xdata = 0;
+    char buf[sizeof(IHEAD) + sizeof(IRES)];
+    ICHUNK *ichunk = NULL, *xchunk = NULL;
+    int i = 0, index = 0, n = 0, ret = -1;
+    IHEAD *presp = NULL, *req = NULL;
+    void *map = NULL, *groupby = NULL;
+    IRECORD *records = NULL;
+    IQUERY *pquery = NULL;
+    QTASK *qtask = NULL;
+    IRES *res = NULL;
+    CONN *conn = NULL;
+    IBASE *db = NULL;
+
+    if((qtask = (QTASK *)args) && (pquery = &(qtask->query))) 
+    {
+        pthread_mutex_lock(&qtask->mutex);
+        if(qtask->qdbs > 0)
+        {
+            i = --(qtask->qdbs);
+            index = qtask->dbs[i];
+            db = pools[index];
+        }
+        pthread_mutex_unlock(&qtask->mutex);
+        if(db)
+        {
+            xchunk = qtask->chunk;
+            if(pquery->nquerys > 0) 
+                ichunk = ibase_bquery(db, pquery);
+            else 
+                ichunk = ibase_query(db, pquery);
+            pthread_mutex_lock(&qtask->mutex);
+            if(ichunk)
+            {
+                res = &(ichunk->res);
+                records = ichunk->records;
+                map = qtask->map;
+                groupby = qtask->groupby;
+                if(pquery->flag & IB_QUERY_RSORT)
+                {
+                    for(i = 0;  i < res->count; i++)
+                    {
+                        if(MTREE64_TOTAL(map) > 0 && MTREE64_TOTAL(map) >= pquery->ntop
+                                && records[i].score < MTREE64_MINK(map)) break;
+                        if(MTREE64_TOTAL(map) == 0 || MTREE64_TOTAL(map) < pquery->ntop)
+                        {
+                            MTREE64_PUSH(map, records[i].score, records[i].globalid);
+                        }
+                        else
+                        {
+                            if(MTREE64_TOTAL(map) >= pquery->ntop && records[i].score >= MTREE64_MINK(map))
+                            {
+                                MTREE64_POP_MIN(map, NULL, NULL);
+                                MTREE64_PUSH(map, records[i].score, records[i].globalid);
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    for(i = 0; i < res->count; i++)
+                    {
+                        if(MTREE64_TOTAL(map) > 0 && MTREE64_TOTAL(map) >= pquery->ntop
+                                && records[i].score > MTREE64_MAXK(map)) break;
+                        if(MTREE64_TOTAL(map) == 0 || MTREE64_TOTAL(map) < pquery->ntop)
+                        {
+                            MTREE64_PUSH(map, records[i].score, records[i].globalid);
+                        }
+                        else
+                        {
+                            if(MTREE64_TOTAL(map) >= pquery->ntop && records[i].score <= MTREE64_MAXK(map))
+                            {
+                                MTREE64_POP_MAX(map, NULL, NULL);
+                                MTREE64_PUSH(map, records[i].score, records[i].globalid);
+                            }
+                        }
+                    }
+                }
+                /* total */ 
+                xchunk->res.total += res->total;
+                xchunk->res.doctotal += res->doctotal;
+                if(res->io_time > xchunk->res.io_time)
+                    xchunk->res.io_time = res->io_time;
+                if(res->sort_time > xchunk->res.sort_time)
+                    xchunk->res.sort_time = res->sort_time;
+                /* catgroup */
+                if(res->ncatgroups > 0)
+                {
+                    for(i = 0; i < IB_CATEGORY_MAX; i++)
+                    {
+                        if(res->catgroups[i] > 0)
+                        {
+                            if(xchunk->res.catgroups[i] == 0)
+                                xchunk->res.ncatgroups++;
+                            xchunk->res.catgroups[i] += res->catgroups[i];
+                        }
+                    }
+                }
+                /* groupby */
+                if(res->ngroups > 0)
+                {
+                    for(i = 0; i < res->ngroups; i++)
+                    {
+                        IMMX_SUM(groupby, (res->groups[i].key), (res->groups[i].val));
+                    }
+                    xchunk->res.flag |= res->flag;
+                }
+            }
+            n = ++(qtask->odbs);
+            pthread_mutex_unlock(&qtask->mutex);
+            if(qtask->qdbs == n)
+            {
+                /* over merge */
+                map = qtask->map;
+                i = 0;
+                xchunk->res.count = 0;
+                while(MTREE64_TOTAL(map) > 0)
+                {
+                    id = 0;
+                    if((IB_QUERY_RSORT & pquery->flag)){MTREE64_POP_MAX(map, &score, &id);}
+                    else {MTREE64_POP_MIN(map, &score, &id);}
+                    if(id && i < IB_TOPK_NUM)
+                    {
+                        xchunk->records[i].score = score;
+                        xchunk->records[i].globalid = id;
+                        xchunk->res.count++;
+                    }
+                    ++i;
+                }
+                /* groupby */
+                if((groupby = qtask->groupby) 
+                        && (xchunk->res.ngroups = PIMX(groupby)->count) > 0)
+                {
+                    i = 0;
+                    do
+                    {
+                        IMMX_POP_MIN(groupby, xlong, xdata);
+                        if(i < IB_GROUP_MAX)
+                        {
+                            xchunk->res.groups[i].key = xlong;
+                            xchunk->res.groups[i].val = xdata;
+                        }
+                        ++i;
+                    }while(PIMX(groupby)->count > 0);
+                }
+                req = &(qtask->req);
+                presp = &(xchunk->resp);
+                res = &(xchunk->res);
+                presp->id = req->id;
+                presp->cid = req->cid;
+                presp->nodeid = req->nodeid;
+                presp->cmd = IB_RESP_QUERY;
+                presp->status = IB_STATUS_OK;
+                presp->length = sizeof(IRES) + res->count * sizeof(IRECORD);
+                if(pquery->qid != req->id)
+                {
+                    FATAL_LOGGER(logger, "Invalid qid:%d to head->id:%d on remote[%s:%d] via %d", pquery->qid, req->id, conn->remote_ip, conn->remote_port, conn->fd);
+                    ret = -1;
+                }
+                else if(pquery->qid != res->qid)
+                {
+                    FATAL_LOGGER(logger, "Invalid qid:%d to res->qid:%d on remote[%s:%d] via %d", pquery->qid, res->qid, conn->remote_ip, conn->remote_port, conn->fd);
+                    ret = -1;
+                }
+                else ret = 0;
+                if((conn = queryd->findconn(queryd, qtask->index)) == qtask->conn)
+                {
+                    if(ret == 0)
+                    {
+                        n = sizeof(IHEAD) + presp->length;
+                        conn->push_chunk(conn, (char *)xchunk, n);
+                    }
+                    else 
+                    {
+                        presp = (IHEAD *)buf; 
+                        presp->status = IB_STATUS_ERR;
+                        presp->id = req->id;
+                        presp->cid = req->cid;
+                        presp->nodeid = req->nodeid;
+                        presp->cmd = req->cmd + 1;
+                        presp->length = sizeof(IRES);
+                        res = (IRES *)(buf + sizeof(IHEAD));
+                        memcpy(res, &(xchunk->res), sizeof(IRES));
+                        res->qid = pquery->qid;
+                        conn->push_chunk(conn, buf, sizeof(IHEAD) + sizeof(IRES));
+                        conn->over_session(conn);
+                    }
+                }
+                ibase_push_mmx(ibase, qtask->groupby);
+                ibase_push_stree(ibase, qtask->map);
+                ibase_push_chunk(ibase, qtask->chunk);
+                qtask->map = NULL;
+                qtask->chunk = NULL;
+                qtask->groupby = NULL;
+                qtask->index = 0;
+                pthread_mutex_lock(&gmutex);
+                qtasks[nqtasks++] = qtask;
+                pthread_mutex_unlock(&gmutex);
+            }
+            ibase_push_chunk(db, ichunk);
+        }
+    }
+    return ;
+}
+
 /* indexd data handler */
 int indexd_data_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *chunk)
 {
     char *p = NULL, *end = NULL, *summary = NULL, *term = NULL;
-    int ret = -1, n = 0, len = 0;
+    int ret = -1, i = 0, n = 0, len = 0;
     IHEAD resp = {0}, *presp = NULL;
     IRES *res = NULL, xres = {0};
     IRECORD *records = NULL;
@@ -289,6 +523,7 @@ int indexd_data_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *ch
     CB_DATA *block = NULL;
     ICHUNK *ichunk = NULL;
     BTERM *bterm = NULL;
+    QTASK *qtask = NULL;
     IQSET *qset = NULL;
     IHEAD *req = NULL;
     IBASE *db = NULL;
@@ -344,42 +579,77 @@ int indexd_data_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *ch
                         if(chunk->ndata == sizeof(IQUERY))
                         {
                             pquery = (IQUERY *)chunk->data; 
-                            db = pools[pquery->dbid];
-                            if(pquery->nquerys > 0) 
-                                ichunk = ibase_bquery(db, pquery);
-                            else 
-                                ichunk = ibase_query(db, pquery);
-                            if(ichunk)
+                            if(pquery->dbid == -1)
                             {
-                                presp = &(ichunk->resp);
-                                res = &(ichunk->res);
-                                presp->id = req->id;
-                                presp->cid = req->cid;
-                                presp->nodeid = req->nodeid;
-                                presp->cmd = IB_RESP_QUERY;
-                                presp->status = IB_STATUS_OK;
-                                presp->length = sizeof(IRES) + res->count * sizeof(IRECORD);
-                                if(pquery->qid != req->id)
+                                pthread_mutex_lock(&gmutex);
+                                if(nqtasks > 0)
                                 {
-                                    FATAL_LOGGER(logger, "Invalid qid:%d to head->id:%d on remote[%s:%d] via %d", pquery->qid, req->id, conn->remote_ip, conn->remote_port, conn->fd);
-                                    ret = -1;
+                                    qtask = qtasks[--nqtasks];
                                 }
-                                else if(pquery->qid != res->qid)
+                                else
                                 {
-                                    FATAL_LOGGER(logger, "Invalid qid:%d to res->qid:%d on remote[%s:%d] via %d", pquery->qid, res->qid, conn->remote_ip, conn->remote_port, conn->fd);
-                                    ret = -1;
+                                    resp.status = IB_STATUS_ERR;
                                 }
-                                else ret = 0;
-                                if(ret == 0)
+                                pthread_mutex_unlock(&gmutex);
+                                if(qtask)
                                 {
-                                    n = sizeof(IHEAD) + presp->length;
-                                    conn->push_chunk(conn, (char *)ichunk, n);
-                                    ibase_push_chunk(db, ichunk);
+                                    memcpy(qtask->dbs, alldbs, sizeof(int) * IBASE_DB_MAX);
+                                    memcpy(&(qtask->query), pquery, sizeof(IQUERY));
+                                    memcpy(&(qtask->req), req, sizeof(IHEAD));
+                                    qtask->ndbs = qtask->qdbs = nalldbs;
+                                    qtask->odbs = 0;
+                                    qtask->conn = conn;
+                                    qtask->index = conn->index;
+                                    qtask->map = ibase_pop_stree(ibase);
+                                    qtask->groupby = ibase_pop_mmx(ibase);
+                                    qtask->chunk = ibase_pop_chunk(ibase);
+                                    memset(&(qtask->chunk->res), 0, sizeof(IRES));
+                                    for(i = 0; i < nalldbs; i++)
+                                    {
+                                        queryd->newtask(queryd, &indexd_query_handler, qtask);
+                                    }
                                     return 0;
                                 }
-                                else resp.status = IB_STATUS_ERR;
                             }
-                            else resp.status = IB_STATUS_OK;
+                            else
+                            {
+                                db = pools[pquery->dbid];
+                                if(pquery->nquerys > 0) 
+                                    ichunk = ibase_bquery(db, pquery);
+                                else 
+                                    ichunk = ibase_query(db, pquery);
+                                if(ichunk)
+                                {
+                                    presp = &(ichunk->resp);
+                                    res = &(ichunk->res);
+                                    presp->id = req->id;
+                                    presp->cid = req->cid;
+                                    presp->nodeid = req->nodeid;
+                                    presp->cmd = IB_RESP_QUERY;
+                                    presp->status = IB_STATUS_OK;
+                                    presp->length = sizeof(IRES) + res->count * sizeof(IRECORD);
+                                    if(pquery->qid != req->id)
+                                    {
+                                        FATAL_LOGGER(logger, "Invalid qid:%d to head->id:%d on remote[%s:%d] via %d", pquery->qid, req->id, conn->remote_ip, conn->remote_port, conn->fd);
+                                        ret = -1;
+                                    }
+                                    else if(pquery->qid != res->qid)
+                                    {
+                                        FATAL_LOGGER(logger, "Invalid qid:%d to res->qid:%d on remote[%s:%d] via %d", pquery->qid, res->qid, conn->remote_ip, conn->remote_port, conn->fd);
+                                        ret = -1;
+                                    }
+                                    else ret = 0;
+                                    if(ret == 0)
+                                    {
+                                        n = sizeof(IHEAD) + presp->length;
+                                        conn->push_chunk(conn, (char *)ichunk, n);
+                                        ibase_push_chunk(db, ichunk);
+                                        return 0;
+                                    }
+                                    else resp.status = IB_STATUS_ERR;
+                                }
+                                else resp.status = IB_STATUS_OK;
+                            }
                         }
                         else resp.status = IB_STATUS_ERR;
                         resp.id = req->id;
@@ -1501,6 +1771,7 @@ IBASE *ibase_init_db(int dbid)
         db->set_compression_status(db, iniparser_getint(dict, "IBASE:compression_status", 0));
         db->set_log_level(db, iniparser_getint(dict, "IBASE:log_level", 0));
         pools[dbid] = db;
+        alldbs[nalldbs++] = dbid;
     }
     return db;
 }
@@ -1677,7 +1948,16 @@ int sbase_initialize(SBASE *sbase, char *conf)
     queryd->session.packet_handler = &indexd_packet_handler;
     queryd->session.data_handler = &indexd_data_handler;
     queryd->session.timeout_handler = &indexd_timeout_handler;
-
+    if((tasks = xmm_mnew(sizeof(QTASK) * IBASE_TASKS_MAX)))
+    {
+        pthread_mutex_init(&gmutex, NULL);
+        for(i = 0; i < IBASE_TASKS_MAX; i++)
+        {
+            qtasks[i] = &(tasks[i]);
+            pthread_mutex_init(&(tasks[i].mutex), NULL);
+        }
+        nqtasks = IBASE_TASKS_MAX;
+    }
     /* INDEXD */
     if((indexd = service_init()) == NULL)
     {
@@ -1801,6 +2081,14 @@ int main(int argc, char **argv)
     //sbase->running(sbase, 3600);
     //sbase->running(sbase, 60000000);
     //sbase->stop(sbase);
+    for(i = 0; i < IBASE_TASKS_MAX; i++)
+    {
+        pthread_mutex_destroy(&(tasks[i].mutex));
+        if(tasks[i].map) ibase_push_stree(ibase, tasks[i].map);
+        tasks[i].map = NULL;
+    }
+    pthread_mutex_destroy(&gmutex);
+    xmm_free(tasks, sizeof(QTASK) * IBASE_TASKS_MAX);
     for(i = 0; i < IBASE_DB_MAX; i++)
     {
         if(pools[i]) ibase_clean(pools[i]);

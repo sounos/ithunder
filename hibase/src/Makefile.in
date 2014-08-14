@@ -125,7 +125,8 @@ himasterd_LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(himasterd_LDFLAGS) \
 am_hindexd_OBJECTS = hindexd-hindexd.$(OBJEXT) hindexd-http.$(OBJEXT) \
 	hindexd-iniparser.$(OBJEXT) hindexd-mtrie.$(OBJEXT) \
 	hindexd-logger.$(OBJEXT) hindexd-stime.$(OBJEXT) \
-	hindexd-base64.$(OBJEXT) hindexd-xmm.$(OBJEXT)
+	hindexd-base64.$(OBJEXT) hindexd-xmm.$(OBJEXT) \
+	hindexd-mtree64.$(OBJEXT) hindexd-immx.$(OBJEXT)
 hindexd_OBJECTS = $(am_hindexd_OBJECTS)
 hindexd_LDADD = $(LDADD)
 hindexd_LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(hindexd_LDFLAGS) \
@@ -289,7 +290,8 @@ himasterd_CPPFLAGS = -I utils/ -D_FILE_OFFSET_BITS=64 -Wall
 himasterd_LDFLAGS = -lz -lsbase
 hindexd_SOURCES = hindexd.c utils/http.c utils/http.h iniparser.c iniparser.h base64indexdhtml.h \
 	utils/logger.h utils/mutex.h utils/timer.h utils/mtrie.h utils/mtrie.c utils/logger.c \
-	utils/stime.h utils/stime.c utils/base64.h utils/base64.c utils/xmm.h utils/xmm.c
+	utils/stime.h utils/stime.c utils/base64.h utils/base64.c utils/xmm.h utils/xmm.c \
+	utils/mtree64.h utils/mtree64.c utils/immx.h utils/immx.c 
 
 hindexd_CPPFLAGS = -I utils/ -D_FILE_OFFSET_BITS=64 -Wall
 hindexd_LDFLAGS = -lz -lsbase -libase
@@ -483,8 +485,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hindexd-base64.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hindexd-hindexd.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hindexd-http.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hindexd-immx.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hindexd-iniparser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hindexd-logger.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hindexd-mtree64.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hindexd-mtrie.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hindexd-stime.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hindexd-xmm.Po@am__quote@
@@ -1076,6 +1080,34 @@ hindexd-xmm.obj: utils/xmm.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='utils/xmm.c' object='hindexd-xmm.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hindexd_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o hindexd-xmm.obj `if test -f 'utils/xmm.c'; then $(CYGPATH_W) 'utils/xmm.c'; else $(CYGPATH_W) '$(srcdir)/utils/xmm.c'; fi`
+
+hindexd-mtree64.o: utils/mtree64.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hindexd_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT hindexd-mtree64.o -MD -MP -MF $(DEPDIR)/hindexd-mtree64.Tpo -c -o hindexd-mtree64.o `test -f 'utils/mtree64.c' || echo '$(srcdir)/'`utils/mtree64.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/hindexd-mtree64.Tpo $(DEPDIR)/hindexd-mtree64.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='utils/mtree64.c' object='hindexd-mtree64.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hindexd_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o hindexd-mtree64.o `test -f 'utils/mtree64.c' || echo '$(srcdir)/'`utils/mtree64.c
+
+hindexd-mtree64.obj: utils/mtree64.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hindexd_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT hindexd-mtree64.obj -MD -MP -MF $(DEPDIR)/hindexd-mtree64.Tpo -c -o hindexd-mtree64.obj `if test -f 'utils/mtree64.c'; then $(CYGPATH_W) 'utils/mtree64.c'; else $(CYGPATH_W) '$(srcdir)/utils/mtree64.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/hindexd-mtree64.Tpo $(DEPDIR)/hindexd-mtree64.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='utils/mtree64.c' object='hindexd-mtree64.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hindexd_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o hindexd-mtree64.obj `if test -f 'utils/mtree64.c'; then $(CYGPATH_W) 'utils/mtree64.c'; else $(CYGPATH_W) '$(srcdir)/utils/mtree64.c'; fi`
+
+hindexd-immx.o: utils/immx.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hindexd_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT hindexd-immx.o -MD -MP -MF $(DEPDIR)/hindexd-immx.Tpo -c -o hindexd-immx.o `test -f 'utils/immx.c' || echo '$(srcdir)/'`utils/immx.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/hindexd-immx.Tpo $(DEPDIR)/hindexd-immx.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='utils/immx.c' object='hindexd-immx.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hindexd_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o hindexd-immx.o `test -f 'utils/immx.c' || echo '$(srcdir)/'`utils/immx.c
+
+hindexd-immx.obj: utils/immx.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hindexd_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT hindexd-immx.obj -MD -MP -MF $(DEPDIR)/hindexd-immx.Tpo -c -o hindexd-immx.obj `if test -f 'utils/immx.c'; then $(CYGPATH_W) 'utils/immx.c'; else $(CYGPATH_W) '$(srcdir)/utils/immx.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/hindexd-immx.Tpo $(DEPDIR)/hindexd-immx.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='utils/immx.c' object='hindexd-immx.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hindexd_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o hindexd-immx.obj `if test -f 'utils/immx.c'; then $(CYGPATH_W) 'utils/immx.c'; else $(CYGPATH_W) '$(srcdir)/utils/immx.c'; fi`
 
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique

@@ -11,7 +11,8 @@ himasterd_LDFLAGS = -lz -lsbase
 
 hindexd_SOURCES = hindexd.c utils/http.c utils/http.h iniparser.c iniparser.h base64indexdhtml.h \
 	utils/logger.h utils/mutex.h utils/timer.h utils/mtrie.h utils/mtrie.c utils/logger.c \
-	utils/stime.h utils/stime.c utils/base64.h utils/base64.c utils/xmm.h utils/xmm.c
+	utils/stime.h utils/stime.c utils/base64.h utils/base64.c utils/xmm.h utils/xmm.c \
+	utils/mtree64.h utils/mtree64.c utils/immx.h utils/immx.c 
 hindexd_CPPFLAGS = -I utils/ -D_FILE_OFFSET_BITS=64 -Wall
 hindexd_LDFLAGS = -lz -lsbase -libase
 
