@@ -563,7 +563,8 @@ typedef struct _IRES
     short count;
     short ncatgroups;
     short ngroups; 
-    int flag;
+    short dbid;
+    short flag;
     int qid;
     int io_time;
     int sort_time;

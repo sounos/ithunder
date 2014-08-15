@@ -360,6 +360,7 @@ void ibase_check_int_idx(IBASE *ibase, int secid, int no)
             && !(ibase->state->mfields[secid][no]))
     {
         sprintf(path, "%s/%s/%d/%d.int", ibase->basedir, IB_IDX_DIR, secid, no);
+        ibase_mkdir(path);
         ibase->state->mfields[secid][no] = imap_init(path);
     }
     return ;
@@ -410,27 +411,14 @@ int ibase_set_int_index(IBASE *ibase, int secid, int int_index_from, int int_fie
 
     if(ibase && ibase->state)
     {
-        if(ibase->state->int_index_fields_num != int_fields_num
-                && ibase->state->int_index_fields_num != 0)
+        if(ibase->state->used_for == IB_USED_FOR_INDEXD)
         {
-            FATAL_LOGGER(ibase->logger, "int index num(%d) should be rebuild to num(%d)",
-                    ibase->state->int_index_fields_num, int_fields_num);
-            _exit(-1);
-        }
-        if(ibase->state->int_index_fields_num == 0)
-        {
-            if(ibase->state->used_for == IB_USED_FOR_INDEXD)
+            n = IB_INT_OFF + int_fields_num;
+            for(i = IB_INT_OFF; i < n; i++)
             {
-                n = IB_INT_OFF + int_fields_num;
-                for(i = IB_INT_OFF; i < n; i++)
-                {
-                    ibase_check_int_idx(ibase, secid, i);
-                }
+                ibase_check_int_idx(ibase, secid, i);
             }
-            ibase->state->int_index_from = int_index_from;
-            ibase->state->int_index_fields_num = int_fields_num;
         }
-        //ibase_check_int_index(ibase);
         return 0;
     }
     return -1;
@@ -445,6 +433,7 @@ void ibase_check_long_idx(IBASE *ibase, int secid, int no)
         && !(ibase->state->mfields[secid][no]))
     {
         sprintf(path, "%s/%s/%d/%d.long", ibase->basedir, IB_IDX_DIR, secid, no);
+        ibase_mkdir(path);
         ibase->state->mfields[secid][no] = lmap_init(path);
     }
     return ;
@@ -495,27 +484,14 @@ int ibase_set_long_index(IBASE *ibase, int secid, int long_index_from, int long_
 
     if(ibase && ibase->state)
     {
-        if(ibase->state->long_index_fields_num != long_fields_num
-                && ibase->state->long_index_fields_num != 0)
+        if(ibase->state->used_for == IB_USED_FOR_INDEXD)
         {
-            FATAL_LOGGER(ibase->logger, "long index num(%d) should be rebuild to num(%d)",
-                    ibase->state->long_index_fields_num, long_fields_num);
-            _exit(-1);
-        }
-        if(ibase->state->long_index_fields_num == 0)
-        {
-            if(ibase->state->used_for == IB_USED_FOR_INDEXD)
+            n = IB_LONG_OFF + long_fields_num;
+            for(i = IB_LONG_OFF; i < n; i++)
             {
-                n = IB_LONG_OFF + long_fields_num;
-                for(i = IB_LONG_OFF; i < n; i++)
-                {
-                    ibase_check_long_idx(ibase, secid, i);
-                }
+                ibase_check_long_idx(ibase, secid, i);
             }
-            ibase->state->long_index_from = long_index_from;
-            ibase->state->long_index_fields_num = long_fields_num;
         }
-        //ibase_check_long_index(ibase);
         return 0;
     }
     return -1;
@@ -530,6 +506,7 @@ void ibase_check_double_idx(IBASE *ibase, int secid, int no)
         && !(ibase->state->mfields[secid][no]))
     {
         sprintf(path, "%s/%s/%d/%d.double", ibase->basedir, IB_IDX_DIR, secid, no);
+        ibase_mkdir(path);
         ibase->state->mfields[secid][no] = dmap_init(path);
     }
     return ;
@@ -579,27 +556,14 @@ int ibase_set_double_index(IBASE *ibase, int secid, int double_index_from, int d
     int i = 0, n = 0;
     if(ibase && ibase->state)
     {
-        if(ibase->state->double_index_fields_num != double_fields_num
-            && ibase->state->double_index_fields_num != 0) 
+        if(ibase->state->used_for == IB_USED_FOR_INDEXD)
         {
-            FATAL_LOGGER(ibase->logger, "double index num(%d) should be rebuild to num(%d)",
-                    ibase->state->double_index_fields_num, double_fields_num);
-            _exit(-1);
-        }
-        if(ibase->state->double_index_fields_num == 0)
-        {
-            if(ibase->state->used_for == IB_USED_FOR_INDEXD)
+            n = IB_DOUBLE_OFF + double_fields_num;
+            for(i = IB_DOUBLE_OFF; i < n; i++)
             {
-                n = IB_DOUBLE_OFF + double_fields_num;
-                for(i = IB_DOUBLE_OFF; i < n; i++)
-                {
-                    ibase_check_double_idx(ibase, secid, i);
-                }
+                ibase_check_double_idx(ibase, secid, i);
             }
-            ibase->state->double_index_from = double_index_from;
-            ibase->state->double_index_fields_num = double_fields_num;
         }
-        //ibase_check_double_index(ibase);
         return 0;
     }
     return -1;

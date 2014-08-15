@@ -247,6 +247,7 @@ int imap_insert(IMAP *imap, u32_t no, int32_t key)
                     imap->roots[x] = k;
                     --k;
                 }
+                imap->roots[x] = k;
             }
             else
             {
@@ -270,6 +271,8 @@ int imap_insert(IMAP *imap, u32_t no, int32_t key)
             imap->slots[k].max = kv[num-1].key;
             imap->slots[k].nodeid = nodeid;
             imap->slots[k].count = num;
+            x = (imap->slots[k].nodeid / IMM_SLOT_NUM);
+            imap->roots[x] = k;
             //fprintf(stdout, "%s::%d k:%d min:%d max:%d num:%d/%d\n", __FILE__, __LINE__, k, imap->slots[k].min, imap->slots[k].max, num, imap->state->count);
         }
     }
@@ -291,32 +294,32 @@ int imap_remove(IMAP *imap, u32_t no)
         if(slotid < 0) return ret;
         i = nodeid % IMM_SLOT_NUM;
         kvs = imap->map + imap->slots[slotid].nodeid;    
-        while(i < imap->slots[slotid].count)
+        while(i < (imap->slots[slotid].count-1))
         {
             memcpy(&(kvs[i]), &(kvs[i+1]), sizeof(IMMKV));
             x = kvs[i].val;
-            imap->vmap[x].off = i;
+            imap->vmap[x].off = (i + imap->slots[slotid].nodeid);
             ++i;
         }
         if(imap->slots[slotid].count == 1)
         {
             i = slotid;
-            imap->state->qleft[(imap->state->nleft++)] = nodeid;
+            imap->state->qleft[(imap->state->nleft++)] = imap->slots[slotid].nodeid;
             imap->roots[rootid] = -1;
-            while(i < imap->state->count)
+            while(i < (imap->state->count-1))
             {
                 memcpy(&(imap->slots[i]), &(imap->slots[i+1]), sizeof(IMMSLOT));
                 rootid = (imap->slots[i].nodeid / IMM_SLOT_NUM);
                 imap->roots[rootid] = i;
                 ++i;
             }
-            --imap->state->count;
+            --(imap->state->count);
         }
         else
         {
             n = --(imap->slots[slotid].count);
             imap->slots[slotid].min = kvs[0].key;
-            if(n > 0) imap->slots[slotid].max = kvs[n - 1].key;
+            imap->slots[slotid].max = kvs[n - 1].key;
         }
         imap->vmap[no].off = -1;
     }

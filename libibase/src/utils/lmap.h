@@ -5,7 +5,7 @@
 #define LMM_SLOT_MAX     524288
 #define LMM_SLOT_NUM     1024
 #define LMM_SLOT2_NUM    512 /* half of LMM_SLOT_NUM */
-#define LMM_LMMV_INC    1000000
+#define LMM_LMMV_INC     1000000
 #define LMM_NODES_MAX    4294967296
 #pragma pack(push, 4)
 #ifndef U32_T

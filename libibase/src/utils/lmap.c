@@ -247,6 +247,7 @@ int lmap_insert(LMAP *lmap, u32_t no, int64_t key)
                     lmap->roots[x] = k;
                     --k;
                 }
+                lmap->roots[x] = k;
             }
             else
             {
@@ -270,6 +271,8 @@ int lmap_insert(LMAP *lmap, u32_t no, int64_t key)
             lmap->slots[k].max = kv[num-1].key;
             lmap->slots[k].nodeid = nodeid;
             lmap->slots[k].count = num;
+            x = (lmap->slots[k].nodeid / LMM_SLOT_NUM);
+            lmap->roots[x] = k;
             //fprintf(stdout, "%s::%d k:%d min:%d max:%d num:%d/%d\n", __FILE__, __LINE__, k, lmap->slots[k].min, lmap->slots[k].max, num, lmap->state->count);
         }
     }
@@ -291,32 +294,32 @@ int lmap_remove(LMAP *lmap, u32_t no)
         if(slotid < 0) return ret;
         i = nodeid % LMM_SLOT_NUM;
         kvs = lmap->map + lmap->slots[slotid].nodeid;    
-        while(i < lmap->slots[slotid].count)
+        while(i < (lmap->slots[slotid].count-1))
         {
             memcpy(&(kvs[i]), &(kvs[i+1]), sizeof(LMMKV));
             x = kvs[i].val;
-            lmap->vmap[x].off = i;
+            lmap->vmap[x].off = (i + lmap->slots[slotid].nodeid);
             ++i;
         }
         if(lmap->slots[slotid].count == 1)
         {
             i = slotid;
-            lmap->state->qleft[(lmap->state->nleft++)] = nodeid;
+            lmap->state->qleft[(lmap->state->nleft++)] = lmap->slots[slotid].nodeid;
             lmap->roots[rootid] = -1;
-            while(i < lmap->state->count)
+            while(i < (lmap->state->count-1))
             {
                 memcpy(&(lmap->slots[i]), &(lmap->slots[i+1]), sizeof(LMMSLOT));
                 rootid = (lmap->slots[i].nodeid / LMM_SLOT_NUM);
                 lmap->roots[rootid] = i;
                 ++i;
             }
-            --lmap->state->count;
+            --(lmap->state->count);
         }
         else
         {
             n = --(lmap->slots[slotid].count);
             lmap->slots[slotid].min = kvs[0].key;
-            if(n > 0) lmap->slots[slotid].max = kvs[n - 1].key;
+            lmap->slots[slotid].max = kvs[n - 1].key;
         }
         lmap->vmap[no].off = -1;
     }

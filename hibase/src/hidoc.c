@@ -1800,6 +1800,7 @@ int hidoc_genindex(HIDOC *hidoc, HINDEX *hindex, FHEADER *fheader, IFIELD *field
         docheader->category = fheader->category;
         docheader->slevel = fheader->slevel;
         docheader->rank = fheader->rank;
+        //fprintf(stdout, "%s::%d dbid:%d secid:%d\n", __FILE__, __LINE__, docheader->dbid, docheader->secid);
         if(docheader->category == 0)
         {
             FATAL_LOGGER(hidoc->logger, "invalid category globalid:%lld", LL64(fheader->globalid));

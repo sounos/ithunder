@@ -105,35 +105,41 @@ do                                                                              
 /* check index state */
 int ibase_check_index_state(IBASE *ibase, DOCHEADER *docheader)
 {
-    int ret = -1, n = 0;
+    int ret = -1, nint = 0, nlong = 0, ndouble = 0, secid = 0;
     if(ibase && docheader)
     {
-        ibase_check_mindex(ibase, docheader->secid);
-        if(ibase->state->int_index_fields_num == 0 
-                && (n = (int)(docheader->intblock_size/sizeof(int))) > 0)
+        nint =  docheader->intblock_size / sizeof(int);
+        nlong =  docheader->longblock_size / sizeof(int64_t);
+        ndouble = docheader->doubleblock_size / sizeof(double);
+        if(nint > 0 && ibase->state->int_index_fields_num)
         {
-            WARN_LOGGER(ibase->logger, "set_int_index(from:%d,num:%d) globalid:%lld", docheader->intindex_from, n, IBLL(docheader->globalid));
-            ibase_set_int_index(ibase, docheader->secid, docheader->intindex_from, n);
+            ibase->state->int_index_from = docheader->intindex_from;
+            ibase->state->int_index_fields_num = nint;
         }
-        if(ibase->state->long_index_fields_num == 0 
-                && (n = (int)(docheader->longblock_size/sizeof(int64_t))) > 0)
+        if(nlong > 0 && !ibase->state->long_index_fields_num)
         {
-            ibase_set_long_index(ibase, docheader->secid, docheader->longindex_from, n);
-            WARN_LOGGER(ibase->logger, "set_long_index(from:%d,num:%d) globalid:%lld", docheader->longindex_from, n, IBLL(docheader->globalid));
+            ibase->state->long_index_from = docheader->longindex_from;
+            ibase->state->long_index_fields_num = nlong;
         }
-        if(ibase->state->double_index_fields_num == 0 
-                && (n = (int)(docheader->doubleblock_size/sizeof(double))) > 0)
+        if(ndouble > 0 && !ibase->state->double_index_fields_num)
         {
-            WARN_LOGGER(ibase->logger, "set_double_index(from:%d,num:%d) docid:%lld", docheader->doubleindex_from, n, IBLL(docheader->globalid));
-            ibase_set_double_index(ibase, docheader->secid, docheader->doubleindex_from, n);
+            ibase->state->double_index_from = docheader->doubleindex_from;
+            ibase->state->double_index_fields_num = ndouble;
         }
-        if((docheader->intblock_size/sizeof(int)) != ibase->state->int_index_fields_num
-                || (docheader->longblock_size/sizeof(int64_t)) != ibase->state->long_index_fields_num
-                || (docheader->doubleblock_size/sizeof(double)) != ibase->state->double_index_fields_num)
+        if(ibase->state->used_for == IB_USED_FOR_INDEXD)
         {
-            FATAL_LOGGER(ibase->logger, "Invalid document globalid:%lld int/long/double index num:%d/%d/%d old_index_int/long/double:%d/%d/%d", IBLL(docheader->globalid), (int)(docheader->intblock_size/sizeof(int)), (int)(docheader->longblock_size/sizeof(int64_t)), (int)(docheader->doubleblock_size/sizeof(double)), ibase->state->int_index_fields_num, ibase->state->long_index_fields_num, ibase->state->double_index_fields_num);
+            if((secid = docheader->secid) >= 0 && secid < IB_SEC_MAX && !ibase->mindex[secid])
+            {
+                ibase_set_int_index(ibase, docheader->secid, docheader->intindex_from, nint);
+                WARN_LOGGER(ibase->logger, "set_int_index(from:%d,num:%d) globalid:%lld secid:%d", docheader->intindex_from, nint, IBLL(docheader->globalid), docheader->secid);
+                ibase_set_long_index(ibase, docheader->secid, docheader->longindex_from, nlong);
+                WARN_LOGGER(ibase->logger, "set_long_index(from:%d,num:%d) globalid:%lld secid:%d", docheader->longindex_from, nlong, IBLL(docheader->globalid), docheader->secid);
+                ibase_set_double_index(ibase, docheader->secid, docheader->doubleindex_from, ndouble);
+                WARN_LOGGER(ibase->logger, "set_double_index(from:%d,num:%d) docid:%lld secid:%d", docheader->doubleindex_from, ndouble, IBLL(docheader->globalid), docheader->secid);
+                ibase_check_mindex(ibase, docheader->secid);
+            }
         }
-        else ret = 0;
+        ret = 0;
     }
     return ret;
 }
@@ -150,10 +156,14 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
     double *doublelist = NULL;
     IHEADER *iheader = NULL;
     STERM *termlist = NULL;
+    void *index = NULL;
     off_t size = 0;
 
-    if((docheader = (DOCHEADER *)block->data) && ibase_check_index_state(ibase, docheader) == 0)
+    if((docheader = (DOCHEADER *)block->data) 
+            && docheader->secid >= 0 && docheader->secid < IB_SEC_MAX
+            && ibase_check_index_state(ibase, docheader) == 0)
     {
+        index = ibase->mindex[docheader->secid];
         ibase->state->dtotal++;
         ibase->state->ttotal += (int64_t)docheader->terms_total;
         if(ibase->state->used_for == IB_USED_FOR_INDEXD)
@@ -228,7 +238,7 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
                         memcpy(p, prevnext, termlist[i].prevnext_size);
                         p += termlist[i].prevnext_size;
                     }
-                    if(db_add_data(PDB(ibase->index), termid, pp, (p - pp)) <= 0)
+                    if(db_add_data(PDB(index), termid, pp, (p - pp)) <= 0)
                     {
                         FATAL_LOGGER(ibase->logger, "index term[%d] failed, %s", 
                                 termid, strerror(errno));
@@ -314,6 +324,7 @@ int ibase_update_index(IBASE *ibase, int docid, IBDATA *block)
 
     if(ibase && block && block->data && block->ndata > 0 
             && (docheader =  (DOCHEADER *)(block->data))
+            && docheader->secid >= 0 && docheader->secid < IB_SEC_MAX
             && ibase_check_index_state(ibase, docheader) == 0)
     {
         if(ibase->state->used_for == IB_USED_FOR_INDEXD)
