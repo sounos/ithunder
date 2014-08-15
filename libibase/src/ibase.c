@@ -251,15 +251,18 @@ int ibase_set_basedir(IBASE *ibase, char *dir, int used_for, int mmsource_status
         {
             sprintf(path, "%s/%s", dir, IB_SOURCE_DIR);
             ibase->state->mmsource_status = mmsource_status;
-            if(ibase->state->mmsource_status == IB_MMSOURCE_ENABLED)
+            if(ibase->state->mmsource_status != IB_MMSOURCE_NULL)
             {
-                ibase->source = db_init(path, 1);
-                ACCESS_LOGGER(ibase->logger, "db_init(%s, 1)", path);
-            }
-            else
-            {
-                ibase->source = db_init(path, 0);
-                ACCESS_LOGGER(ibase->logger, "db_init(%s, 0)", path);
+                if(ibase->state->mmsource_status == IB_MMSOURCE_ENABLED)
+                {
+                    ibase->source = db_init(path, 1);
+                    ACCESS_LOGGER(ibase->logger, "db_init(%s, 1)", path);
+                }
+                else
+                {
+                    ibase->source = db_init(path, 0);
+                    ACCESS_LOGGER(ibase->logger, "db_init(%s, 0)", path);
+                }
             }
         }
         /* index */
