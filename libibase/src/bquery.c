@@ -448,7 +448,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
             {
                 itermlist[i].weight = 1;
             }
-            if((n = itermlist[i].mm.ndata = db_get_data(PDB(ibase->index), itermlist[i].termid, &(itermlist[i].mm.data))) > 0)
+            if((n = itermlist[i].mm.ndata = db_get_data(PDB(index), itermlist[i].termid, &(itermlist[i].mm.data))) > 0)
             {
                 total += n;
                 itermlist[i].p = itermlist[i].mm.data;
@@ -927,7 +927,7 @@ end:
         {
             for(i = 0; i < nqterms; i++)
             {
-                db_free_data(PDB(ibase->index), itermlist[i].mm.data, itermlist[i].mm.ndata);
+                db_free_data(PDB(index), itermlist[i].mm.data, itermlist[i].mm.ndata);
             }
             ibase_push_itermlist(ibase, itermlist);
         }
