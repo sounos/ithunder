@@ -341,6 +341,9 @@ void indexd_query_handler(void *args)
             records = ichunk->records;
             map = qtask->map;
             groupby = qtask->groupby;
+            xchunk->res.qid = res->qid;
+            xchunk->res.dbid = res->dbid;
+            xchunk->res.flag = res->flag;
             if(pquery->flag & IB_QUERY_RSORT)
             {
                 for(i = 0;  i < res->count; i++)
@@ -383,7 +386,7 @@ void indexd_query_handler(void *args)
             }
             /* total */ 
             xchunk->res.total += res->total;
-            xchunk->res.doctotal += res->doctotal;
+            xchunk->res.doctotal = res->doctotal;
             if(res->io_time > xchunk->res.io_time)
                 xchunk->res.io_time = res->io_time;
             if(res->sort_time > xchunk->res.sort_time)
@@ -457,19 +460,20 @@ void indexd_query_handler(void *args)
             presp->cmd = IB_RESP_QUERY;
             presp->status = IB_STATUS_OK;
             presp->length = sizeof(IRES) + res->count * sizeof(IRECORD);
-            if(pquery->qid != req->id)
-            {
-                FATAL_LOGGER(logger, "Invalid qid:%d to head->id:%d on remote[%s:%d] via %d", pquery->qid, req->id, conn->remote_ip, conn->remote_port, conn->fd);
-                ret = -1;
-            }
-            else if(pquery->qid != res->qid)
-            {
-                FATAL_LOGGER(logger, "Invalid qid:%d to res->qid:%d on remote[%s:%d] via %d", pquery->qid, res->qid, conn->remote_ip, conn->remote_port, conn->fd);
-                ret = -1;
-            }
-            else ret = 0;
             if((conn = queryd->findconn(queryd, qtask->index)) == qtask->conn)
             {
+                if(pquery->qid != req->id)
+                {
+                    FATAL_LOGGER(logger, "Invalid qid:%d to head->id:%d on remote[%s:%d] via %d", pquery->qid, req->id, conn->remote_ip, conn->remote_port, conn->fd);
+                    ret = -1;
+                }
+                else if(pquery->qid != res->qid)
+                {
+                    FATAL_LOGGER(logger, "Invalid qid:%d to res->qid:%d on remote[%s:%d] via %d", pquery->qid, res->qid, conn->remote_ip, conn->remote_port, conn->fd);
+                    ret = -1;
+                }
+                else ret = 0;
+
                 if(ret == 0)
                 {
                     n = sizeof(IHEAD) + presp->length;
