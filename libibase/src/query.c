@@ -15,7 +15,7 @@
 #include "immx.h"
  
 /* binary list merging */
-ICHUNK *ibase_query(IBASE *ibase, IQUERY *query)
+ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
 {
     int i = 0, n = 0, k = 0,min_set_num = -1, docid = 0, ifrom = -1, is_sort_reverse = 0, 
         min_set_fid = 0, int_index_from = 0, int_index_to = 0, ito = -1, 
@@ -32,7 +32,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query)
     IHEADER *headers = NULL; ICHUNK *chunk = NULL;
     IRES *res = NULL;
 
-    if(ibase && query)
+    if(ibase && query && secid >= 0 && secid < IB_SEC_MAX && ibase->mindex[secid])
     {
         if((chunk = ibase_pop_chunk(ibase)))
         {
@@ -63,38 +63,38 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query)
         {
             fid -= int_index_from;
             fid += IB_INT_OFF;
-            if(ibase->state->mfields[fid]) is_field_sort = IB_SORT_BY_INT;
+            if(ibase->state->mfields[secid][fid]) is_field_sort = IB_SORT_BY_INT;
         }
         else if(fid >= long_index_from && fid < long_index_to)
         {
             fid -= long_index_from;
             fid += IB_LONG_OFF;
-            if(ibase->state->mfields[fid]) is_field_sort = IB_SORT_BY_LONG;
+            if(ibase->state->mfields[secid][fid]) is_field_sort = IB_SORT_BY_LONG;
         }
         else if(fid >= double_index_from && fid < double_index_to)
         {
             fid -= double_index_from;
             fid += IB_DOUBLE_OFF;
-            if(ibase->state->mfields[fid]) is_field_sort = IB_SORT_BY_DOUBLE;
+            if(ibase->state->mfields[secid][fid]) is_field_sort = IB_SORT_BY_DOUBLE;
         }
         gid = query->groupby;
         if(gid >= int_index_from && gid < int_index_to)
         {
             gid -= int_index_from;
             gid += IB_INT_OFF;
-            if(ibase->state->mfields[gid]) is_groupby  = IB_GROUPBY_INT;
+            if(ibase->state->mfields[secid][gid]) is_groupby  = IB_GROUPBY_INT;
         }
         else if(gid >= long_index_from && gid < long_index_to)
         {
             gid -= long_index_from;
             gid += IB_LONG_OFF;
-            if(ibase->state->mfields[gid]) is_groupby  = IB_GROUPBY_LONG;
+            if(ibase->state->mfields[secid][gid]) is_groupby  = IB_GROUPBY_LONG;
         }
         else if(gid >= double_index_from && gid < double_index_to)
         {
             gid -= double_index_from;
             gid += IB_DOUBLE_OFF;
-            if(ibase->state->mfields[gid]) is_groupby  = IB_GROUPBY_DOUBLE;
+            if(ibase->state->mfields[secid][gid]) is_groupby  = IB_GROUPBY_DOUBLE;
         }
         if(gid > 0){groupby = ibase_pop_mmx(ibase);};
         TIMER_INIT(timer);
@@ -102,21 +102,21 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query)
         if((k = query->in_int_fieldid) > 0 && query->in_int_num > 0)
         {
             k += IB_INT_OFF - int_index_from ;
-            n = imap_ins(ibase->state->mfields[k], query->in_int_list, query->in_int_num, NULL);
+            n = imap_ins(ibase->state->mfields[secid][k], query->in_int_list, query->in_int_num, NULL);
             if(min_set_num == -1 || n < min_set_num)
             {min_set_fid = k;min_set_num = n;query_range = IB_RANGE_IN;}
         }
         if((k = query->in_long_fieldid) > 0 && query->in_long_num > 0)
         {
             k += IB_LONG_OFF - long_index_from ;
-            n = lmap_ins(ibase->state->mfields[k], query->in_long_list, query->in_long_num, NULL);
+            n = lmap_ins(ibase->state->mfields[secid][k], query->in_long_list, query->in_long_num, NULL);
             if(min_set_num == -1 || n < min_set_num)
             {min_set_fid = k;min_set_num = n;query_range = IB_RANGE_IN;}
         }
         if((k = query->in_double_fieldid) > 0 && query->in_double_num > 0)
         {
             k += IB_DOUBLE_OFF - double_index_from ;
-            n = dmap_ins(ibase->state->mfields[k], query->in_double_list, query->in_double_num, NULL);
+            n = dmap_ins(ibase->state->mfields[secid][k], query->in_double_list, query->in_double_num, NULL);
             if(min_set_num == -1 || n < min_set_num)
             {min_set_fid = k;min_set_num = n;query_range = IB_RANGE_IN;}
         }
@@ -131,22 +131,22 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query)
                     ito = query->int_range_list[i].to;
                     k -= int_index_from;
                     k += IB_INT_OFF;
-                    if(!ibase->state->mfields[k]) continue;
+                    if(!ibase->state->mfields[secid][k]) continue;
                     if((range_flag & (IB_RANGE_FROM|IB_RANGE_TO)) == (IB_RANGE_FROM|IB_RANGE_TO))
                     {
-                        n = imap_range(ibase->state->mfields[k], ifrom, ito, NULL);
+                        n = imap_range(ibase->state->mfields[secid][k], ifrom, ito, NULL);
                         if(min_set_num == -1 || n < min_set_num)
                         {min_set_fid=k;min_set_num = n;irangefrom=ifrom;irangeto=ito;query_range=0;}
                     }
                     else if((range_flag & IB_RANGE_TO))
                     {
-                        n = imap_rangeto(ibase->state->mfields[k],ito, NULL);
+                        n = imap_rangeto(ibase->state->mfields[secid][k],ito, NULL);
                         if(min_set_num == -1 || n < min_set_num)
                         {min_set_fid = k;min_set_num = n;irangeto=ito;query_range=IB_RANGE_TO;}
                     }
                     else
                     {
-                        n = imap_rangefrom(ibase->state->mfields[k],ifrom, NULL);
+                        n = imap_rangefrom(ibase->state->mfields[secid][k],ifrom, NULL);
                         if(min_set_num == -1 || n < min_set_num)
                         {min_set_fid = k;min_set_num=n;irangefrom=ifrom;query_range=IB_RANGE_FROM;}
                     }
@@ -164,22 +164,22 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query)
                     lto = query->long_range_list[i].to;
                     k -= long_index_from;
                     k += IB_LONG_OFF;
-                    if(!ibase->state->mfields[k]) continue;
+                    if(!ibase->state->mfields[secid][k]) continue;
                     if((range_flag & (IB_RANGE_FROM|IB_RANGE_TO)) == (IB_RANGE_FROM|IB_RANGE_TO))
                     {
-                        n = lmap_range(ibase->state->mfields[k], lfrom, lto, NULL);
+                        n = lmap_range(ibase->state->mfields[secid][k], lfrom, lto, NULL);
                         if(min_set_num == -1 || n < min_set_num)
                         {min_set_fid=k;min_set_num = n;lrangefrom=lfrom;lrangeto=lto;query_range=0;}
                     }
                     else if((range_flag & IB_RANGE_TO))
                     {
-                        n = lmap_rangeto(ibase->state->mfields[k],lto, NULL);
+                        n = lmap_rangeto(ibase->state->mfields[secid][k],lto, NULL);
                         if(min_set_num == -1 || n < min_set_num)
                         {min_set_fid = k;min_set_num = n;lrangeto=lto;query_range=IB_RANGE_TO;}
                     }
                     else
                     {
-                        n = lmap_rangefrom(ibase->state->mfields[k],lfrom, NULL);
+                        n = lmap_rangefrom(ibase->state->mfields[secid][k],lfrom, NULL);
                         if(min_set_num == -1 || n < min_set_num)
                         {min_set_fid = k;min_set_num=n;lrangefrom=lfrom;query_range=IB_RANGE_FROM;}
                     }
@@ -197,22 +197,22 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query)
                     dto = query->double_range_list[i].to;
                     k -= double_index_from;
                     k += IB_DOUBLE_OFF;
-                    if(!ibase->state->mfields[k]) continue;
+                    if(!ibase->state->mfields[secid][k]) continue;
                     if((range_flag & (IB_RANGE_FROM|IB_RANGE_TO)) == (IB_RANGE_FROM|IB_RANGE_TO))
                     {
-                        n = dmap_range(ibase->state->mfields[k], dfrom, dto, NULL);
+                        n = dmap_range(ibase->state->mfields[secid][k], dfrom, dto, NULL);
                         if(min_set_num == -1 || n < min_set_num)
                         {min_set_fid=k;min_set_num = n;drangefrom=dfrom;drangeto=dto;query_range=0;}
                     }
                     else if((range_flag & IB_RANGE_TO))
                     {
-                        n = dmap_rangeto(ibase->state->mfields[k], dto, NULL);
+                        n = dmap_rangeto(ibase->state->mfields[secid][k], dto, NULL);
                         if(min_set_num == -1 || n < min_set_num)
                         {min_set_fid = k;min_set_num = n;drangeto = dto;query_range=IB_RANGE_TO;}
                     }
                     else
                     {
-                        n = dmap_rangefrom(ibase->state->mfields[k], dfrom, NULL);
+                        n = dmap_rangefrom(ibase->state->mfields[secid][k], dfrom, NULL);
                         if(min_set_num == -1 || n < min_set_num)
                         {min_set_fid = k;min_set_num=n;drangefrom=dfrom;query_range=IB_RANGE_FROM;}
                     }
@@ -224,40 +224,40 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query)
             docs_size = (min_set_num + 100000) * sizeof(uint32_t);
             docs = (uint32_t *)db_new_data(PDB(ibase->index), docs_size);
             if(min_set_fid >= IB_INT_OFF && min_set_fid < IB_INT_TO 
-                    && ibase->state->mfields[min_set_fid])
+                    && ibase->state->mfields[secid][min_set_fid])
             {
                 if(query_range == IB_RANGE_FROM)
-                    ndocs = imap_rangefrom(ibase->state->mfields[min_set_fid], irangefrom, docs);
+                    ndocs = imap_rangefrom(ibase->state->mfields[secid][min_set_fid], irangefrom, docs);
                 else if(query_range == IB_RANGE_TO)
-                    ndocs = imap_rangeto(ibase->state->mfields[min_set_fid], irangeto, docs);
+                    ndocs = imap_rangeto(ibase->state->mfields[secid][min_set_fid], irangeto, docs);
                 else if(query_range == IB_RANGE_IN)
-                    ndocs = imap_ins(ibase->state->mfields[min_set_fid], query->in_int_list, query->in_int_num, docs);
+                    ndocs = imap_ins(ibase->state->mfields[secid][min_set_fid], query->in_int_list, query->in_int_num, docs);
                 else
-                    ndocs = imap_range(ibase->state->mfields[min_set_fid], irangefrom, irangeto, docs);
+                    ndocs = imap_range(ibase->state->mfields[secid][min_set_fid], irangefrom, irangeto, docs);
             }
             else if(min_set_fid >= IB_LONG_OFF && min_set_fid < IB_LONG_TO
-                    && ibase->state->mfields[min_set_fid])
+                    && ibase->state->mfields[secid][min_set_fid])
             {
                 if(query_range == IB_RANGE_FROM)
-                    ndocs = lmap_rangefrom(ibase->state->mfields[min_set_fid], lrangefrom, docs);
+                    ndocs = lmap_rangefrom(ibase->state->mfields[secid][min_set_fid], lrangefrom, docs);
                 else if(query_range == IB_RANGE_TO)
-                    ndocs = lmap_rangeto(ibase->state->mfields[min_set_fid], lrangeto, docs);
+                    ndocs = lmap_rangeto(ibase->state->mfields[secid][min_set_fid], lrangeto, docs);
                 else if(query_range == IB_RANGE_IN)
-                    ndocs = lmap_ins(ibase->state->mfields[min_set_fid], query->in_long_list, query->in_long_num, docs);
+                    ndocs = lmap_ins(ibase->state->mfields[secid][min_set_fid], query->in_long_list, query->in_long_num, docs);
                 else
-                    ndocs = lmap_range(ibase->state->mfields[min_set_fid], lrangefrom, lrangeto, docs);
+                    ndocs = lmap_range(ibase->state->mfields[secid][min_set_fid], lrangefrom, lrangeto, docs);
             }
             else if(min_set_fid >= IB_DOUBLE_OFF && min_set_fid < IB_DOUBLE_TO
-                    && ibase->state->mfields[min_set_fid])
+                    && ibase->state->mfields[secid][min_set_fid])
             {
                 if(query_range == IB_RANGE_FROM)
-                    ndocs = dmap_rangefrom(ibase->state->mfields[min_set_fid], drangefrom, docs);
+                    ndocs = dmap_rangefrom(ibase->state->mfields[secid][min_set_fid], drangefrom, docs);
                 else if(query_range == IB_RANGE_TO)
-                    ndocs = dmap_rangeto(ibase->state->mfields[min_set_fid], drangeto, docs);
+                    ndocs = dmap_rangeto(ibase->state->mfields[secid][min_set_fid], drangeto, docs);
                 else if(query_range == IB_RANGE_IN)
-                    ndocs = dmap_ins(ibase->state->mfields[min_set_fid], query->in_double_list, query->in_double_num, docs);
+                    ndocs = dmap_ins(ibase->state->mfields[secid][min_set_fid], query->in_double_list, query->in_double_num, docs);
                 else
-                    ndocs = dmap_range(ibase->state->mfields[min_set_fid], drangefrom, drangeto, docs);
+                    ndocs = dmap_range(ibase->state->mfields[secid][min_set_fid], drangefrom, drangeto, docs);
             }
         }
         TIMER_SAMPLE(timer);
@@ -285,10 +285,10 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query)
             /* in/range filter */
             if((jj = query->in_int_fieldid) > 0 && query->in_int_num > 0
                 && (jj += (IB_INT_OFF - int_index_from)) > 0 && jj != min_set_fid
-                && ibase->state->mfields[jj])
+                && ibase->state->mfields[secid][jj])
             {
                 imax = query->in_int_num - 1;imin = 0;
-                xint = IMAP_GET(ibase->state->mfields[jj], docid);
+                xint = IMAP_GET(ibase->state->mfields[secid][jj], docid);
                 if(xint < query->in_int_list[imin] || xint > query->in_int_list[imax]) goto next;
                 if(xint != query->in_int_list[imin] && xint != query->in_int_list[imax])
                 {
@@ -305,10 +305,10 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query)
             }
             if((jj = query->in_long_fieldid) > 0 && query->in_long_num > 0
                 && (jj += (IB_LONG_OFF - long_index_from)) > 0 && jj != min_set_fid
-                && ibase->state->mfields[jj])
+                && ibase->state->mfields[secid][jj])
             {
                 imax = query->in_long_num - 1;imin = 0;
-                xlong = LMAP_GET(ibase->state->mfields[jj], docid);
+                xlong = LMAP_GET(ibase->state->mfields[secid][jj], docid);
                 if(xlong < query->in_long_list[imin] || xlong > query->in_long_list[imax]) goto next;
                 if(xlong != query->in_long_list[imin] && xlong != query->in_long_list[imax])
                 {
@@ -325,10 +325,10 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query)
             }
             if((jj = query->in_double_fieldid) > 0 && query->in_double_num > 0
                 && (jj += (IB_DOUBLE_OFF - double_index_from)) > 0 && jj != min_set_fid
-                && ibase->state->mfields[jj])
+                && ibase->state->mfields[secid][jj])
             {
                 imax = query->in_double_num - 1;imin = 0;
-                xdouble = DMAP_GET(ibase->state->mfields[jj], docid);
+                xdouble = DMAP_GET(ibase->state->mfields[secid][jj], docid);
                 if(xdouble < query->in_double_list[imin] || xdouble > query->in_double_list[imax]) goto next;
                 if(xdouble != query->in_double_list[imin] && xdouble != query->in_double_list[imax])
                 {
@@ -354,8 +354,8 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query)
                     k -= int_index_from;
                     k += IB_INT_OFF;
                     if(k == min_set_fid) continue;
-                    if(!ibase->state->mfields[k]) goto next;
-                    xint = IMAP_GET(ibase->state->mfields[k], docid);
+                    if(!ibase->state->mfields[secid][k]) goto next;
+                    xint = IMAP_GET(ibase->state->mfields[secid][k], docid);
                     if((range_flag & IB_RANGE_FROM) && xint < ifrom) goto next;
                     if((range_flag & IB_RANGE_TO) && xint > ito) goto next;
                 }
@@ -366,8 +366,8 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query)
                     k -= int_index_from;
                     k += IB_INT_OFF;
                     if(k == min_set_fid) continue;
-                    if(!ibase->state->mfields[k]) goto next;
-                    xint = IMAP_GET(ibase->state->mfields[k], docid);
+                    if(!ibase->state->mfields[secid][k]) goto next;
+                    xint = IMAP_GET(ibase->state->mfields[secid][k], docid);
                     if((query->int_bits_list[i].flag & IB_BITFIELDS_FILTER))
                     {
                         if((query->int_bits_list[i].bits & xint) == 0) goto next;
@@ -389,8 +389,8 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query)
                     k -= long_index_from;
                     k += IB_LONG_OFF;
                     //if(k == min_set_fid) continue;
-                    if(!ibase->state->mfields[k]) goto next;
-                    xlong = LMAP_GET(ibase->state->mfields[k], docid);
+                    if(!ibase->state->mfields[secid][k]) goto next;
+                    xlong = LMAP_GET(ibase->state->mfields[secid][k], docid);
                     if((range_flag & IB_RANGE_FROM) && xlong < lfrom) goto next;
                     if((range_flag & IB_RANGE_TO) && xlong > lto) goto next;
                 }
@@ -401,8 +401,8 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query)
                     k -= long_index_from;
                     k += IB_LONG_OFF;
                     if(k == min_set_fid) continue;
-                    if(!ibase->state->mfields[k]) goto next;
-                    xlong = LMAP_GET(ibase->state->mfields[k], docid);
+                    if(!ibase->state->mfields[secid][k]) goto next;
+                    xlong = LMAP_GET(ibase->state->mfields[secid][k], docid);
                     if((query->long_bits_list[i].flag & IB_BITFIELDS_FILTER))
                     {
                         if((query->long_bits_list[i].bits & xlong) == 0) goto next;
@@ -424,8 +424,8 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query)
                     k -= double_index_from;
                     k += IB_DOUBLE_OFF;
                     if(k == min_set_fid) continue;
-                    if(!ibase->state->mfields[k]) goto next;
-                    xdouble = DMAP_GET(ibase->state->mfields[k], docid);
+                    if(!ibase->state->mfields[secid][k]) goto next;
+                    xdouble = DMAP_GET(ibase->state->mfields[secid][k], docid);
                     if((range_flag & IB_RANGE_FROM) && xdouble < dfrom) goto next;
                     if((range_flag & IB_RANGE_TO) && xdouble > dto) goto next;
                 }
@@ -474,15 +474,15 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query)
             {
                 if(is_field_sort == IB_SORT_BY_INT)
                 {
-                    doc_score = IB_INT2LONG_SCORE(IMAP_GET(ibase->state->mfields[fid], docid)) + (int64_t)(doc_score >> 16);
+                    doc_score = IB_INT2LONG_SCORE(IMAP_GET(ibase->state->mfields[secid][fid], docid)) + (int64_t)(doc_score >> 16);
                 }
                 else if(is_field_sort == IB_SORT_BY_LONG)
                 {
-                    doc_score = LMAP_GET(ibase->state->mfields[fid], docid);
+                    doc_score = LMAP_GET(ibase->state->mfields[secid][fid], docid);
                 }
                 else if(is_field_sort == IB_SORT_BY_DOUBLE)
                 {
-                    xdouble = DMAP_GET(ibase->state->mfields[fid], docid);
+                    xdouble = DMAP_GET(ibase->state->mfields[secid][fid], docid);
                     doc_score = IB_LONG_SCORE(xdouble);
                 }
             }
@@ -491,15 +491,15 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query)
             {
                 if(is_groupby == IB_GROUPBY_INT)
                 {
-                    xlong = (int64_t)IMAP_GET(ibase->state->mfields[gid], docid);
+                    xlong = (int64_t)IMAP_GET(ibase->state->mfields[secid][gid], docid);
                 }
                 else if(is_groupby == IB_GROUPBY_LONG)
                 {
-                    xlong = LMAP_GET(ibase->state->mfields[gid], docid);
+                    xlong = LMAP_GET(ibase->state->mfields[secid][gid], docid);
                 }
                 else if(is_groupby == IB_GROUPBY_DOUBLE)
                 {
-                    xlong = IB_LONG_SCORE(DMAP_GET(ibase->state->mfields[gid], docid));
+                    xlong = IB_LONG_SCORE(DMAP_GET(ibase->state->mfields[secid][gid], docid));
                 }
                 IMMX_ADD(groupby, xlong);
                 DEBUG_LOGGER(ibase->logger, "docid:%d/%lld gid:%d key:%lld count:%d", docid, IBLL(headers[docid].globalid), gid, IBLL(xlong), PIMX(groupby)->count);
@@ -588,15 +588,15 @@ next:
                         doc_score = IBLONG((headers[docid].rank*(double)(query->base_rank)));
                         if(is_field_sort == IB_SORT_BY_INT)
                         {
-                            doc_score = IB_INT2LONG_SCORE(IMAP_GET(ibase->state->mfields[fid], docid)) + (int64_t)(doc_score >> 16);
+                            doc_score = IB_INT2LONG_SCORE(IMAP_GET(ibase->state->mfields[secid][fid], docid)) + (int64_t)(doc_score >> 16);
                         }
                         else if(is_field_sort == IB_SORT_BY_LONG)
                         {
-                            doc_score = LMAP_GET(ibase->state->mfields[fid], docid);
+                            doc_score = LMAP_GET(ibase->state->mfields[secid][fid], docid);
                         }
                         else if(is_field_sort == IB_SORT_BY_DOUBLE)
                         {
-                            xdouble = DMAP_GET(ibase->state->mfields[fid], docid);
+                            xdouble = DMAP_GET(ibase->state->mfields[secid][fid], docid);
                             doc_score = IB_LONG_SCORE(xdouble);
                         }
                         records[k].score = doc_score;
@@ -618,15 +618,15 @@ next:
                         doc_score = IBLONG((headers[docid].rank*(double)(query->base_rank)));
                         if(is_field_sort == IB_SORT_BY_INT)
                         {
-                            doc_score = IB_INT2LONG_SCORE(IMAP_GET(ibase->state->mfields[fid], docid)) + (int64_t)(doc_score >> 16);
+                            doc_score = IB_INT2LONG_SCORE(IMAP_GET(ibase->state->mfields[secid][fid], docid)) + (int64_t)(doc_score >> 16);
                         }
                         else if(is_field_sort == IB_SORT_BY_LONG)
                         {
-                            doc_score = LMAP_GET(ibase->state->mfields[fid], docid);
+                            doc_score = LMAP_GET(ibase->state->mfields[secid][fid], docid);
                         }
                         else if(is_field_sort == IB_SORT_BY_DOUBLE)
                         {
-                            xdouble = DMAP_GET(ibase->state->mfields[fid], docid);
+                            xdouble = DMAP_GET(ibase->state->mfields[secid][fid], docid);
                             doc_score = IB_LONG_SCORE(xdouble);
                         }
                         records[k].score = doc_score;

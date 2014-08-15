@@ -138,7 +138,7 @@ void ibase_unxindex(IBASE *ibase, ITERM *itermlist, void *_stree_,
     return ;
 }
  
-ICHUNK *ibase_xquery(IBASE *ibase, IQUERY *query)
+ICHUNK *ibase_xquery(IBASE *ibase, IQUERY *query, int secid)
 {
     int i = 0, x = 0, n = 0, k = 0, z = 0, *np = NULL, nqterms = 0, nquerys = 0, next = 0,
         is_query_phrase =  0, docid = 0, *intidx = NULL, ifrom = 0, mm = 0, nn = 0,

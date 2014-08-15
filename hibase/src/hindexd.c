@@ -35,7 +35,7 @@
 #define HTTP_NOT_FOUND          "HTTP/1.0 404 Not Found\r\nContent-Length:0\r\n\r\n" 
 #define HTTP_NOT_MODIFIED       "HTTP/1.0 304 Not Modified\r\nContent-Length:0\r\n\r\n"
 #define HTTP_NO_CONTENT         "HTTP/1.0 204 No Content\r\nContent-Length:0\r\n\r\n"
-#define IBASE_DB_MAX  4096
+#define IBASE_DB_MAX  64
 #ifndef LL64
 #define LL64(xxxx) ((long long int)xxxx)
 #endif
@@ -169,9 +169,11 @@ static char *e_argvs[] =
 #define E_ARGV_GEOFILTER    38
     "dbid",
 #define E_ARGV_DBID         39
+    "secid",
+#define E_ARGV_SECID        40
     ""
 };
-#define  E_ARGV_NUM         40
+#define  E_ARGV_NUM         41
 IBASE *ibase_init_db(int dbid);
 void indexd_query_handler(void *args);
 int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query);
@@ -334,9 +336,9 @@ void indexd_query_handler(void *args)
         {
             xchunk = qtask->chunk;
             if(pquery->nquerys > 0) 
-                ichunk = ibase_bquery(db, pquery);
+                ichunk = ibase_bquery(db, pquery, pquery->secid);
             else 
-                ichunk = ibase_query(db, pquery);
+                ichunk = ibase_query(db, pquery, pquery->secid);
             pthread_mutex_lock(&qtask->mutex);
             if(ichunk)
             {
@@ -617,9 +619,9 @@ int indexd_data_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *ch
                             {
                                 db = pools[pquery->dbid];
                                 if(pquery->nquerys > 0) 
-                                    ichunk = ibase_bquery(db, pquery);
+                                    ichunk = ibase_bquery(db, pquery, pquery->secid);
                                 else 
-                                    ichunk = ibase_query(db, pquery);
+                                    ichunk = ibase_query(db, pquery, pquery->secid);
                                 if(ichunk)
                                 {
                                     presp = &(ichunk->resp);
@@ -972,6 +974,9 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                             break;
                         case E_ARGV_DBID:
                             query->dbid = atoi(p);
+                            break;
+                        case E_ARGV_SECID:
+                            query->secid = atoi(p);
                             break;
                         default :
                             break;
@@ -1485,8 +1490,8 @@ int httpd_query_handler(CONN *conn, IQUERY *query)
         if(query && query->from < query->ntop && query->count > 0)
         {
             db = pools[query->dbid];
-            if(query->nquerys > 0) ichunk = ibase_bquery(db, query);
-            else ichunk = ibase_query(db, query);
+            if(query->nquerys > 0) ichunk = ibase_bquery(db, query, query->secid);
+            else ichunk = ibase_query(db, query, query->secid);
             if(ichunk)
             {
                 res     = &(ichunk->res);

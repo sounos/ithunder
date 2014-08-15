@@ -469,7 +469,7 @@ typedef struct _IQUERY
 {
     short       from;
     short       count;
-    short       bits;
+    short       secid;
     short       ntop;
     short       nqterms;
     short       nquerys;
@@ -833,11 +833,13 @@ int ibase_set_log_level(IBASE *ibase, int level);
 //ICHUNK *ibase_query(IBASE *ibase, IQUERY *query);
 /* query with bitmap merging */
 //ICHUNK *ibase_mquery(IBASE *ibase, IQUERY *query);
+/* get secs */
+int ibase_get_secs(IBASE *ibase, int *secs);
 /* query with binary list merging */
-ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query);
-ICHUNK *ibase_query(IBASE *ibase, IQUERY *query);
+ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid);
+ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid);
 /* mtree merging */
-ICHUNK *ibase_xquery(IBASE *ibase, IQUERY *query);
+ICHUNK *ibase_xquery(IBASE *ibase, IQUERY *query, int secid);
 /* push iterm */
 void ibase_push_itermlist(IBASE *ibase, ITERM *itermlist);
 /* ibase pop iterm */

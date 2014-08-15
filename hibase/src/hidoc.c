@@ -126,7 +126,7 @@ int pmkdir(char *path)
 /* set document basedir  */
 int hidoc_set_basedir(HIDOC *hidoc, char *basedir)
 {
-    char path[FILE_PATH_MAX], *p = NULL;
+    char path[FILE_PATH_MAX];//, *p = NULL;
     int i = 0, j = 0, taskid = 0;
     HITASK *tasks = NULL;
     struct stat st = {0};
@@ -213,7 +213,7 @@ int hidoc_set_basedir(HIDOC *hidoc, char *basedir)
         sprintf(path, "%s/%s", basedir, HINDEX_LOG_NAME);
         LOGGER_INIT(hidoc->logger, path);
         LOGGER_SET_LEVEL(hidoc->logger, hidoc->log_access);
-        p = path;
+        //p = path;
         /* name map */
         sprintf(path, "%s/%s", basedir, HINDEX_NODEMAP_NAME);
         hidoc->namemap = mmtrie_init(path);
@@ -274,9 +274,9 @@ int hidoc_set_basedir(HIDOC *hidoc, char *basedir)
             fprintf(stderr, "open xindex file(%s) failed, %s\n", path, strerror(errno));
             _exit(-1);
         }
-        hidoc_set_int_index(hidoc, hidoc->state->int_index_from, hidoc->state->int_index_count);
-        hidoc_set_long_index(hidoc, hidoc->state->long_index_from, hidoc->state->long_index_count);
-        hidoc_set_double_index(hidoc, hidoc->state->double_index_from, hidoc->state->double_index_count);
+        //hidoc_set_int_index(hidoc, hidoc->state->int_index_from, hidoc->state->int_index_count);
+        //hidoc_set_long_index(hidoc, hidoc->state->long_index_from, hidoc->state->long_index_count);
+        //hidoc_set_double_index(hidoc, hidoc->state->double_index_from, hidoc->state->double_index_count);
         return 0;
     }
     return -1;
@@ -929,12 +929,13 @@ int hidoc_mid(HIDOC *hidoc, int64_t globalid)
 /* add document */
 int hidoc_push_index(HIDOC *hidoc, IFIELD *fields, int flag, IBDATA *block)
 {
-    int mid = 0, i = 0, id = 0, x = 0, newid = 0, ret = -1, *int_index = NULL, *intidx = NULL;
-    double *double_index = NULL, *doubleidx = NULL;
-    int64_t *long_index = NULL, *longidx = NULL;
+    //int mid = 0, i = 0, id = 0, x = 0, newid = 0, ret = -1; *int_index = NULL, *intidx = NULL;
+    int mid = 0, newid = 0, ret = -1;
+    //double *double_index = NULL, *doubleidx = NULL;
+    //int64_t *long_index = NULL, *longidx = NULL;
     DOCHEADER *docheader = NULL;
     XINDEX *xindexs = NULL;
-    char *p = NULL;
+    //char *p = NULL;
 
     if(hidoc && block->ndata > 0 && (docheader = (DOCHEADER *)block->data) && fields)
     {
@@ -988,8 +989,8 @@ int hidoc_push_index(HIDOC *hidoc, IFIELD *fields, int flag, IBDATA *block)
             {
                 xindexs[mid].category = docheader->category;
             }
-            p = (char *)docheader;
             /*
+            p = (char *)docheader;
             if(docheader->intblock_size > 0 && hidoc->state->int_index_count > 0 && (x = hidoc->state->int_index_from) >= 0 
                     && docheader->intblock_off > 0 && (int_index = (int *)hidoc->xintio.map))
             {
@@ -1048,11 +1049,11 @@ int hidoc_push_index(HIDOC *hidoc, IFIELD *fields, int flag, IBDATA *block)
 /* read index */
 int hidoc_read_index(HIDOC *hidoc, int taskid, char *data, int *len, int *count)
 {
-    int id = -1, nodeid = 0, x = 0, k = 0, *px = NULL, z = 0, 
-        left = 0, last = 0, n = 0, *int_index = 0;
+    int id = -1, nodeid = 0, x = 0, k = 0, *px = NULL, 
+        left = 0, last = 0, n = 0;//, *int_index = 0, z = 0;
     DOCHEADER *docheader = NULL;
-    int64_t *long_index = NULL;
-    double *double_index = NULL;
+    //int64_t *long_index = NULL;
+    //double *double_index = NULL;
     XINDEX *xindexs = NULL;
     HITASK *tasks = NULL;
     HINODE *nodes = NULL;
@@ -1794,6 +1795,7 @@ int hidoc_genindex(HIDOC *hidoc, HINDEX *hindex, FHEADER *fheader, IFIELD *field
         }
         docheader->status = fheader->status;
         docheader->dbid = fheader->dbid;
+        docheader->secid = fheader->secid;
         docheader->crc = fheader->crc;
         docheader->category = fheader->category;
         docheader->slevel = fheader->slevel;
@@ -2698,11 +2700,11 @@ void hidoc_update(HIDOC *hidoc, int mid, int flag)
 /* read upindex */
 int hidoc_read_upindex(HIDOC *hidoc, int taskid, char *data, int *len, int *count)
 {
-    int ret = -1, mid = -1, nodeid = -1, id = 0, k = 0, n = 0, z = 0, 
-        left = 0, prev = 0, next = 0, *px = NULL, *int_index = NULL;
+    int ret = -1, mid = -1, nodeid = -1, id = 0, k = 0, n = 0,  
+        left = 0, prev = 0, next = 0, *px = NULL;//, *int_index = NULL, z = 0;
     DOCHEADER *docheader = NULL;
-    int64_t *long_index = NULL;
-    double *double_index = NULL;
+    //int64_t *long_index = NULL;
+    //double *double_index = NULL;
     XINDEX *xindexs = NULL;
     HINODE *nodes = NULL;
     HITASK *tasks = NULL;

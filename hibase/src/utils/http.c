@@ -483,7 +483,7 @@ int http_cookie_line(HTTP_RESPONSE *http_resp, char *cookie)
                 if(http_resp->cookies[i].expire_len > 0)
                 {
                     /* expire */
-                    p += sprintf(p, "e=%u;", (unsigned int)str2time(bs+http_resp->cookies[i].expire_off));
+                    p += sprintf(p, "e=%u;", (unsigned int)str2time((char *)(bs+http_resp->cookies[i].expire_off)));
                 }
                 if(http_resp->cookies[i].path_len > 0)
                 {
