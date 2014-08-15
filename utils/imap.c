@@ -15,7 +15,7 @@ IMAP *imap_init(char *file)
     char path[1024];
     struct stat st = {0};
     off_t size = 0;
-    int n = 0, i = 0;
+    int i = 0;
 
     if(file && (imap = (IMAP *)calloc(1, sizeof(IMAP))))
     {
@@ -44,7 +44,7 @@ IMAP *imap_init(char *file)
        {
            fprintf(stderr, "open %s failed, %s\n", file, strerror(errno));
        }
-       n = sprintf(path, "%s.v", file);
+       sprintf(path, "%s.v", file);
        if((imap->vfd = open(path, O_CREAT|O_RDWR, 0644)) > 0) 
        {
             size = imap->vmsize = (off_t)sizeof(IMMV) *  (off_t)IMM_NODES_MAX;
@@ -57,13 +57,13 @@ IMAP *imap_init(char *file)
        {
            fprintf(stderr, "open %s failed, %s\n", file, strerror(errno));
        }
-       RWLOCK_INIT(&(imap->rwlock));
+       RWLOCK_INIT(imap->rwlock);
     }
     return imap;
 }
 
 /* imap set val */
-int imap_vset(IMAP *imap, int no, int32_t val)
+int imap_vset(IMAP *imap, u32_t no, int32_t val)
 {
     off_t size = (off_t)((no / IMM_IMMV_INC) + 1) 
             * (off_t)IMM_IMMV_INC * (off_t) sizeof(IMMV);
@@ -87,7 +87,7 @@ int imap_vset(IMAP *imap, int no, int32_t val)
 }
 
 /* imap get val */
-int imap_vget(IMAP *imap, int no, int32_t *val)
+int imap_vget(IMAP *imap, u32_t no, int32_t *val)
 {
     int ret = -1, n = 0;
 
@@ -124,7 +124,7 @@ int imap_slot_new(IMAP *imap)
     return ret;
 }
 
-int imap_insert(IMAP *imap, int no, int32_t key)
+int imap_insert(IMAP *imap, u32_t no, int32_t key)
 {
     int ret = -1, i = 0, k = -1, nodeid = 0, pos = 0, num = 0, 
         n = 0, x = 0, min = 0, max = 0;
@@ -247,6 +247,7 @@ int imap_insert(IMAP *imap, int no, int32_t key)
                     imap->roots[x] = k;
                     --k;
                 }
+                imap->roots[x] = k;
             }
             else
             {
@@ -270,16 +271,18 @@ int imap_insert(IMAP *imap, int no, int32_t key)
             imap->slots[k].max = kv[num-1].key;
             imap->slots[k].nodeid = nodeid;
             imap->slots[k].count = num;
+            x = (imap->slots[k].nodeid / IMM_SLOT_NUM);
+            imap->roots[x] = k;
             //fprintf(stdout, "%s::%d k:%d min:%d max:%d num:%d/%d\n", __FILE__, __LINE__, k, imap->slots[k].min, imap->slots[k].max, num, imap->state->count);
         }
     }
     return ret;
 }
 
-int imap_remove(IMAP *imap, int32_t no)
+int imap_remove(IMAP *imap, u32_t no)
 {
-    uint32_t nodeid = 0, rootid = 0, slotid = 0;
-    int ret = -1, i = 0, x = 0, n = 0;
+    int ret = -1, i = 0, x = 0, n = 0, slotid = 0;
+    u32_t nodeid = 0, rootid = 0;
     IMMKV *kvs = NULL;
 
     if(imap && imap->state && imap->vmap 
@@ -287,29 +290,30 @@ int imap_remove(IMAP *imap, int32_t no)
             && (nodeid = imap->vmap[no].off) >= 0)
     {
         rootid = (nodeid / IMM_SLOT_NUM);
-        slotid = imap->roots[rootid];
+        slotid = (int)imap->roots[rootid];
+        if(slotid < 0) return ret;
         i = nodeid % IMM_SLOT_NUM;
         kvs = imap->map + imap->slots[slotid].nodeid;    
-        while(i < imap->slots[slotid].count)
+        while(i < (imap->slots[slotid].count-1))
         {
             memcpy(&(kvs[i]), &(kvs[i+1]), sizeof(IMMKV));
             x = kvs[i].val;
-            imap->vmap[x].off = i;
+            imap->vmap[x].off = (i + imap->slots[slotid].nodeid);
             ++i;
         }
         if(imap->slots[slotid].count == 1)
         {
             i = slotid;
-            imap->state->qleft[(imap->state->nleft++)] = nodeid;
+            imap->state->qleft[(imap->state->nleft++)] = imap->slots[slotid].nodeid;
             imap->roots[rootid] = -1;
-            while(i < imap->state->count)
+            while(i < (imap->state->count-1))
             {
                 memcpy(&(imap->slots[i]), &(imap->slots[i+1]), sizeof(IMMSLOT));
                 rootid = (imap->slots[i].nodeid / IMM_SLOT_NUM);
                 imap->roots[rootid] = i;
                 ++i;
             }
-            --imap->state->count;
+            --(imap->state->count);
         }
         else
         {
@@ -317,6 +321,7 @@ int imap_remove(IMAP *imap, int32_t no)
             imap->slots[slotid].min = kvs[0].key;
             imap->slots[slotid].max = kvs[n - 1].key;
         }
+        imap->vmap[no].off = -1;
     }
     return ret;
 }
@@ -329,7 +334,7 @@ int imap_find_slot(IMAP *imap, int32_t key)
         max = n - 1;
         min = 0;
         if(key <= imap->slots[min].max) ret = min;
-        else if(key >= imap->slots[max].min) ret = max;
+        else if(key > imap->slots[max].min) ret = max;
         else
         {
             while(max > min)
@@ -367,8 +372,8 @@ int imap_find_slot2(IMAP *imap, int32_t key)
     {
         max = n - 1;
         min = 0;
-        if(key <= imap->slots[min].max) ret = min;
-        else if(key >= imap->slots[max].min) ret = max;
+        if(key >= imap->slots[max].min) ret = max;
+        else if(key < imap->slots[min].max) ret = min;
         else
         {
             while(max > min)
@@ -410,7 +415,7 @@ int imap_find_kv(IMAP *imap, int k, int32_t key)
         kvs = imap->map + imap->slots[k].nodeid;
         min = 0;
         max = n - 1; 
-        if(key <= kvs[min].key) ret = min;
+        if(kvs[min].key >= key) ret = min;
         else
         {
             while(max > min)
@@ -454,7 +459,7 @@ int imap_find_kv2(IMAP *imap, int k, int32_t key)
         kvs = imap->map + imap->slots[k].nodeid;
         min = 0;
         max = n - 1; 
-        if(key <= kvs[max].key) ret = max;
+        if(kvs[max].key <= key) ret = max;
         else
         {
             while(max > min)
@@ -485,17 +490,16 @@ int imap_find_kv2(IMAP *imap, int k, int32_t key)
     return ret;
 }
 
-int imap_in(IMAP *imap, int32_t key, int32_t *list)
+int imap_in(IMAP *imap, int32_t key, u32_t *list)
 {
-    int i = 0, k = 0, z = 0, ret = 0, n = 0, ii = 0;
+    int i = 0, k = 0, z = 0, ret = 0, n = 0;
     IMMKV *kvs = NULL;
 
     if(imap && imap->state && (n = imap->state->count) > 0)
     {
-        RWLOCK_RDLOCK(&(imap->rwlock));
+        RWLOCK_RDLOCK(imap->rwlock);
         k = imap_find_slot(imap, key);
         i = imap_find_kv(imap, k, key);
-        ii = imap_find_kv2(imap, k, key);
         do
         {
             kvs = imap->map + imap->slots[k].nodeid;
@@ -506,14 +510,14 @@ int imap_in(IMAP *imap, int32_t key, int32_t *list)
                     ret += imap->slots[k].count - i;
                     if(list)
                     {
-                        while(i < imap->slots[k].count) list[z++] = kvs[i++].key;
+                        while(i < imap->slots[k].count) list[z++] = kvs[i++].val;
                     }
                 }
                 else
                 {
                     while(i < imap->slots[k].count && key == kvs[i].key)
                     {
-                        if(list)list[z++] = kvs[i].key;
+                        if(list)list[z++] = kvs[i].val;
                         ++ret;
                         ++i;
                     }
@@ -521,19 +525,20 @@ int imap_in(IMAP *imap, int32_t key, int32_t *list)
             }
             i=0;
         }while(++k < n && imap->slots[k].min == key);
-        RWLOCK_UNLOCK(&(imap->rwlock));
+        RWLOCK_UNLOCK(imap->rwlock);
     }
     return ret;
 }
 
-int imap_range(IMAP *imap, int32_t from, int32_t to, int32_t *list)
+int imap_range(IMAP *imap, int32_t from, int32_t to, u32_t *list)
 {
     int i = 0, ii = 0, k = 0, kk = 0, j = 0, x = 0, z = 0, ret = 0, n = 0;
     IMMKV *kvs = NULL;
 
     if(imap && imap->state)
     {
-        RWLOCK_RDLOCK(&(imap->rwlock));
+        if(from == to) return imap_in(imap, from, list);
+        RWLOCK_RDLOCK(imap->rwlock);
         k = imap_find_slot(imap, from);
         kk = imap_find_slot2(imap, to);
         i = imap_find_kv(imap, k, from);
@@ -544,7 +549,7 @@ int imap_range(IMAP *imap, int32_t from, int32_t to, int32_t *list)
             if(list)
             {
                 kvs = imap->map + imap->slots[k].nodeid;
-                for(x = i; x <= ii; x++) list[z++] = kvs[x].key;
+                for(x = i; x <= ii; x++) list[z++] = kvs[x].val;
             }
         }
         else
@@ -554,7 +559,7 @@ int imap_range(IMAP *imap, int32_t from, int32_t to, int32_t *list)
             if(list)
             {
                 kvs = imap->map + imap->slots[k].nodeid;
-                for(x = i; x < n; x++) list[z++] = kvs[x].key;
+                for(x = i; x < n; x++) list[z++] = kvs[x].val;
             }
             for(j = i+1; j < kk; j++)
             {
@@ -562,36 +567,36 @@ int imap_range(IMAP *imap, int32_t from, int32_t to, int32_t *list)
                 if(list)
                 {
                     kvs = imap->map + imap->slots[j].nodeid;
-                    for(x = 0; x < imap->slots[j].count; x++) list[z++] = kvs[x].key;
+                    for(x = 0; x < imap->slots[j].count; x++) list[z++] = kvs[x].val;
                 }
             }
             ret += ii;
             if(list)
             {
                 kvs = imap->map + imap->slots[kk].nodeid;
-                for(x = 0; x < ii; x++) list[z++] = kvs[x].key;
+                for(x = 0; x < ii; x++) list[z++] = kvs[x].val;
             }
         }
-        RWLOCK_UNLOCK(&(imap->rwlock));
+        RWLOCK_UNLOCK(imap->rwlock);
     }
     return ret;
 }
 
-int imap_rangefrom(IMAP *imap, int32_t key, int32_t *list) /* key = from */
+int imap_rangefrom(IMAP *imap, int32_t key, u32_t *list) /* key = from */
 {
     int i = 0, k = 0, x = 0, z = 0, ret = 0, n = 0;
     IMMKV *kvs = NULL;
 
     if(imap && imap->state)
     {
-        RWLOCK_RDLOCK(&(imap->rwlock));
+        RWLOCK_RDLOCK(imap->rwlock);
         if((k = imap_find_slot(imap, key)) >= 0 && (i = imap_find_kv(imap, k, key)) >= 0)
         {
             kvs = imap->map + imap->slots[k].nodeid;
             n =  imap->slots[k].count;
             if(list)
             {
-                for(x = i; x < n; x++) list[z++] = kvs[x].key;
+                for(x = i; x < n; x++) list[z++] = kvs[x].val;
             }
             ret = n - i;
             for(i = k + 1; i <  imap->state->count; i++)
@@ -601,24 +606,24 @@ int imap_rangefrom(IMAP *imap, int32_t key, int32_t *list) /* key = from */
                 {
                     kvs = imap->map + imap->slots[i].nodeid;
                     n = imap->slots[i].count;
-                    for(x = 0; x < n; x++) list[z++] = kvs[x].key;
+                    for(x = 0; x < n; x++) list[z++] = kvs[x].val;
                 }
             }
         }
-        RWLOCK_UNLOCK(&(imap->rwlock));
+        RWLOCK_UNLOCK(imap->rwlock);
     }
     //fprintf(stdout, "%s::%d k:%d ret:%d/%d\n", __FILE__, __LINE__, k, ret, z);
     return ret;
 }
 
-int imap_rangeto(IMAP *imap, int32_t key, int32_t *list) /* key = to */
+int imap_rangeto(IMAP *imap, int32_t key, u32_t *list) /* key = to */
 {
     int i = 0, k = 0, x = 0, j = 0, z = 0, ret = 0, n = 0;
     IMMKV *kvs = NULL;
 
     if(imap && imap->state && (n = (imap->state->count)) > 0)
     {
-        RWLOCK_RDLOCK(&(imap->rwlock));
+        RWLOCK_RDLOCK(imap->rwlock);
         if((k = imap_find_slot2(imap, key)) >= 0 && k < n 
                 && (i = imap_find_kv2(imap, k, key)) >= 0)
         {
@@ -630,7 +635,7 @@ int imap_rangeto(IMAP *imap, int32_t key, int32_t *list) /* key = to */
                     kvs = imap->map + imap->slots[j].nodeid;
                     for(x = 0; x < imap->slots[j].count; x++)
                     {
-                        list[z++] = kvs[x].key;
+                        list[z++] = kvs[x].val;
                     }
                 }
             }
@@ -640,20 +645,20 @@ int imap_rangeto(IMAP *imap, int32_t key, int32_t *list) /* key = to */
                 kvs = imap->map + imap->slots[k].nodeid;
                 for(x = 0; x <= i; x++)
                 {
-                    list[z++] = kvs[x].key;
+                    list[z++] = kvs[x].val;
                 }
             }
         }
-        RWLOCK_UNLOCK(&(imap->rwlock));
+        RWLOCK_UNLOCK(imap->rwlock);
     }
     //fprintf(stdout, "%s::%d k:%d ret:%d/%d\n", __FILE__, __LINE__, k, ret, z);
     return ret;
 }
 
-int imap_ins(IMAP *imap, int32_t *keys, int nkeys, int32_t *list)
+int imap_ins(IMAP *imap, int32_t *keys, int nkeys, u32_t *list)
 {
     int ret = 0, i = 0, n = 0;
-    int32_t *plist = list;
+    u32_t *plist = list;
 
     if(imap && imap->state && keys && nkeys > 0)
     {
@@ -667,29 +672,30 @@ int imap_ins(IMAP *imap, int32_t *keys, int nkeys, int32_t *list)
     return ret;
 }
 
-int imap_get(IMAP *imap, int no, int32_t *key)
+int imap_get(IMAP *imap, u32_t no, u32_t *val)
 {
     int ret = -1, n = 0;
 
     if(imap)
     {
-        RWLOCK_RDLOCK(&(imap->rwlock));
+        RWLOCK_RDLOCK(imap->rwlock);
         if((n = (imap->vsize/sizeof(IMMV))) > 0 && no < n)
         {
-            if(key) *key = imap->vmap[no].val;
+            if(val) *val = imap->vmap[no].val;
+            ret = 0;
         }
-        RWLOCK_UNLOCK(&(imap->rwlock));
+        RWLOCK_UNLOCK(imap->rwlock);
     }
     return ret;
 }
 
-int imap_set(IMAP *imap, int no, int32_t key)
+int imap_set(IMAP *imap, u32_t no, int32_t key)
 {
     int ret = -1;
 
     if(imap)
     {
-       RWLOCK_WRLOCK(&(imap->rwlock));
+       RWLOCK_WRLOCK(imap->rwlock);
        imap_vset(imap, no, key);
        if(imap->vmap[no].off  < 0)
        {
@@ -703,25 +709,27 @@ int imap_set(IMAP *imap, int no, int32_t key)
                 imap_insert(imap, no, key);
            }
        }
+       ret = 0;
        imap->vmap[no].val = key;
-       RWLOCK_UNLOCK(&(imap->rwlock));
+       RWLOCK_UNLOCK(imap->rwlock);
     }
     return ret;
 }
 
-int imap_del(IMAP *imap, int no)
+int imap_del(IMAP *imap, u32_t no)
 {
     int ret = -1, n = 0;
 
     if(imap)
     {
-        RWLOCK_WRLOCK(&(imap->rwlock));
+        RWLOCK_WRLOCK(imap->rwlock);
         if((n = (imap->vsize/sizeof(IMMV))) > 0 && no < n)
         {
             imap_remove(imap, no);
             imap->vmap[no].off = -1;
+            ret = 0;
         }
-        RWLOCK_UNLOCK(&(imap->rwlock));
+        RWLOCK_UNLOCK(imap->rwlock);
     }
     return ret;
 }
@@ -734,7 +742,7 @@ void imap_close(IMAP *imap)
         if(imap->fd) close(imap->fd);
         if(imap->vmap) munmap(imap->vmap, imap->vmsize);
         if(imap->vfd) close(imap->vfd);
-        RWLOCK_DESTROY(&(imap->rwlock));
+        RWLOCK_DESTROY(imap->rwlock);
         free(imap);
     }
     return ;
@@ -747,10 +755,10 @@ void imap_close(IMAP *imap)
 int main()
 {
     IMAP *imap = NULL;
-    int i = 0, j = 0, n = 0, total = 0, stat[MASK], stat2[MASK];
+    int i = 0, j = 0, n = 0, total = 0, no = 0, stat[MASK], stat2[MASK];
     int32_t val = 0, from = 0, to = 0, *res = NULL;
-    int32_t inputs[256], last[256];
-    int64_t all = 0;
+    int32_t inputs[256], nos[256], last[256];
+    int32_t all = 0;
     time_t stime = 0, etime = 0;
     void *timer = NULL;
 
@@ -766,14 +774,20 @@ int main()
         n = 256;
         for(i = 0; i < n; i++)
         {
-            inputs[i] = rand()%MASK;
+            no = (rand()%MASK);
+            nos[i] = no;
+            if((i % 3) == 0)
+                inputs[i] = no * -1;
+            else
+                inputs[i] = no;
         }
         TIMER_RESET(timer);
-        for(i = 1; i < 40000000; i++)
+        for(i = 1; i < 20000000; i++)
         {
            j = (rand()%n);
            val = inputs[j];
-           stat[val]++;
+           no = nos[j];
+           stat[no]++;
            imap_set(imap, i, val);
            last[j] = i;
         }
@@ -790,7 +804,8 @@ int main()
         for(i = 0; i < n; i++)
         {
             val = inputs[i];
-            stat2[val] = imap_in(imap, val, res);
+            no = nos[i];
+            stat2[no] = imap_in(imap, val, res);
         }
         TIMER_SAMPLE(timer);
         fprintf(stdout, "in() time used:%lld\n", PT_LU_USEC(timer));
@@ -804,9 +819,9 @@ int main()
         fprintf(stdout, "ins(keys, res:%p) total:%d time used:%lld\n", res, total, PT_LU_USEC(timer));
         for(i = 0; i < n; i++)
         {
-            j = inputs[i];
+            j = nos[i];
             if(stat[j] != stat2[j])
-                fprintf(stdout, "%d:%d/%d\n", j, stat[j], stat2[j]);
+                fprintf(stdout, "%d:%d/%d::%d\n", j, stat[j], stat2[j], inputs[i]);
         }
 #ifdef OUT_ALL
         for(i = 0; i < total; i++)
