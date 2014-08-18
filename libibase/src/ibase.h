@@ -288,8 +288,8 @@ typedef struct _DOCHEADER
     short   intblock_size;
     short   longblock_size;
     short   doubleblock_size;
-    short   dbid;
     short   secid;
+    short   dbid;
     int     terms_total;
     int     crc;
     int     size;
@@ -314,8 +314,8 @@ typedef struct _FHEADER
     short   flag;
     short   nfields;
     short   slevel;
-    short   dbid;
     short   secid;
+    short   dbid;
     int     crc;
     int     size;
     int64_t globalid;
