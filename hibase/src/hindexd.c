@@ -518,8 +518,6 @@ void indexd_query_handler(void *args)
                         ret = -1;
                     }
                     else ret = 0;
-
-
                     if(ret == 0)
                     {
                         n = sizeof(IHEAD) + presp->length;
@@ -651,6 +649,7 @@ int indexd_data_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *ch
                                     memcpy(&(qtask->req), req, sizeof(IHEAD));
                                     qtask->qsecs = qtask->nsecs;
                                     qtask->osecs = 0;
+                                    qtask->source = 0;
                                     qtask->conn = conn;
                                     qtask->index = conn->index;
                                     qtask->map = ibase_pop_stree(db);

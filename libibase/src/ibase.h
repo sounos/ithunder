@@ -76,7 +76,7 @@ extern "C" {
 #define  IB_USED_FOR_INDEXD     0x00
 #define  IB_USED_FOR_QDOCD      0x01
 #define  IB_USED_FOR_QPARSERD   0x02
-#define  IB_SEC_MAX             1024
+#define  IB_SEC_MAX             8192
 #define  IBLL(xxx) ((long long int)(xxx))
 /*
  * ;16384=16K 32768=32K 65536=64K 131072=128K 262144=256K 524288=512K 786432=768K 
