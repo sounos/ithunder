@@ -277,7 +277,6 @@ int indexd_index_handler(CONN *conn)
                         }
                         db = pools[dbid];
                     }
-                    //fprintf(stdout, "%s::%d dbid:%d secid:%d\n", __FILE__, __LINE__, docheader->dbid, docheader->secid);
                     if((ibase_add_document(db, &block)) != 0)
                     {
                         FATAL_LOGGER(logger, "Add documents[%d][%d] failed, %s", i, docheader->globalid, strerror(errno));
@@ -334,7 +333,6 @@ void indexd_query_handler(void *args)
         xchunk = qtask->chunk;
         if(pquery->nquerys > 0) 
         {
-		    fprintf(stdout, "%s::%d secid:%d nquerys:%d nqterms:%d\n", __FILE__, __LINE__, secid, pquery->nquerys, pquery->nqterms);
             ichunk = ibase_bquery(db, pquery, secid);
         }
         else 
@@ -351,7 +349,6 @@ void indexd_query_handler(void *args)
             xchunk->res.flag = res->flag;
             if(pquery->flag & IB_QUERY_RSORT)
             {
-		        fprintf(stdout, "%s::%d secid:%d count:%d map:%p total:%d\n", __FILE__, __LINE__, secid, res->total, map, MTREE64_TOTAL(map));
                 for(i = 0;  i < res->count; i++)
                 {
                     if(MTREE64_TOTAL(map) > 0 && MTREE64_TOTAL(map) >= pquery->ntop
@@ -372,7 +369,6 @@ void indexd_query_handler(void *args)
             }
             else
             {
-		        fprintf(stdout, "%s::%d secid:%d count:%d map:%p total:%d\n", __FILE__, __LINE__, secid, res->total, map, MTREE64_TOTAL(map));
                 for(i = 0; i < res->count; i++)
                 {
                     if(MTREE64_TOTAL(map) > 0 && MTREE64_TOTAL(map) >= pquery->ntop
@@ -391,7 +387,6 @@ void indexd_query_handler(void *args)
                     }
                 }
             }
-		    fprintf(stdout, "%s::%d secid:%d total:%d\n", __FILE__, __LINE__, secid, res->total);
             /* total */ 
             xchunk->res.total += res->total;
             xchunk->res.doctotal = res->doctotal;
@@ -430,7 +425,6 @@ void indexd_query_handler(void *args)
             map = qtask->map;
             i = 0;
             xchunk->res.count = 0;
-		    fprintf(stdout, "%s::%d secid:%d total:%d\n", __FILE__, __LINE__, secid, MTREE64_TOTAL(map));
             while(MTREE64_TOTAL(map) > 0)
             {
                 id = 0;
@@ -528,7 +522,6 @@ void indexd_query_handler(void *args)
 
                     if(ret == 0)
                     {
-                        fprintf(stdout, "%s::%d secid:%d n:%d/%d res->count:%d\n", __FILE__, __LINE__, secid, n, qtask->nsecs, res->count);
                         n = sizeof(IHEAD) + presp->length;
                         conn->push_chunk(conn, (char *)xchunk, n);
                     }
@@ -668,7 +661,6 @@ int indexd_data_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *ch
                                     {
                                         queryd->newtask(queryd, &indexd_query_handler, qtask);
                                     }
-				                    fprintf(stdout, "%s::%d OK\n", __FILE__, __LINE__);
                                     return 0;
                                 }
                             }
@@ -806,7 +798,6 @@ int indexd_error_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *c
 {
     if(conn)
     {
-	    //fprintf(stdout, "%s::%d ERROR\n", __FILE__, __LINE__);
         conn->over_cstate(conn);
         return conn->over(conn);
     }
@@ -818,7 +809,6 @@ int indexd_timeout_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA 
 {
     if(conn)
     {
-	    //fprintf(stdout, "%s::%d TIMEOUT\n", __FILE__, __LINE__);
         conn->over_cstate(conn);
         return conn->over(conn);
     }
@@ -1575,7 +1565,6 @@ int httpd_query_handler(CONN *conn, IQUERY *query)
                     {
                         queryd->newtask(queryd, &indexd_query_handler, qtask);
                     }
-                    fprintf(stdout, "%s::%d OK\n", __FILE__, __LINE__);
                     return 0;
                 }
             }
