@@ -591,6 +591,7 @@ int mdb_set_tag(MDB *db, int id, int tag)
             && db->status == 0 && (dbx = (MDBX *)(db->dbxio.map)))
     {
         RWLOCK_WRLOCK(db->mutex_dbx);
+        CHECK_MDBXMIO(db, id);
         dbx[id].tag = tag;
         RWLOCK_UNLOCK(db->mutex_dbx);
         ret = 0;
@@ -603,7 +604,8 @@ int mdb_get_tag(MDB *db, int id, int *tag)
 {
     MDBX *dbx = NULL;
     int ret = -1;
-    if(db && id >= 0 && id < MDB_MDBX_MAX 
+
+    if(db && id >= 0 && id <= db->state->mdb_id_max
             && db->status == 0 && (dbx = (MDBX *)(db->dbxio.map)))
     {
         RWLOCK_RDLOCK(db->mutex_dbx);
