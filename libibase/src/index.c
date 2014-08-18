@@ -15,6 +15,7 @@
 #include "logger.h"
 #include "xmm.h"
 #include "db.h"
+#include "mdb.h"
 #include "imap.h"
 #include "lmap.h"
 #include "dmap.h"
@@ -150,7 +151,7 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
     char *term = NULL, buf[IB_BUF_SIZE], *data = NULL, *p = NULL, 
          *pp = NULL, *prevnext = NULL;
     int i = 0, termid = 0, n = 0, k = 0, ndocid = 0, ret = -1, ndata = 0, secid = 0, 
-        *intlist = NULL, *np = NULL;
+        *intlist = NULL, *np = NULL, last_docid = 0;
     DOCHEADER *docheader = NULL;
     int64_t *longlist = NULL;
     double *doublelist = NULL;
@@ -207,10 +208,11 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
                 MUTEX_LOCK(ibase->mutex_termstate);
                 if(termid > ibase->state->termid){ADD_TERMSTATE(ibase, termid);}
                 ((TERMSTATE *)(ibase->termstateio.map))[termid].len = termlist[i].term_len;
-                ndocid = docid - ((TERMSTATE *)(ibase->termstateio.map))[termid].last_docid;
-                ((TERMSTATE *)(ibase->termstateio.map))[termid].last_docid = docid;
                 ((TERMSTATE *)(ibase->termstateio.map))[termid].total++;
                 MUTEX_UNLOCK(ibase->mutex_termstate);
+                ndocid = 0;
+                if(mdb_get_tag(index, termid, &last_docid) == 0)
+                    ndocid = docid - last_docid;
                 if(ibase->state->index_status != IB_INDEX_DISABLED)
                 {
                     p = pp = buf;
@@ -238,13 +240,14 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
                         memcpy(p, prevnext, termlist[i].prevnext_size);
                         p += termlist[i].prevnext_size;
                     }
-                    if(db_add_data(PDB(index), termid, pp, (p - pp)) <= 0)
+                    if(mdb_add_data(PMDB(index), termid, pp, (p - pp)) <= 0)
                     {
                         FATAL_LOGGER(ibase->logger, "index term[%d] failed, %s", 
                                 termid, strerror(errno));
                         if(data){free(data); data = NULL;}
                         _exit(-1);
                     }
+                    mdb_set_tag(PMDB(index), termid, docid);
                     if(data){xmm_free(data, ndata); data = NULL;}
                 }
             }

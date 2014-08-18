@@ -194,7 +194,7 @@ typedef struct _TERMSTATE
     short   status;
     short   len;
     int     total;
-    int     last_docid;
+    //int     last_docid;
     //int     mod_time;
 }TERMSTATE;
 

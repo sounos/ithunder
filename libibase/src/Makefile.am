@@ -14,6 +14,8 @@ utils/mmtrie.c \
 utils/mmtrie.h \
 utils/db.h \
 utils/db.c \
+utils/mdb.h \
+utils/mdb.c \
 utils/rwlock.h \
 utils/imap.h \
 utils/imap.c \

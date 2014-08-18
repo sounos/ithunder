@@ -52,7 +52,7 @@ typedef struct _QTASK
     int osecs;
     int dbid;
     int index;
-    int bits;
+    int source;
     void *db;
     CONN *conn;
     void *map;
@@ -308,16 +308,18 @@ err_end:
 void indexd_query_handler(void *args)
 {
     int64_t score = 0, id = 0, xlong = 0, xdata = 0;
-    char buf[sizeof(IHEAD) + sizeof(IRES)];
+    char line[sizeof(IHEAD) + sizeof(IRES)], buf[HTTP_BUF_SIZE], *summary = NULL, *p = NULL;
     ICHUNK *ichunk = NULL, *xchunk = NULL;
-    int i = 0, secid = 0, n = 0, ret = -1;
+    int i = 0, secid = 0, n = 0, x = 0, ret = -1;
     IHEAD *presp = NULL, *req = NULL;
     void *map = NULL, *groupby = NULL;
     IRECORD *records = NULL;
     IQUERY *pquery = NULL;
+    CB_DATA *block = NULL;
     QTASK *qtask = NULL;
-    IRES *res = NULL;
     CONN *conn = NULL;
+    IRES *res = NULL;
+    IQSET qset = {0};
     IBASE *db = NULL;
 
     if((qtask = (QTASK *)args) && (db = qtask->db) && (pquery = &(qtask->query))) 
@@ -331,7 +333,10 @@ void indexd_query_handler(void *args)
         pthread_mutex_unlock(&qtask->mutex);
         xchunk = qtask->chunk;
         if(pquery->nquerys > 0) 
+        {
+		    fprintf(stdout, "%s::%d secid:%d nquerys:%d nqterms:%d\n", __FILE__, __LINE__, secid, pquery->nquerys, pquery->nqterms);
             ichunk = ibase_bquery(db, pquery, secid);
+        }
         else 
             ichunk = ibase_query(db, pquery, secid);
         pthread_mutex_lock(&qtask->mutex);
@@ -346,6 +351,7 @@ void indexd_query_handler(void *args)
             xchunk->res.flag = res->flag;
             if(pquery->flag & IB_QUERY_RSORT)
             {
+		        fprintf(stdout, "%s::%d secid:%d count:%d map:%p total:%d\n", __FILE__, __LINE__, secid, res->total, map, MTREE64_TOTAL(map));
                 for(i = 0;  i < res->count; i++)
                 {
                     if(MTREE64_TOTAL(map) > 0 && MTREE64_TOTAL(map) >= pquery->ntop
@@ -366,6 +372,7 @@ void indexd_query_handler(void *args)
             }
             else
             {
+		        fprintf(stdout, "%s::%d secid:%d count:%d map:%p total:%d\n", __FILE__, __LINE__, secid, res->total, map, MTREE64_TOTAL(map));
                 for(i = 0; i < res->count; i++)
                 {
                     if(MTREE64_TOTAL(map) > 0 && MTREE64_TOTAL(map) >= pquery->ntop
@@ -384,6 +391,7 @@ void indexd_query_handler(void *args)
                     }
                 }
             }
+		    fprintf(stdout, "%s::%d secid:%d total:%d\n", __FILE__, __LINE__, secid, res->total);
             /* total */ 
             xchunk->res.total += res->total;
             xchunk->res.doctotal = res->doctotal;
@@ -422,6 +430,7 @@ void indexd_query_handler(void *args)
             map = qtask->map;
             i = 0;
             xchunk->res.count = 0;
+		    fprintf(stdout, "%s::%d secid:%d total:%d\n", __FILE__, __LINE__, secid, MTREE64_TOTAL(map));
             while(MTREE64_TOTAL(map) > 0)
             {
                 id = 0;
@@ -451,48 +460,93 @@ void indexd_query_handler(void *args)
                     ++i;
                 }while(PIMX(groupby)->count > 0);
             }
-            req = &(qtask->req);
-            presp = &(xchunk->resp);
-            res = &(xchunk->res);
-            presp->id = req->id;
-            presp->cid = req->cid;
-            presp->nodeid = req->nodeid;
-            presp->cmd = IB_RESP_QUERY;
-            presp->status = IB_STATUS_OK;
-            presp->length = sizeof(IRES) + res->count * sizeof(IRECORD);
-            if((conn = queryd->findconn(queryd, qtask->index)) == qtask->conn)
+            if(qtask->source)
             {
-                if(pquery->qid != req->id)
+                res     = &(xchunk->res);
+                records  = xchunk->records;
+                qset.count = pquery->count;
+                if((pquery->from + pquery->count) > res->count)
+                    qset.count = res->count - pquery->from;
+                x = pquery->from;
+                if(qset.count > 0 && (n = (IB_SUMMARY_MAX * qset.count)) > 0 
+                        && (conn = httpd->findconn(httpd, qtask->index)) == qtask->conn
+                        && (block = conn->newchunk(conn, n)))
                 {
-                    FATAL_LOGGER(logger, "Invalid qid:%d to head->id:%d on remote[%s:%d] via %d", pquery->qid, req->id, conn->remote_ip, conn->remote_port, conn->fd);
-                    ret = -1;
+                    summary = block->data; 
+                    qset.nqterms = pquery->nqterms;
+                    memcpy(qset.qterms, pquery->qterms, pquery->nqterms * sizeof(QTERM));
+                    memcpy(qset.displaylist, pquery->display, sizeof(IDISPLAY) * IB_FIELDS_MAX); 
+                    memcpy(&(qset.res), res, sizeof(IRES));
+                    records = &(xchunk->records[x]);
+                    if((n = ibase_read_summary(db, &qset, records, summary, 
+                                    highlight_start, highlight_end)) > 0)
+                    {
+                        p = buf;
+                        p += sprintf(p, "HTTP/1.0 200 OK\r\nContent-Type:text/html;charset=%s\r\n"
+                                "Content-Length: %d\r\nConnection:Keep-Alive\r\n\r\n", 
+                                http_default_charset, n);
+                        conn->push_chunk(conn, buf, (p - buf));
+                        if((ret = conn->send_chunk(conn, block, n)) != 0)
+                            conn->freechunk(conn,block);
+                    }
+                    else
+                    {
+                        conn->freechunk(conn,block);
+                        ret = -1;
+                    }
+                    if(ret == -1) 
+                    {
+                        conn->push_chunk(conn, HTTP_BAD_REQUEST, strlen(HTTP_BAD_REQUEST));
+                    }
                 }
-                else if(pquery->qid != res->qid)
+            }
+            else
+            {
+                req = &(qtask->req);
+                presp = &(xchunk->resp);
+                res = &(xchunk->res);
+                presp->id = req->id;
+                presp->cid = req->cid;
+                presp->nodeid = req->nodeid;
+                presp->cmd = IB_RESP_QUERY;
+                presp->status = IB_STATUS_OK;
+                presp->length = sizeof(IRES) + res->count * sizeof(IRECORD);
+                if((conn = queryd->findconn(queryd, qtask->index)) == qtask->conn)
                 {
-                    FATAL_LOGGER(logger, "Invalid qid:%d to res->qid:%d on remote[%s:%d] via %d", pquery->qid, res->qid, conn->remote_ip, conn->remote_port, conn->fd);
-                    ret = -1;
-                }
-                else ret = 0;
+                    if(pquery->qid != req->id)
+                    {
+                        FATAL_LOGGER(logger, "Invalid qid:%d to head->id:%d", pquery->qid, req->id);
+                        ret = -1;
+                    }
+                    else if(pquery->qid != res->qid)
+                    {
+                        FATAL_LOGGER(logger, "Invalid qid:%d to res->qid:%d", pquery->qid, res->qid);
+                        ret = -1;
+                    }
+                    else ret = 0;
 
-                if(ret == 0)
-                {
-                    n = sizeof(IHEAD) + presp->length;
-                    conn->push_chunk(conn, (char *)xchunk, n);
-                }
-                else 
-                {
-                    presp = (IHEAD *)buf; 
-                    presp->status = IB_STATUS_ERR;
-                    presp->id = req->id;
-                    presp->cid = req->cid;
-                    presp->nodeid = req->nodeid;
-                    presp->cmd = req->cmd + 1;
-                    presp->length = sizeof(IRES);
-                    res = (IRES *)(buf + sizeof(IHEAD));
-                    memcpy(res, &(xchunk->res), sizeof(IRES));
-                    res->qid = pquery->qid;
-                    conn->push_chunk(conn, buf, sizeof(IHEAD) + sizeof(IRES));
-                    conn->over_session(conn);
+
+                    if(ret == 0)
+                    {
+                        fprintf(stdout, "%s::%d secid:%d n:%d/%d res->count:%d\n", __FILE__, __LINE__, secid, n, qtask->nsecs, res->count);
+                        n = sizeof(IHEAD) + presp->length;
+                        conn->push_chunk(conn, (char *)xchunk, n);
+                    }
+                    else 
+                    {
+                        presp = (IHEAD *)line; 
+                        presp->status = IB_STATUS_ERR;
+                        presp->id = req->id;
+                        presp->cid = req->cid;
+                        presp->nodeid = req->nodeid;
+                        presp->cmd = req->cmd + 1;
+                        presp->length = sizeof(IRES);
+                        res = (IRES *)(line + sizeof(IHEAD));
+                        memcpy(res, &(xchunk->res), sizeof(IRES));
+                        res->qid = pquery->qid;
+                        conn->push_chunk(conn, line, sizeof(IHEAD) + sizeof(IRES));
+                        conn->over_session(conn);
+                    }
                 }
             }
             ibase_push_mmx(db, qtask->groupby);
@@ -614,6 +668,7 @@ int indexd_data_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *ch
                                     {
                                         queryd->newtask(queryd, &indexd_query_handler, qtask);
                                     }
+				                    fprintf(stdout, "%s::%d OK\n", __FILE__, __LINE__);
                                     return 0;
                                 }
                             }
@@ -852,6 +907,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
 
     if(httpRQ && query)
     {
+        query->secid = -1;
         for(i = 0; i < httpRQ->nargvs; i++)
         {
             if(httpRQ->argvs[i].nk > 0 && (n = httpRQ->argvs[i].k) > 0
@@ -1477,10 +1533,11 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
 int httpd_query_handler(CONN *conn, IQUERY *query)
 {
     char buf[HTTP_BUF_SIZE], *summary = NULL, *p = NULL;
-    int ret = -1, x = 0, n = 0;
+    int ret = -1, x = 0, n = 0, i = 0;
     IRECORD *records = NULL;
     CB_DATA *block = NULL;
     ICHUNK *ichunk = NULL;
+    QTASK *qtask = NULL;
     IQSET qset = {0};
     IRES *res = NULL;
     IBASE *db = NULL;
@@ -1493,56 +1550,77 @@ int httpd_query_handler(CONN *conn, IQUERY *query)
             if(query->dbid > 0 && query->dbid < IBASE_DB_MAX) 
                 db = pools[query->dbid];
             else db = ibase;
-            if(query->nquerys > 0) ichunk = ibase_bquery(db, query, query->secid);
-            else ichunk = ibase_query(db, query, query->secid);
-            if(ichunk)
+            if(query->secid == -1)
             {
-                res     = &(ichunk->res);
-                records  = ichunk->records;
-                qset.count = query->count;
-                if((query->from + query->count) > res->count)
-                    qset.count = res->count - query->from;
-                x = query->from;
-                /*
-                   n = sprintf(line, "count:%d total:%d io_time:%u sort_time:%d time:%lld\n", 
-                   res->count, res->total, res->io_time, res->sort_time, PT_LU_USEC(timer));
-                   p = buf;
-                   p += sprintf(p, "HTTP/1.0 200 OK\r\nContent-Type:text/html;charset=%s\r\n"
-                   "Content-Length: %d\r\nConnection:Keep-Alive\r\n\r\n%s",
-                   http_default_charset, n, line);
-                   conn->push_chunk(conn, buf, (p - buf));
-                   ret = 0;
-                   */
-                if(qset.count > 0 && (n = (IB_SUMMARY_MAX * qset.count)) > 0 
-                        && (block = conn->newchunk(conn, n)))
+                pthread_mutex_lock(&gmutex);
+                if(nqtasks > 0)
                 {
-                    summary = block->data; 
-                    qset.nqterms = query->nqterms;
-                    memcpy(qset.qterms, query->qterms, query->nqterms * sizeof(QTERM));
-                    memcpy(qset.displaylist, query->display, sizeof(IDISPLAY) * IB_FIELDS_MAX); 
-                    memcpy(&(qset.res), res, sizeof(IRES));
-                    records = &(ichunk->records[x]);
-                    if((n = ibase_read_summary(db, &qset, records, summary, 
-                                    highlight_start, highlight_end)) > 0)
-                    {
-                        //fprintf(stdout, "%s::%d ntop:%d from:%d count:%d n:%d summary:%s\n", __FILE__, __LINE__, query->ntop, query->from, query->count, n, summary);
-                        p = buf;
-                        p += sprintf(p, "HTTP/1.0 200 OK\r\nContent-Type:text/html;charset=%s\r\n"
-                                "Content-Length: %d\r\nConnection:Keep-Alive\r\n\r\n", 
-                                http_default_charset, n);
-                        conn->push_chunk(conn, buf, (p - buf));
-                        if((ret = conn->send_chunk(conn, block, n)) != 0)
-                            conn->freechunk(conn,block);
-                    }
-                    else
-                    {
-                        conn->freechunk(conn,block);
-                        ret = -1;
-                    }
+                    qtask = qtasks[--nqtasks];
                 }
-                ibase_push_chunk(db, ichunk);
-                if(ret == -1) goto err_end;
-                return 0;
+                pthread_mutex_unlock(&gmutex);
+                if(qtask && (qtask->db = db) 
+                        && (qtask->nsecs = ibase_get_secs(db, qtask->secs)) > 0)
+                {
+                    memcpy(&(qtask->query), query, sizeof(IQUERY));
+                    qtask->qsecs = qtask->nsecs;
+                    qtask->osecs = 0;
+                    qtask->source = 1;
+                    qtask->conn = conn;
+                    qtask->index = conn->index;
+                    qtask->map = ibase_pop_stree(db);
+                    qtask->groupby = ibase_pop_mmx(db);
+                    qtask->chunk = ibase_pop_chunk(db);
+                    memset(&(qtask->chunk->res), 0, sizeof(IRES));
+                    for(i = 0; i < qtask->nsecs; i++)
+                    {
+                        queryd->newtask(queryd, &indexd_query_handler, qtask);
+                    }
+                    fprintf(stdout, "%s::%d OK\n", __FILE__, __LINE__);
+                    return 0;
+                }
+            }
+            else
+            {
+                if(query->nquerys > 0) ichunk = ibase_bquery(db, query, query->secid);
+                else ichunk = ibase_query(db, query, query->secid);
+                if(ichunk)
+                {
+                    res     = &(ichunk->res);
+                    records  = ichunk->records;
+                    qset.count = query->count;
+                    if((query->from + query->count) > res->count)
+                        qset.count = res->count - query->from;
+                    x = query->from;
+                    if(qset.count > 0 && (n = (IB_SUMMARY_MAX * qset.count)) > 0 
+                            && (block = conn->newchunk(conn, n)))
+                    {
+                        summary = block->data; 
+                        qset.nqterms = query->nqterms;
+                        memcpy(qset.qterms, query->qterms, query->nqterms * sizeof(QTERM));
+                        memcpy(qset.displaylist, query->display, sizeof(IDISPLAY) * IB_FIELDS_MAX); 
+                        memcpy(&(qset.res), res, sizeof(IRES));
+                        records = &(ichunk->records[x]);
+                        if((n = ibase_read_summary(db, &qset, records, summary, 
+                                        highlight_start, highlight_end)) > 0)
+                        {
+                            p = buf;
+                            p += sprintf(p, "HTTP/1.0 200 OK\r\nContent-Type:text/html;charset=%s\r\n"
+                                    "Content-Length: %d\r\nConnection:Keep-Alive\r\n\r\n", 
+                                    http_default_charset, n);
+                            conn->push_chunk(conn, buf, (p - buf));
+                            if((ret = conn->send_chunk(conn, block, n)) != 0)
+                                conn->freechunk(conn,block);
+                        }
+                        else
+                        {
+                            conn->freechunk(conn,block);
+                            ret = -1;
+                        }
+                    }
+                    ibase_push_chunk(db, ichunk);
+                    if(ret == -1) goto err_end;
+                    return 0;
+                }
             }
         }
 err_end:

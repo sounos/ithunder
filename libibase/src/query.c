@@ -4,6 +4,7 @@
 #include <string.h>
 #include "ibase.h"
 #include "db.h"
+#include "mdb.h"
 #include "timer.h"
 #include "zvbcode.h"
 #include "logger.h"
@@ -222,7 +223,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
         if(min_set_num > 0)
         {
             docs_size = (min_set_num + 100000) * sizeof(uint32_t);
-            docs = (uint32_t *)db_new_data(PDB(ibase->index), docs_size);
+            docs = (uint32_t *)mdb_new_data(PMDB(ibase->index), docs_size);
             if(min_set_fid >= IB_INT_OFF && min_set_fid < IB_INT_TO 
                     && ibase->state->mfields[secid][min_set_fid])
             {
@@ -660,7 +661,7 @@ next:
         }
         ACCESS_LOGGER(ibase->logger, "bsort(%d) %d/%d documents res:%d time used:%lld ioTime:%lld sortTime:%lld ncatgroups:%d ngroups:%d", query->qid, ndocs, res->total, res->count, PT_USEC_U(timer), IBLL(res->io_time), IBLL(res->sort_time),res->ncatgroups, res->ngroups);
 end:
-        if(docs) db_free_data(PDB(ibase->index), (char *)docs, docs_size);
+        if(docs) mdb_free_data(PMDB(ibase->index), (char *)docs, docs_size);
         if(res) res->doctotal = ibase->state->dtotal;
         if(topmap) ibase_push_stree(ibase, topmap);
         if(groupby) ibase_push_mmx(ibase, groupby);

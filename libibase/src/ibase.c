@@ -18,6 +18,7 @@
 #include "logger.h"
 #include "mtree64.h"
 #include "db.h"
+#include "mdb.h"
 #include "xmm.h"
 #include "immx.h"
 #include "imap.h"
@@ -273,8 +274,8 @@ int ibase_set_basedir(IBASE *ibase, char *dir, int used_for, int mmsource_status
             {
                 x = ibase->state->secs[k];
                 sprintf(path, "%s/%s/%d", dir, IB_INDEX_DIR, x);
-                ibase->mindex[x] = db_init(path, 1);
-                db_set_block_incre_mode(ibase->mindex[x], DB_BLOCK_INCRE_DOUBLE);
+                ibase->mindex[x] = mdb_init(path, 1);
+                mdb_set_block_incre_mode(ibase->mindex[x], DB_BLOCK_INCRE_DOUBLE);
                 sprintf(path, "%s/%s/%d/", dir, IB_IDX_DIR, x);
                 ibase_mkdir(path);
                 for(i = IB_INT_OFF; i < IB_INT_TO; i++)
@@ -301,10 +302,8 @@ int ibase_set_basedir(IBASE *ibase, char *dir, int used_for, int mmsource_status
                         ibase->state->mfields[x][i] = dmap_init(path);
                     }
                 }
-                /*
-                   ibase->index = db_init(path, 1);
-                   db_set_block_incre_mode(ibase->index, DB_BLOCK_INCRE_DOUBLE);
-                   */
+                sprintf(path, "%s/%s/mm", dir, IB_INDEX_DIR);
+                ibase->index = mdb_init(path, 0);
             }
         }
 
@@ -332,9 +331,9 @@ void ibase_check_mindex(IBASE *ibase, int secid)
         if(!ibase->mindex[secid])
         {
             sprintf(path, "%s/%s/%d", ibase->basedir, IB_INDEX_DIR, secid);
-            ibase->mindex[secid] = db_init(path, 1);
+            ibase->mindex[secid] = mdb_init(path, 1);
             ibase->state->secs[ibase->state->nsecs++] = secid;
-            db_set_block_incre_mode(ibase->mindex[secid], DB_BLOCK_INCRE_DOUBLE);
+            mdb_set_block_incre_mode(ibase->mindex[secid], DB_BLOCK_INCRE_DOUBLE);
         }
     }
     return ;
@@ -1650,11 +1649,11 @@ void ibase_clean(IBASE *ibase)
 
     if(ibase)
     {
-        //if(ibase->index) db_clean(PDB(ibase->index));
+        if(ibase->index) mdb_clean(PMDB(ibase->index));
         for(k = 0; k < ibase->state->nsecs; k++)
         {
             x = ibase->state->secs[k];
-            if(ibase->mindex[x]) db_clean(PDB(ibase->mindex[x]));
+            if(ibase->mindex[x]) mdb_clean(PMDB(ibase->mindex[x]));
             for(i = IB_INT_OFF; i < IB_INT_TO; i++)
             {
                 if(ibase->state->mfields[x][i]) imap_close(ibase->state->mfields[x][i]);
