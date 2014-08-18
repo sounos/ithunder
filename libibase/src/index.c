@@ -210,7 +210,7 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
                 ((TERMSTATE *)(ibase->termstateio.map))[termid].len = termlist[i].term_len;
                 ((TERMSTATE *)(ibase->termstateio.map))[termid].total++;
                 MUTEX_UNLOCK(ibase->mutex_termstate);
-                ndocid = 0; last_docid = 0;
+                ndocid = docid; last_docid = 0;
                 if(mdb_get_tag(index, termid, &last_docid) == 0)
                     ndocid = docid - last_docid;
                 if(ibase->state->index_status != IB_INDEX_DISABLED)
