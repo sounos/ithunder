@@ -2,7 +2,7 @@
  * @file xtree.c
  * @author Hightman Mar
  * @editor set number ; syntax on ; set autoindent ; set tabstop=4 (vim)
- * $Id: xtree.c,v 1.6 2011/05/16 06:00:28 hightman Exp $
+ * $Id$
  */
 
 #ifdef HAVE_CONFIG_H
@@ -159,7 +159,7 @@ void xtree_del(xtree_t xt, const char *key)
 }
 */
 
-#ifdef HAVE_NOT_QUIET
+#ifdef DEBUG
 /* draw the xtree to stdout */
 struct draw_arg
 {
@@ -177,19 +177,19 @@ static void _xtree_draw_node(node_t node, struct draw_arg *arg, int depth, char 
 
 	// output the flag & icon
 	if (arg->flag == 'T')	
-		printf("(£Ô) ");	
+		printf("(ï¼´) ");	
 	else
 	{
 		printf("%s", icon2);
 		if (arg->flag  == 'L')
 		{
-			strcat(icon2, " ©§");
-			printf(" ©Ã(£Ì) ");
+			strcat(icon2, " â”ƒ");
+			printf(" â”Ÿ(ï¼¬) ");
 		}
 		else
 		{
-			strcat(icon2, " ¡¡");
-			printf(" ©¸(£Ò) ");
+			strcat(icon2, " ã€€");
+			printf(" â””(ï¼²) ");
 		}
 	}
 
@@ -274,8 +274,12 @@ static void _xtree_reset_nodes(node_t *nodes, int low, int high, node_t *curr)
 	}
 }
 
+#ifdef WIN32
+static int _xtree_node_cmp(node_t *a, node_t *b)
+#else
 static int _xtree_node_cmp(a, b)
 	node_t *a, *b;
+#endif
 {
 	return strcmp((*a)->key, (*b)->key);
 }

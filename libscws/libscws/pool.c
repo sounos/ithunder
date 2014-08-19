@@ -2,7 +2,7 @@
  * @file pool.c
  * @author Hightman Mar
  * @editor set number ; syntax on ; set autoindent ; set tabstop=4 (vim)
- * $Id: pool.c,v 1.4 2010/01/29 04:33:27 hightman Exp $
+ * $Id$
  */
 
 #include "pool.h"

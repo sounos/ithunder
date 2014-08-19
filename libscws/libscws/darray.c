@@ -2,7 +2,7 @@
  * @file xdict.c (dictionary query)
  * @author Hightman Mar
  * @editor set number ; syntax on ; set autoindent ; set tabstop=4 (vim)
- * $Id: darray.c,v 1.2 2009/05/26 02:44:08 hightman Exp $
+ * $Id$
  */
 
 #include "darray.h"

@@ -2,11 +2,15 @@
  * @file xdb.h (read only)
  * @author Hightman Mar
  * @editor set number ; syntax on ; set autoindent ; set tabstop=4 (vim)
- * $Id: xdb.h,v 1.3 2011/05/16 06:00:28 hightman Exp $
+ * $Id$
  */
 
 #ifndef	_SCWS_XDB_20070525_H_
 #define	_SCWS_XDB_20070525_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* constant var define */
 #define	XDB_FLOAT_CHECK		(3.14)
@@ -61,7 +65,7 @@ xdb_t xdb_create(const char *fpath, int base, int prime);
 void *xdb_nget(xdb_t x, const char *key, int len, unsigned int *vlen);
 void *xdb_get(xdb_t x, const char *key, unsigned int *vlen);
 
-#ifdef HAVE_NOT_QUIET
+#ifdef DEBUG
 void xdb_draw(xdb_t x);
 #endif
 
@@ -76,5 +80,9 @@ void xdb_optimize(xdb_t x);
 /* xdb: close the db */
 void xdb_close(xdb_t x);
 void xdb_version(xdb_t x);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

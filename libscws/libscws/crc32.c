@@ -2,7 +2,7 @@
  * @file crc32.c
  * @author Hightman Mar
  * @editor set number ; syntax on ; set autoindent ; set tabstop=4 (vim)
- * $Id: crc32.c,v 1.2 2010/01/28 16:45:47 hightman Exp $
+ * $Id$
  */
 
 #include "crc32.h"

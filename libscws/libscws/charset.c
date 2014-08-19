@@ -2,7 +2,7 @@
  * @file mblen.c
  * @author Hightman Mar
  * @editor set number ; syntax on ; set autoindent ; set tabstop=4 (vim)
- * $Id: charset.c,v 1.3 2011/05/16 06:00:28 hightman Exp $
+ * $Id$
  */
 
 #ifdef WIN32

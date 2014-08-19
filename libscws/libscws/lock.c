@@ -16,7 +16,7 @@
    +----------------------------------------------------------------------+
 */
 
-/* $Id: lock.c,v 1.3 2010/01/29 04:33:27 hightman Exp $ */
+/* $Id$ */
 
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -145,7 +145,7 @@ int _xdb_flock(int fd, int operation)
     return -1;
 }
 #else
-#warning no proper flock support for your site
+#warning no proper flock supported
 {
 	errno = 0;
 	return 0;

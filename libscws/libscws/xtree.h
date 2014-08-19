@@ -2,11 +2,15 @@
  * @file xtree.h
  * @author Hightman Mar
  * @editor set number ; syntax on ; set autoindent ; set tabstop=4 (vim)
- * $Id: xtree.h,v 1.2 2011/05/16 06:00:28 hightman Exp $
+ * $Id$
  */
 
 #ifndef	_SCWS_XTREE_20070525_H_
 #define	_SCWS_XTREE_20070525_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* pool required */
 #include "pool.h"
@@ -47,11 +51,15 @@ void xtree_del(xtree_t xt, const char *key);
 void xtree_ndel(xtree_t xt, const char *key, int len);
 */
 
-#ifdef HAVE_NOT_QUIET
+#ifdef DEBUG
 void xtree_draw(xtree_t xt);
 #endif
 
 void xtree_optimize(xtree_t xt);
 void xtree_to_xdb(xtree_t xt, const char *fpath);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

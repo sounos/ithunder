@@ -2,28 +2,33 @@
  * @file xdict (dictionary)
  * @author Hightman Mar
  * @editor set number ; syntax on ; set autoindent ; set tabstop=4 (vim)
- * $Id: xdict.h,v 1.7 2011/05/16 06:00:28 hightman Exp $
+ * $Id$
  */
 
 #ifndef	_SCWS_XDICT_20070528_H_
 #define	_SCWS_XDICT_20070528_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* constant var define */
-#define	SCWS_WORD_FULL		0x01	// ¶à×Ö: Õû´Ê
-#define	SCWS_WORD_PART		0x02	// ¶à×Ö: Ç°´Ê¶Î
-#define	SCWS_WORD_USED		0x04	// ¶à×Ö: ÒÑÊ¹ÓÃ
-#define	SCWS_WORD_RULE		0x08	// ¶à×Ö: ×Ô¶¯Ê¶±ğµÄ
+#define	SCWS_WORD_FULL		0x01	// å¤šå­—: æ•´è¯
+#define	SCWS_WORD_PART		0x02	// å¤šå­—: å‰è¯æ®µ
+#define	SCWS_WORD_USED		0x04	// å¤šå­—: å·²ä½¿ç”¨
+#define	SCWS_WORD_RULE		0x08	// å¤šå­—: è‡ªåŠ¨è¯†åˆ«çš„
+#define	SCWS_WORD_LONG		0x10	// å¤šå­—: çŸ­è¯ç»„æˆçš„é•¿è¯
 
-#define	SCWS_WORD_MALLOCED	0x80	// xdict_query ½á¹û±ØĞëµ÷ÓÃ free
+#define	SCWS_WORD_MALLOCED	0x80	// xdict_query ç»“æœå¿…é¡»è°ƒç”¨ free
 
-#define	SCWS_ZFLAG_PUT		0x02	// µ¥×Ö: ÒÑÊ¹ÓÃ
-#define	SCWS_ZFLAG_N2		0x04	// µ¥×Ö: Ë«×ÖÃû´ÊÍ·
-#define	SCWS_ZFLAG_NR2		0x08	// µ¥×Ö: ´ÊÍ·ÇÒÎªË«×ÖÈËÃû
-#define	SCWS_ZFLAG_WHEAD	0x10	// µ¥×Ö: ´ÊÍ·
-#define	SCWS_ZFLAG_WPART	0x20	// µ¥×Ö: ´ÊÎ²»ò´ÊÖĞ
-#define	SCWS_ZFLAG_ENGLISH	0x40	// µ¥×Ö: ¼ĞÔÚÖĞ¼äµÄÓ¢ÎÄ
-#define SCWS_ZFLAG_SYMBOL   0x80    // µ¥×Ö: ·ûºÅÏµÁĞ
-#define	SCWS_XDICT_PRIME	0x3ffd	// ´Êµä½á¹¹Ê÷Êı£º16381
+#define	SCWS_ZFLAG_PUT		0x02	// å•å­—: å·²ä½¿ç”¨
+#define	SCWS_ZFLAG_N2		0x04	// å•å­—: åŒå­—åè¯å¤´
+#define	SCWS_ZFLAG_NR2		0x08	// å•å­—: è¯å¤´ä¸”ä¸ºåŒå­—äººå
+#define	SCWS_ZFLAG_WHEAD	0x10	// å•å­—: è¯å¤´
+#define	SCWS_ZFLAG_WPART	0x20	// å•å­—: è¯å°¾æˆ–è¯ä¸­
+#define	SCWS_ZFLAG_ENGLISH	0x40	// å•å­—: å¤¹åœ¨ä¸­é—´çš„è‹±æ–‡
+#define SCWS_ZFLAG_SYMBOL   0x80    // å•å­—: ç¬¦å·ç³»åˆ—
+#define	SCWS_XDICT_PRIME	0x3ffd	// è¯å…¸ç»“æ„æ ‘æ•°ï¼š16381
 
 /* xdict open mode */
 #define	SCWS_XDICT_XDB		1
@@ -44,6 +49,7 @@ typedef struct scws_xdict
 {
 	void *xdict;
 	int xmode;
+	int ref;	// hightman.20130110: refcount (zero to really free/close)
 	struct scws_xdict *next;
 }	xdict_st, *xdict_t;
 
@@ -51,10 +57,17 @@ typedef struct scws_xdict
 xdict_t xdict_open(const char *fpath, int mode);
 void xdict_close(xdict_t xd);
 
+/* fork xdict */
+xdict_t xdict_fork(xdict_t xd);
+
 /* add a new dict file into xd, succ: 0, error: -1, Mblen only used for XDICT_TXT */
 xdict_t xdict_add(xdict_t xd, const char *fpath, int mode, unsigned char *ml);
 
 /* NOW this is ThreadSafe function */
 word_t xdict_query(xdict_t xd, const char *key, int len);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

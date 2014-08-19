@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.59])
-AC_INIT(libscws, 1.1.8, [http://www.ftphp.com/scws])
+AC_INIT(libscws, [1.2.2], [http://www.ftphp.com/scws])
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE
@@ -16,6 +16,14 @@ AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
 AC_PROG_LIBTOOL
+
+# libtool
+LIBTOOL="$LIBTOOL --preserve-dup-deps"
+AC_SUBST(LIBTOOL)
+
+# libtool compile
+SHARED_LIB_VERSION=2:0:1
+AC_SUBST(SHARED_LIB_VERSION)
 
 # Checks for libraries.
 # FIXME: Replace `main' with a function in `-lm':
@@ -37,5 +45,6 @@ AC_CONFIG_FILES([Makefile
                  cli/Makefile
                  dict/Makefile
                  etc/Makefile
-                 libscws/Makefile])
+                 libscws/Makefile
+                 libscws/version.h])
 AC_OUTPUT

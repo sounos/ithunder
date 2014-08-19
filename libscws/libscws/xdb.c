@@ -2,7 +2,7 @@
  * @file xdb.c (xtree use file storage)
  * @author Hightman Mar
  * @editor set number ; syntax on ; set autoindent ; set tabstop=4 (vim)
- * $Id: xdb.c,v 1.11 2011/05/16 06:00:28 hightman Exp $
+ * $Id$
  */
 
 #ifdef HAVE_CONFIG_H
@@ -24,6 +24,10 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+
+#ifdef HAVE_FLOCK
+#   include <sys/file.h>
+#endif
 
 #ifdef HAVE_MMAP
 #   include <sys/mman.h>
@@ -130,7 +134,7 @@ xdb_t xdb_open(const char *fpath, int mode)
 	/* try to open & check the file */
 	if ((x->fd = open(fpath, mode == 'w' ? O_RDWR : O_RDONLY)) < 0)
 	{
-#ifdef HAVE_NOT_QUIET
+#ifdef DEBUG
 		perror("Failed to open the XDB file");
 #endif
 		free(x);
@@ -140,7 +144,7 @@ xdb_t xdb_open(const char *fpath, int mode)
 	/* check the file */
 	if (fstat(x->fd, &st) || !S_ISREG(st.st_mode) || (x->fsize = st.st_size) <= 0)
 	{
-#ifdef HAVE_NOT_QUIET
+#ifdef DEBUG
 		perror("Invalid XDB file");
 #endif
 		close(x->fd);
@@ -153,7 +157,7 @@ xdb_t xdb_open(const char *fpath, int mode)
 	if ((read(x->fd, &xhdr, sizeof(xhdr)) != sizeof(xhdr))
 		|| memcmp(xhdr.tag, XDB_TAGNAME, 3) || (xhdr.fsize != x->fsize))
 	{
-#ifdef HAVE_NOT_QUIET
+#ifdef DEBUG
 		perror("Invalid XDB file format");
 #endif
 		close(x->fd);
@@ -179,7 +183,7 @@ xdb_t xdb_open(const char *fpath, int mode)
 
 		if (x->fmap == (char *) MAP_FAILED)
 		{
-#ifdef HAVE_NOT_QUIET
+#ifdef DEBUG
 			perror("Mmap() failed");
 #endif
 			free(x);
@@ -202,7 +206,7 @@ xdb_t xdb_create(const char *fpath, int base, int prime)
 	/* try to open & check the file */
 	if ((x->fd = open(fpath, (O_CREAT|O_RDWR|O_TRUNC|O_EXCL), 0600)) < 0)
 	{
-#ifdef HAVE_NOT_QUIET
+#ifdef DEBUG
 		perror("Failed to open & create the db file");
 #endif
 		free(x);
@@ -350,7 +354,7 @@ void xdb_put(xdb_t x, const char *value, const char *key)
 	xdb_nput(x, (void *) value, value ? strlen(value) : 0, key, strlen(key));
 }
 
-#ifdef HAVE_NOT_QUIET
+#ifdef DEBUG
 /* draw the xdb to stdout */
 struct draw_arg
 {
@@ -368,19 +372,19 @@ static void _xdb_draw_node(xdb_t x, xptr_t ptr, struct draw_arg *arg, int depth,
 
 	// output the flag & icon
 	if (arg->flag == 'T')	
-		printf("(£Ô) ");	
+		printf("(ï¼´) ");	
 	else
 	{
 		printf("%s", icon2);
 		if (arg->flag  == 'L')
 		{
-			strcat(icon2, " ©§");
-			printf(" ©Ã(£Ì) ");
+			strcat(icon2, " â”ƒ");
+			printf(" â”Ÿ(ï¼¬) ");
 		}
 		else
 		{
-			strcat(icon2, " ¡¡");
-			printf(" ©¸(£Ò) ");
+			strcat(icon2, " ã€€");
+			printf(" â””(ï¼²) ");
 		}
 	}
 

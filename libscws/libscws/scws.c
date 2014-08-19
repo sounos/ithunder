@@ -2,7 +2,6 @@
  * @file scws.c (core segment functions)
  * @author Hightman Mar
  * @editor set number ; syntax on ; set autoindent ; set tabstop=4 (vim)
- * @notice this is modified from source of jabberd2.0s10
  * $Id  $
  */
 
@@ -55,6 +54,8 @@ scws_t scws_new()
 {
 	scws_t s;
 	s = (scws_t) malloc(sizeof(scws_st));
+    if (s == NULL)
+        return s;
 	memset(s, 0, sizeof(scws_st));
 	s->mblen = charset_table_get(NULL);
 	s->off = s->len = 0;
@@ -63,15 +64,36 @@ scws_t scws_new()
 	return s;
 }
 
+/* hightman.110320: fork scws */
+scws_t scws_fork(scws_t p)
+{
+	scws_t s = scws_new();
+
+	if (p != NULL && s != NULL)
+	{
+		s->mblen = p->mblen;
+		s->mode = p->mode;
+		// fork dict/rules
+		s->r = scws_rule_fork(p->r);
+		s->d = xdict_fork(p->d);
+	}
+
+	return s;
+}
+
 /* close & free the engine */
 void scws_free(scws_t s)
 {
 	if (s->d)
+	{
 		xdict_close(s->d);
-
+		s->d = NULL;
+	}
 	if (s->r)
+	{
 		scws_rule_free(s->r);
-
+		s->r = NULL;
+	}
 	free(s);
 }
 
@@ -173,7 +195,7 @@ do {															\
 	}															\
 } while(0)
 
-/* single bytes segment (´¿µ¥×Ö½Ú×Ö·û) */
+/* single bytes segment (çº¯å•å­—èŠ‚å­—ç¬¦) */
 #define	PFLAG_WITH_MB		0x01
 #define	PFLAG_ALNUM			0x02
 #define	PFLAG_VALID			0x04
@@ -352,7 +374,7 @@ static void _scws_ssegment(scws_t s, int end)
 		}
 	}
 
-	/* È¡³öµ¥´Ê¼°±êµã. Êı×ÖÔÊĞíÒ»¸öµãÇÒÏÂÒ»¸öÎªÊı×Ö,²»Á¬ĞøµÄ. ×ÖÄ¸ÔÊĞíÒ»¸ö²»Á¬ĞøµÄ' */
+	/* å–å‡ºå•è¯åŠæ ‡ç‚¹. æ•°å­—å…è®¸ä¸€ä¸ªç‚¹ä¸”ä¸‹ä¸€ä¸ªä¸ºæ•°å­—,ä¸è¿ç»­çš„. å­—æ¯å…è®¸ä¸€ä¸ªä¸è¿ç»­çš„' */
 	while (start < end)
 	{
 		ch = txt[start++];
@@ -394,7 +416,7 @@ static void _scws_ssegment(scws_t s, int end)
 				}
 				else
 				{
-					/* hightman.110419: - ³öÏÖÔÚ×ÖÄ¸ÖĞ¼äÔÊĞíÁ¬½Ó(0x2d), _ ÔÊĞíÁ¬½Ó(0x5f) */
+					/* hightman.110419: - å‡ºç°åœ¨å­—æ¯ä¸­é—´å…è®¸è¿æ¥(0x2d), _ å…è®¸è¿æ¥(0x5f) */
 					if ((ch == 0x2d || ch == 0x5f) && SCWS_IS_ALPHA(txt[start+1]))
 						pflag |= PFLAG_ADDSYM;
 					else if (!SCWS_IS_ALPHA(ch))
@@ -448,12 +470,12 @@ static void _scws_mset_word(scws_t s, int i, int j)
 	word_t item;
 
 	item = s->wmap[i][j];
-	/* hightman.070705: ¼ÓÈë item == null ÅĞ¶Ï, ·ÀÖ¹³¬³¤´Ê(255×ÖÒÔÉÏ)unsigned charÒç³ö */
+	/* hightman.070705: åŠ å…¥ item == null åˆ¤æ–­, é˜²æ­¢è¶…é•¿è¯(255å­—ä»¥ä¸Š)unsigned charæº¢å‡º */
 	if ((item == NULL) || ((s->mode & SCWS_IGN_SYMBOL) 
       && !SCWS_IS_ECHAR(item->flag) && !memcmp(item->attr, attr_un, 2)))
 		return;
 
-	/* hightman.070701: É¢×Ö×Ô¶¯¶şÔª¾ÛºÏ */
+	/* hightman.070701: æ•£å­—è‡ªåŠ¨äºŒå…ƒèšåˆ */
 	if (s->mode & SCWS_DUALITY)
 	{
 		int k = s->zis;
@@ -498,25 +520,27 @@ static void _scws_mset_word(scws_t s, int i, int j)
 			while (m < j)
 			{
 				k = m;
+				// hightman.111223: multi short enhanced
 				for (n = m + 1; n <= j; n++)
 				{
-					if (n == j && m == i) break;
-					item = s->wmap[m][n];
-					if (item && (item->flag & SCWS_WORD_FULL))
-					{
+					// 3 chars at most
+					if ((n == j && m == i) || (n - m) > 2) break;
+					item = s->wmap[m][n];	
+					if (!item) continue;
+					// first shortest or last longest word
+					if ((item->flag & SCWS_WORD_FULL) && (k == m || n == j))
 						k = n;
-						SCWS_PUT_RES(s->zmap[m].start, item->idf, (s->zmap[n].end - s->zmap[m].start), item->attr);
-						if (!(item->flag & SCWS_WORD_PART))
-							break; 
-					}
+					if (!(item->flag & SCWS_WORD_PART)) break;
 				}
+				// short word not found, stop to find, passed to next loop
 				if (k == m)
-				{
-					if (m == i) break;									
-					item = s->wmap[m][m];
-					SCWS_PUT_RES(s->zmap[m].start, item->idf, (s->zmap[m].end - s->zmap[m].start), item->attr);
-				}
-				if ((m = (k+1)) == j)
+					break;
+				
+				// save the short word
+				item = s->wmap[m][k];
+				SCWS_PUT_RES(s->zmap[m].start, item->idf, (s->zmap[k].end - s->zmap[m].start), item->attr);
+				// find the next word or go to prev for duality last word
+				if ((m = k + 1) == j)
 				{
 					m--;
 					break;
@@ -528,8 +552,32 @@ static void _scws_mset_word(scws_t s, int i, int j)
 		{
 			while (m < j)
 			{
-				SCWS_PUT_RES(s->zmap[m].start, s->wmap[m][m]->idf, (s->zmap[m+1].end - s->zmap[m].start), s->wmap[m][m]->attr);
+				if (SCWS_IS_ECHAR(s->wmap[m][m]->flag))
+				{
+					SCWS_PUT_RES(s->zmap[m].start, s->wmap[m][m]->idf, (s->zmap[m].end - s->zmap[m].start), s->wmap[m][m]->attr);
+					s->wmap[m][m]->flag |= SCWS_ZFLAG_PUT;
+				}
+				else if (SCWS_IS_ECHAR(s->wmap[m+1][m+1]->flag))
+				{
+					if (m == i)
+					{
+						SCWS_PUT_RES(s->zmap[m].start, s->wmap[m][m]->idf, (s->zmap[m].end - s->zmap[m].start), s->wmap[m][m]->attr);
+						s->wmap[m][m]->flag |= SCWS_ZFLAG_PUT;
+					}
+					m++;
+					SCWS_PUT_RES(s->zmap[m].start, s->wmap[m][m]->idf, (s->zmap[m].end - s->zmap[m].start), s->wmap[m][m]->attr);
+					s->wmap[m][m]->flag |= SCWS_ZFLAG_PUT;
+				}
+				else
+				{
+					SCWS_PUT_RES(s->zmap[m].start, s->wmap[m][m]->idf, (s->zmap[m+1].end - s->zmap[m].start), s->wmap[m][m]->attr);
+				}
 				m++;
+				if (m == j && (SCWS_IS_ECHAR(s->wmap[m][m]->flag) || SCWS_IS_ECHAR(s->wmap[m-1][m-1]->flag)))
+				{
+					SCWS_PUT_RES(s->zmap[m].start, s->wmap[m][m]->idf, (s->zmap[m].end - s->zmap[m].start), s->wmap[m][m]->attr);
+					s->wmap[m][m]->flag |= SCWS_ZFLAG_PUT;
+				}
 			}
 		}
 	}
@@ -646,7 +694,7 @@ static void _scws_mseg_zone(scws_t s, int f, int t)
 		nweight /= pow(x+sz-1,5);
 
 		/* draw the path for debug */
-#ifdef HAVE_NOT_QUIET
+#ifdef DEBUG
 		if (s->mode & SCWS_DEBUG)
 		{		
 			fprintf(stderr, "PATH by keyword = %.*s, (weight=%.4f):\n",
@@ -662,7 +710,7 @@ static void _scws_mseg_zone(scws_t s, int f, int t)
 #endif
 
 		j2 = x = j;
-		if (x - i > 1) i--;
+		if ((x - i) > 1) i--;
 		/* check better path */
 		if (nweight > weight)
 		{
@@ -686,7 +734,7 @@ static void _scws_mseg_zone(scws_t s, int f, int t)
 		m = n + 1;
 	}
 
-	/* Ò»¿Ú.070808: memory leak fixed. */
+	/* ä¸€å£.070808: memory leak fixed. */
 	if (mpath) free(mpath);
 	if (npath) free(npath);
 }
@@ -837,8 +885,8 @@ static void _scws_msegment(scws_t s, int end, int zlen)
 		if ((r1->flag & SCWS_ZRULE_PREFIX) && (i < (zlen - clen)))
 		{			
 			/* prefix, check after (zmin~zmax) */
-			// ÏÈ¼ì²é zmin ×ÖÄÚÊÇ·ñÈ«²¿·ûºÏÒªÇó
-			// ÔÙÔÚ zmax ·¶Î§ÄÚÈ¡µÃ·ûºÏÒªÇóµÄ×Ö
+			// å…ˆæ£€æŸ¥ zmin å­—å†…æ˜¯å¦å…¨éƒ¨ç¬¦åˆè¦æ±‚
+			// å†åœ¨ zmax èŒƒå›´å†…å–å¾—ç¬¦åˆè¦æ±‚çš„å­—
 			// int i, j, k, ch, clen, start;
 			for (ch = 1; ch <= clen; ch++)
 			{
@@ -862,7 +910,7 @@ static void _scws_msegment(scws_t s, int end, int zlen)
 				j++;
 			}
 
-			// ×¢ÒâÔ­À´2×ÖÈËÃû,Ê¶±ğºóÈÔÎª2×ÖµÄÇé¿ö
+			// æ³¨æ„åŸæ¥2å­—äººå,è¯†åˆ«åä»ä¸º2å­—çš„æƒ…å†µ
 			if (wmap[i][i]->flag & SCWS_ZFLAG_NR2)
 			{
 				if (clen == 1)
@@ -935,7 +983,7 @@ static void _scws_msegment(scws_t s, int end, int zlen)
 		}
 	}
 
-	/* two words auto rule check (Å·Ñô** , **Î÷Â·) */
+	/* two words auto rule check (æ¬§é˜³** , **è¥¿è·¯) */
 	for (i = zlen - 2; i >= 0; i--)
 	{
 		/* with value ==> must be have SCWS_WORD_FULL, so needn't check it ag. */
@@ -1145,11 +1193,12 @@ scws_res_t scws_get_result(scws_t s)
 		{
 			int i;
 
-			// mb + single-byte. allowd: alpha+num + ÖĞÎÄ
+			// mb + single-byte. allowd: alpha+num + ä¸­æ–‡
 			if (!SCWS_IS_ALNUM(ch))
 				break;
 			
 			pflag &= ~PFLAG_VALID;
+			// å¤¹åœ¨ä¸­æ–‡é—´çš„è‹±æ–‡æ•°å­—æœ€å¤šå…è®¸ 2 ä¸ªå­—ç¬¦ (è¶…è¿‡2å¯ä»¥ç‹¬ç«‹æˆè¯æ²¡å•¥é—®é¢˜)
 			for (i = off+1; i < (off+3); i++)
 			{
 				ch = txt[i];
@@ -1173,7 +1222,7 @@ scws_res_t scws_get_result(scws_t s)
 		    break;
 	}
 
-	/* hightman.070624: ´¦Àí°ë¸ö×ÖµÄÎÊÌâ */
+	/* hightman.070624: å¤„ç†åŠä¸ªå­—çš„é—®é¢˜ */
 	if ((ch = off) > len)	
 		off -= clen;
 
@@ -1196,7 +1245,7 @@ scws_res_t scws_get_result(scws_t s)
 			idf = SCWS_EN_IDF(zlen);
 			SCWS_PUT_RES(s->off, idf, zlen, attr_en);
 		
-			/* hightman.090523: Îª×ÖÄ¸Êı×Ö»ìºÏÔÙ¶È²ğ½â, ´¿Êı×Ö, (>1 ? ´¿×ÖÄ¸ : Êı×Ö+×ÖÄ¸) */
+			/* hightman.090523: ä¸ºå­—æ¯æ•°å­—æ··åˆå†åº¦æ‹†è§£, çº¯æ•°å­—, (>1 ? çº¯å­—æ¯ : æ•°å­—+å­—æ¯) */
 			if ((s->mode & SCWS_MULTI_DUALITY) && zlen > 2)
 				_scws_alnum_multi(s, s->off, zlen);
 		}
@@ -1279,7 +1328,8 @@ static inline int _attr_belong(const char *a, word_attr *at)
 	memset(at, 0, cnt);									\
 	cnt = 0;											\
 	for (cnt = 0; (word = strchr(xattr, ',')); cnt++) {	\
-		strncpy(at[cnt], xattr, 2);						\
+		at[cnt][0] = *xattr++;							\
+		at[cnt][1] = xattr == word ? '\0' : *xattr;		\
 		xattr = word + 1;								\
 	}													\
 	strncpy(at[cnt], xattr, 2);							\

@@ -16,12 +16,12 @@
    +----------------------------------------------------------------------+
 */
 
-/* $Id: lock.h,v 1.2 2010/01/29 04:33:27 hightman Exp $ */
+/* $Id$ */
 
 #ifndef LOCK_H
 #define LOCK_H
 
-/* php_flock internally uses fcntl whther or not flock is available
+/* php_flock internally uses fcntl whether or not flock is available
 * This way our php_flock even works on NFS files.
 * More info: /usr/src/linux/Documentation
 */

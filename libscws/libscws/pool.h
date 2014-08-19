@@ -2,11 +2,15 @@
  * @file pool.h
  * @author Hightman Mar
  * @editor set number ; syntax on ; set autoindent ; set tabstop=4 (vim)
- * $Id: pool.h,v 1.2 2011/05/16 06:00:28 hightman Exp $
+ * $Id$
  */
 
 #ifndef	_SCWS_POOL_20070525_H_
 #define	_SCWS_POOL_20070525_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* block size for pool */
 #define	POOL_BLK_SIZ	4096
@@ -41,5 +45,9 @@ void *pmalloc_x(pool_t p, int size, char c);	/* wrapper around pmalloc which pre
 void *pmalloc_z(pool_t p, int size);			/* wrapper around pmalloc, which prefills by zero */
 char *pstrdup(pool_t p, const char *s);			/* wrapper around strdup, gains the mem from the pool */
 char *pstrndup(pool_t p, const char *s, int l);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

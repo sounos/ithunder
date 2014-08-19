@@ -2,7 +2,7 @@
  * @file scws.h (core include)
  * @author Hightman Mar
  * @editor set number ; syntax on ; set autoindent ; set tabstop=4 (vim)
- * $Id: scws.h,v 1.9 2011/05/16 06:00:28 hightman Exp $
+ * $Id$
  */
 
 #ifndef	_SCWS_LIBSCWS_20070531_H_
@@ -12,7 +12,7 @@
 extern "C" {
 #endif
 
-#include "scws_version.h"
+#include "version.h"
 #include "rule.h"
 #include "xdict.h"
 
@@ -37,6 +37,7 @@ extern "C" {
 
 /* data structures */
 typedef struct scws_result *scws_res_t;
+
 struct scws_result
 {
 	int off;
@@ -47,6 +48,7 @@ struct scws_result
 };
 
 typedef struct scws_topword *scws_top_t;
+
 struct scws_topword
 {
 	char *word;
@@ -62,7 +64,9 @@ struct scws_zchar
 	int end;
 };
 
-typedef struct
+typedef struct scws_st scws_st, *scws_t;
+
+struct scws_st
 {
 	xdict_t d;
 	rule_t r;
@@ -77,11 +81,13 @@ typedef struct
 	scws_res_t res1;
 	word_t **wmap;
 	struct scws_zchar *zmap;
-}	scws_st, *scws_t;
+};
 
 /* api: init the scws handler */
-scws_t scws_new();	
+scws_t scws_new();
 void scws_free(scws_t s);
+/* fork instance for multi-threaded usage, but they shared the dict/rules */
+scws_t scws_fork(scws_t s);
 
 /* mode = SCWS_XDICT_XDB | SCWS_XDICT_MEM | SCWS_XDICT_TXT */
 int scws_add_dict(scws_t s, const char *fpath, int mode);
