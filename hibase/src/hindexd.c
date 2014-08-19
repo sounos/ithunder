@@ -463,7 +463,8 @@ void indexd_query_handler(void *args)
                     qset.count = res->count - pquery->from;
                 x = pquery->from;
                 if(qset.count > 0 && (n = (IB_SUMMARY_MAX * qset.count)) > 0 
-                        && (conn = httpd->findconn(httpd, qtask->index)) == qtask->conn
+                        && (conn = httpd->findconn(httpd, qtask->index))
+                        &&  conn == qtask->conn
                         && (block = conn->newchunk(conn, n)))
                 {
                     summary = block->data; 
@@ -505,7 +506,7 @@ void indexd_query_handler(void *args)
                 presp->cmd = IB_RESP_QUERY;
                 presp->status = IB_STATUS_OK;
                 presp->length = sizeof(IRES) + res->count * sizeof(IRECORD);
-                if((conn = queryd->findconn(queryd, qtask->index)) == qtask->conn)
+                if((conn = queryd->findconn(queryd, qtask->index)) && conn == qtask->conn)
                 {
                     if(pquery->qid != req->id)
                     {
