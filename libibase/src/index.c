@@ -26,58 +26,6 @@
 #ifndef SIZET
 #define SIZET(x) ((size_t)x)
 #endif
-#define SET_INT_INDEX(ibase, docid, list, zzz)                                              \
-do                                                                                          \
-{                                                                                           \
-    zzz = ibase->state->int_index_fields_num * docid;                                       \
-    if(((off_t)zzz * (off_t)sizeof(int)) >= ibase->intidxio.end)                            \
-    {                                                                                       \
-        ibase->intidxio.old = ibase->intidxio.end;                                          \
-        ibase->intidxio.end = (off_t)((off_t)sizeof(int) * (off_t)IB_NUMERIC_BASE           \
-                * (off_t)ibase->state->int_index_fields_num                                 \
-                * (off_t)((docid/IB_NUMERIC_BASE)+1));                                      \
-        if(ftruncate(ibase->intidxio.fd, ibase->intidxio.end) != 0)break;                   \
-        memset(ibase->intidxio.map + ibase->intidxio.old, 0,                                \
-                ibase->intidxio.end - ibase->intidxio.old);                                 \
-    }                                                                                       \
-    memcpy(&(((int *)ibase->intidxio.map)[zzz]), list, sizeof(int) *                        \
-                ibase->state->int_index_fields_num);                                        \
-}while(0);
-#define SET_LONG_INDEX(ibase, docid, list, zzz)                                             \
-do                                                                                          \
-{                                                                                           \
-    zzz = ibase->state->long_index_fields_num * docid;                                      \
-    if(((off_t)zzz * (off_t)sizeof(int64_t)) >= ibase->longidxio.end)                       \
-    {                                                                                       \
-        ibase->longidxio.old = ibase->longidxio.end;                                        \
-        ibase->longidxio.end = (off_t)((off_t)sizeof(int64_t) * (off_t)IB_NUMERIC_BASE      \
-                * (off_t)ibase->state->long_index_fields_num                                \
-                * (off_t)((docid/IB_NUMERIC_BASE)+1));                                      \
-        if(ftruncate(ibase->longidxio.fd, ibase->longidxio.end) != 0)break;                 \
-        memset(ibase->longidxio.map + ibase->longidxio.old, 0,                              \
-                ibase->longidxio.end - ibase->longidxio.old);                               \
-    }                                                                                       \
-    memcpy(&(((int64_t *)ibase->longidxio.map)[zzz]), list, sizeof(int64_t) *               \
-                ibase->state->long_index_fields_num);                                       \
-}while(0);
-#define SET_DOUBLE_INDEX(ibase, docid, list, zzz)                                           \
-do                                                                                          \
-{                                                                                           \
-    zzz = ibase->state->double_index_fields_num * docid;                                    \
-    if(((off_t)zzz * (off_t)sizeof(double)) >= ibase->doubleidxio.end)                      \
-    {                                                                                       \
-        ibase->doubleidxio.old = ibase->doubleidxio.end;                                    \
-        ibase->doubleidxio.end = (off_t)((off_t)sizeof(double)*(off_t)IB_NUMERIC_BASE       \
-                * (off_t)ibase->state->double_index_fields_num                              \
-                * (off_t)((docid/IB_NUMERIC_BASE)+1));                                      \
-        if(ftruncate(ibase->doubleidxio.fd, ibase->doubleidxio.end) != 0)break;             \
-        memset(ibase->doubleidxio.map + ibase->doubleidxio.old, 0,                          \
-                ibase->doubleidxio.end - ibase->doubleidxio.old);                           \
-    }                                                                                       \
-    memcpy(&(((double *)ibase->doubleidxio.map)[zzz]), list, sizeof(double) *               \
-                ibase->state->double_index_fields_num);                                     \
-}while(0);
-
 #define ADD_TERMSTATE(ibase, xtermid)                                                       \
 do                                                                                          \
 {                                                                                           \
@@ -112,7 +60,7 @@ int ibase_check_index_state(IBASE *ibase, DOCHEADER *docheader)
         nint =  docheader->intblock_size / sizeof(int);
         nlong =  docheader->longblock_size / sizeof(int64_t);
         ndouble = docheader->doubleblock_size / sizeof(double);
-        if(nint > 0 && ibase->state->int_index_fields_num)
+        if(nint > 0 && !ibase->state->int_index_fields_num)
         {
             ibase->state->int_index_from = docheader->intindex_from;
             ibase->state->int_index_fields_num = nint;
@@ -277,7 +225,6 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
                     IMAP_SET(ibase->state->mfields[secid][i], docid, intlist[k]);
                     k++;
                 }
-                //SET_INT_INDEX(ibase, docid, intlist, x);
             }
             /* index long */
             if((n = ibase->state->long_index_fields_num) > 0 
@@ -290,7 +237,6 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
                     LMAP_SET(ibase->state->mfields[secid][i], docid, longlist[k]);
                     k++;
                 }
-                //SET_LONG_INDEX(ibase, docid, longlist, x);
             }
             /* index double */
             if((n = ibase->state->double_index_fields_num) > 0 
@@ -303,7 +249,6 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
                     DMAP_SET(ibase->state->mfields[secid][i], docid, doublelist[k]);
                     k++;
                 }
-                //SET_DOUBLE_INDEX(ibase, docid, doublelist, x);
             }
         }
         if(ibase->state->used_for != IB_USED_FOR_QPARSERD 
@@ -369,7 +314,6 @@ int ibase_update_index(IBASE *ibase, int docid, IBDATA *block)
                             IMAP_SET(ibase->state->mfields[secid][i], docid, intlist[k]);
                             k++;
                         }
-                        //SET_INT_INDEX(ibase, docid, intlist, x);
                     }
                     /* index long */
                     if((n = ibase->state->long_index_fields_num) > 0 
@@ -382,7 +326,6 @@ int ibase_update_index(IBASE *ibase, int docid, IBDATA *block)
                             LMAP_SET(ibase->state->mfields[secid][i], docid, longlist[k]);
                             k++;
                         }
-                        //SET_LONG_INDEX(ibase, docid, longlist, x);
                     }
                     /* index double */
                     if((n = ibase->state->double_index_fields_num) > 0 
@@ -395,7 +338,6 @@ int ibase_update_index(IBASE *ibase, int docid, IBDATA *block)
                             DMAP_SET(ibase->state->mfields[secid][i], docid, doublelist[k]);
                             k++;
                         }
-                        //SET_DOUBLE_INDEX(ibase, docid, doublelist, x);
                     }
                 }   
             }
