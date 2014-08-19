@@ -213,6 +213,7 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
                 last_docid = 0;
                 if(mdb_get_tag(index, termid, &last_docid) == 0)
                     ndocid = docid - last_docid;
+                else
                 {
                     ndocid = docid;
                 }
