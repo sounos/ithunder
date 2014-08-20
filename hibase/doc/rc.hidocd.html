@@ -828,9 +828,11 @@
                             if(xmlHttp.status == 200)
                             {
                                 if((obj = document.getElementById('dumpfile')))
-                                var res = eval(xmlHttp.responseText);
-                                var html = "当前数据源:"+res.source+"["+res.offset+"/"+res.size+"]<hr>";
-                                obj.innerHTML = html;
+                                {
+                                    var res = eval(xmlHttp.responseText);
+                                    var html = "当前数据源:"+res.source+"&nbsp;&nbsp;[<font color='#5FB404'>"+res.offset+"</font>/<font color=red>"+res.size+"</font>]<hr>";
+                                    obj.innerHTML = html;
+                                }
                             }
                         }
                     }
