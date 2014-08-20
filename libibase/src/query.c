@@ -33,7 +33,8 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
     IHEADER *headers = NULL; ICHUNK *chunk = NULL;
     IRES *res = NULL;
 
-    if(ibase && query && secid >= 0 && secid < IB_SEC_MAX && ibase->mindex[secid])
+    if(ibase && query && secid >= 0 && secid < IB_SEC_MAX 
+            && ibase->index && ibase->mindex[secid])
     {
         if((chunk = ibase_pop_chunk(ibase)))
         {
@@ -265,7 +266,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
         res->io_time = (int)PT_LU_USEC(timer);
         DEBUG_LOGGER(ibase->logger, "reading range fields[%d] data:%p ndata:%d qid:%d time used :%lld", min_set_fid, docs, ndocs, query->qid, PT_LU_USEC(timer));
         res->total = 0;
-        while(off < ndocs)
+        while(docs && off < ndocs)
         {
             docid = docs[off];
             doc_score = 0.0;

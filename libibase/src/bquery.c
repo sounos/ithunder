@@ -356,7 +356,8 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
     ITERM *itermlist = NULL;
     IRES *res = NULL;
 
-    if(ibase && query && secid >= 0 && secid < IB_SEC_MAX && (index = ibase->mindex[secid]))
+    if(ibase && query && secid >= 0 && secid < IB_SEC_MAX 
+            && (index = ibase->mindex[secid]))
     {
         if((chunk = ibase_pop_chunk(ibase)))
         {

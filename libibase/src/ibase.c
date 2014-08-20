@@ -302,9 +302,9 @@ int ibase_set_basedir(IBASE *ibase, char *dir, int used_for, int mmsource_status
                         ibase->state->mfields[x][i] = dmap_init(path);
                     }
                 }
-                sprintf(path, "%s/%s/mm", dir, IB_INDEX_DIR);
-                ibase->index = mdb_init(path, 0);
             }
+            sprintf(path, "%s/%s/mm", dir, IB_INDEX_DIR);
+            ibase->index = mdb_init(path, 0);
         }
 
         /* check int/long/double index*/
