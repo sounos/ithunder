@@ -289,8 +289,8 @@ err_end:
 /* httpd request handler */
 int httpd_request_handler(CONN *conn, HTTP_REQ *http_req)
 {
-    char buf[HTTP_LINE_MAX], *p = NULL, *end = NULL, *name = NULL, *ip = NULL, 
-         *bterms = NULL, *termlist = NULL, *doclist = NULL, *rank = NULL, 
+    char buf[HTTP_LINE_MAX], line[2048], *p = NULL, *end = NULL, *name = NULL,
+         *bterms = NULL, *termlist = NULL, *doclist = NULL, *rank = NULL, *ip = NULL, 
          *category = NULL, *slevel = NULL, *bitxcat = NULL, *dumpfile = NULL, 
          *fields = NULL, *idx_status = NULL, *term = NULL;
     int ret = -1, i = 0, id = 0, x = 0, n = 0, type = -1, taskid = -1, nodeid = -1, 
@@ -645,14 +645,14 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *http_req)
                 break;
             case E_OP_LIST_DUMP:
                 {
-                    if(hidoc->state && (n = strlen(hidoc->state->dumpfile)) > 0)
+                    if((n = hidoc->get_dumpinfo(hidoc, line, line + HTTP_LINE_MAX))> 0)
                     {
                         p = buf;
                         p += sprintf(p, "HTTP/1.0 200 OK\r\nContent-Type: text/html;charset=%s\r\n"
                                 "Content-Length: %d\r\n", http_default_charset, n);
                         if((n = http_req->headers[HEAD_GEN_CONNECTION]) > 0)
                             p += sprintf(p, "Connection: %s\r\n", (http_req->hlines + n));
-                        p += sprintf(p, "\r\n%s", hidoc->state->dumpfile);
+                        p += sprintf(p, "\r\n%s", line);
                         return conn->push_chunk(conn, buf, p - buf);
                     }
                     else goto err_end;

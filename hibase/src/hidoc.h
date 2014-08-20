@@ -231,6 +231,7 @@ typedef struct _HIDOC
     
     int (*set_basedir)(struct _HIDOC *, char *basedir);
     int (*set_dump)(struct _HIDOC *, char *dump);
+    int (*get_dumpinfo)(struct _HIDOC *, char *out, char *end);
     int (*set_int_index)(struct _HIDOC *, int int_index_from, int int_index_count);
     int (*set_long_index)(struct _HIDOC *, int long_index_from, int long_index_count);
     int (*set_double_index)(struct _HIDOC *, int double_index_from, int double_index_count);

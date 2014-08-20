@@ -803,7 +803,8 @@
                         {
                             if(xmlHttp.status == 200)
                             {
-                                o.innerHTML = "当前数据源:"+dumpfile+"<hr>";
+                                DumpList();
+                                //o.innerHTML = "当前数据源:"+dumpfile+"<hr>";
                             }
                         }
                     }
@@ -827,7 +828,9 @@
                             if(xmlHttp.status == 200)
                             {
                                 if((obj = document.getElementById('dumpfile')))
-                                obj.innerHTML = "当前数据源:"+xmlHttp.responseText+"<hr>";
+                                var res = eval(xmlHttp.responseText);
+                                var html = "当前数据源:"+res.source+"["+res.offset+"/"+res.size+"]<hr>";
+                                obj.innerHTML = html;
                             }
                         }
                     }

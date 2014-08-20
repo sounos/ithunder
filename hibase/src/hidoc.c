@@ -450,6 +450,25 @@ int hidoc_set_dump(HIDOC *hidoc, char *dumpfile)
     return ret;
 }
 
+/* get dump info */
+int hidoc_get_dumpinfo(HIDOC *hidoc, char *out, char *end)
+{
+    int ret = -1, n = 0;
+    struct stat st = {0};
+    char *p = NULL;
+
+    if(hidoc && (p = out) && hidoc->state 
+            && (n = strlen(hidoc->state->dumpfile))
+            && (end - out) > (n + 64)
+            && stat(hidoc->state->dumpfile, &st) == 0)
+    {
+        ret = sprintf(p, "({\"size\":\"%lld\",\"offset\":\"%lld\",\"source\":\"%s\"})", 
+                (long long int)st.st_size, (long long int)hidoc->state->dump_offset, 
+                hidoc->state->dumpfile);
+    }
+    return ret;
+}
+
 /* import new dict */
 int hidoc_set_dict(HIDOC *hidoc, char *dict_file, char *dict_charset, char *dict_rules)
 {
@@ -3324,6 +3343,7 @@ HIDOC *hidoc_init()
         hidoc->set_phrase_status        = hidoc_set_phrase_status;
         hidoc->genindex                 = hidoc_genindex;
         hidoc->set_dump                 = hidoc_set_dump;
+        hidoc->get_dumpinfo             = hidoc_get_dumpinfo;
         hidoc->pop_document             = hidoc_pop_document;
         hidoc->parse_document           = hidoc_parse_document;
         hidoc->parseHTML                = hidoc_parseHTML;
