@@ -253,6 +253,8 @@ int mdb_pread(MDB *db, int index, void *data, int ndata, off_t offset)
 
     if(db && index >= 0 && data && ndata > 0 && offset >= 0 && offset < MDB_MFILE_SIZE)
     {
+        n = pread(db->dbsio[index].fd, data, ndata, offset);
+        /*
         RWLOCK_RDLOCK(db->dbsio[index].mutex);
         if(lseek(db->dbsio[index].fd, offset, SEEK_SET) == offset)
             n = read(db->dbsio[index].fd, data, ndata);
@@ -261,6 +263,7 @@ int mdb_pread(MDB *db, int index, void *data, int ndata, off_t offset)
             FATAL_LOGGER(db->logger, "lseek to dbsio[%d/%d] offset:%lld failed, %s", index, db->state->last_id, LL(offset), strerror(errno));
         }
         RWLOCK_UNLOCK(db->dbsio[index].mutex);
+        */
     }
     return n;
 }
@@ -271,6 +274,8 @@ int mdb_pwrite(MDB *db, int index, void *data, int ndata, off_t offset)
 
     if(db && index >= 0 && data && ndata > 0 && offset >= 0 && offset < MDB_MFILE_SIZE)
     {
+        n = pwrite(db->dbsio[index].fd, data, ndata, offset);
+        /*
         RWLOCK_WRLOCK(db->dbsio[index].mutex);
         if(lseek(db->dbsio[index].fd, offset, SEEK_SET) == offset)
             n = write(db->dbsio[index].fd, data, ndata);
@@ -279,6 +284,7 @@ int mdb_pwrite(MDB *db, int index, void *data, int ndata, off_t offset)
             FATAL_LOGGER(db->logger, "lseek to dbsio[%d/%d] offset:%lld failed, %s", index, db->state->last_id, LL(offset), strerror(errno));
         }
         RWLOCK_UNLOCK(db->dbsio[index].mutex);
+        */
     }
     return n;
 }

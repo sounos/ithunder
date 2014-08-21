@@ -430,6 +430,7 @@ int ibase_read_summary(IBASE *ibase, IQSET *qset, IRECORD *records, char *summar
                 {
                     TIMER_SAMPLE(timer);
                     id_time += PT_LU_USEC(timer);
+                    memset(zblock, 0, sizeof(DOCHEADER));
                     if(db_read_data(PDB(ibase->source), docid, zblock) <= 0) 
                     {
                         FATAL_LOGGER(ibase->logger, "read source docid:%d globalid:%lld failed,%s", docid, IBLL(records[i].globalid), strerror(errno));
@@ -443,7 +444,7 @@ int ibase_read_summary(IBASE *ibase, IQSET *qset, IRECORD *records, char *summar
                     nzdata = docheader->content_zsize;
                     if((nzdata = docheader->content_zsize) > 0)
                     {
-                        //ACCESS_LOGGER(ibase->logger, "Ready for uncompress data %u to %d", nzdata, docheader->content_size);
+                        DEBUG_LOGGER(ibase->logger, "Ready for uncompress data %u to %d", nzdata, docheader->content_size);
                         block[docheader->content_size] = '\0';
                         if(uncompress((Bytef *)block, (uLongf *)&ndata, 
                                     (Bytef *)zdata, (uLong)nzdata) == -1) 
@@ -453,7 +454,7 @@ int ibase_read_summary(IBASE *ibase, IQSET *qset, IRECORD *records, char *summar
                             continue;
                         }
                         content = block;
-                        //ACCESS_LOGGER(ibase->logger, "Over uncompress data %u to %d", nzdata, docheader->content_size);
+                        DEBUG_LOGGER(ibase->logger, "Over uncompress data %u to %d", nzdata, docheader->content_size);
                     }
                     else
                     {

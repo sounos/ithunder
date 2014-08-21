@@ -253,6 +253,8 @@ int db_pread(DB *db, int index, void *data, int ndata, off_t offset)
 
     if(db && index >= 0 && data && ndata > 0 && offset >= 0 && offset < DB_MFILE_SIZE)
     {
+        n = pread(db->dbsio[index].fd, data, ndata, offset);
+        /*
         RWLOCK_RDLOCK(db->dbsio[index].mutex);
         if(lseek(db->dbsio[index].fd, offset, SEEK_SET) == offset)
             n = read(db->dbsio[index].fd, data, ndata);
@@ -260,7 +262,8 @@ int db_pread(DB *db, int index, void *data, int ndata, off_t offset)
         {
             FATAL_LOGGER(db->logger, "lseek to dbsio[%d/%d] offset:%lld failed, %s", index, db->state->last_id, LL(offset), strerror(errno));
         }
-        RWLOCK_UNLOCK(db->dbsio[index].mutex);
+        */
+        //RWLOCK_UNLOCK(db->dbsio[index].mutex);
     }
     return n;
 }
@@ -271,6 +274,8 @@ int db_pwrite(DB *db, int index, void *data, int ndata, off_t offset)
 
     if(db && index >= 0 && data && ndata > 0 && offset >= 0 && offset < DB_MFILE_SIZE)
     {
+        n = pwrite(db->dbsio[index].fd, data, ndata, offset);
+        /*
         RWLOCK_WRLOCK(db->dbsio[index].mutex);
         if(lseek(db->dbsio[index].fd, offset, SEEK_SET) == offset)
             n = write(db->dbsio[index].fd, data, ndata);
@@ -279,6 +284,7 @@ int db_pwrite(DB *db, int index, void *data, int ndata, off_t offset)
             FATAL_LOGGER(db->logger, "lseek to dbsio[%d/%d] offset:%lld failed, %s", index, db->state->last_id, LL(offset), strerror(errno));
         }
         RWLOCK_UNLOCK(db->dbsio[index].mutex);
+        */
     }
     return n;
 }
@@ -1161,6 +1167,7 @@ int db__read__data(DB *db, int id, char *data)
                 else
                 {
                     //if(pread(db->dbsio[index].fd, data, n, (off_t)dbx[id].blockid*(off_t)DB_BASE_SIZE)> 0)
+                    ACCESS_LOGGER(db->logger, "read() dbxid:%d blockid:%d index:%d block_size:%d",id, dbx[id].blockid, dbx[id].index, dbx[id].block_size);
                     if(db_pread(db, index, data, n, (off_t)(dbx[id].blockid)*(off_t)DB_BASE_SIZE)> 0)
                         ret = n;
                 }

@@ -254,6 +254,7 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
         if(ibase->state->used_for != IB_USED_FOR_QPARSERD 
                 && ibase->state->mmsource_status != IB_MMSOURCE_NULL)
         {
+                ACCESS_LOGGER(ibase->logger, "docid:%lld c_size:%d c_zsize:%d size:%d", docheader->globalid, docheader->content_size, docheader->content_zsize, docheader->prevnext_off);
                 docheader->size = docheader->prevnext_off;
                 ret = db_set_data(PDB(ibase->source), docid, block->data, docheader->size);
         }
@@ -345,6 +346,7 @@ int ibase_update_index(IBASE *ibase, int docid, IBDATA *block)
         if(ibase->state->used_for != IB_USED_FOR_QPARSERD 
                 && ibase->state->mmsource_status != IB_MMSOURCE_NULL)
         {
+            ACCESS_LOGGER(ibase->logger, "docid:%lld/%d c_size:%d c_zsize:%d size:%d", docheader->globalid, docid, docheader->content_size, docheader->content_zsize, docheader->prevnext_off);
             docheader->size = docheader->prevnext_off;
             ret = db_set_data(PDB(ibase->source), docid, block->data, docheader->size);
         }

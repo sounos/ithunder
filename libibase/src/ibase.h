@@ -759,7 +759,6 @@ typedef struct _IBASE
     int     (*set_log_level)(struct _IBASE *ibase, int level);
     void    (*clean)(struct _IBASE *ibase);
 }IBASE;
-#pragma pack(pop)
 /* initialize ibase */
 IBASE *ibase_init();
 /* mkdir force */
@@ -869,6 +868,7 @@ int ibase_read_summary(IBASE *ibase, IQSET *qset, IRECORD *records, char *summar
         char *highlight_start, char *highlight_end);
 /* clean */
 void ibase_clean(IBASE *ibase);
+#pragma pack(pop)
 #ifdef __cplusplus
  }
 #endif
