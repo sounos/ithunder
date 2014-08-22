@@ -87,11 +87,8 @@ extern "C" {
 #define  IB_TERMSTATE_NAME       "ibase.termstate"
 #define  IB_STATE_NAME           "ibase.state"
 #define  IB_DOCMAP_NAME          "ibase.docmap"
-#define  IB_HEADERS_NAME         "ibase.headers"
+#define  IB_MHEADER_NAME         "ibase.mheader"
 #define  IB_IDX_DIR              "idx"
-#define  IB_INTIDX_NAME          "ibase.int"
-#define  IB_LONGIDX_NAME         "ibase.long"
-#define  IB_DOUBLEIDX_NAME       "ibase.double"
 #define  IB_INDEX_DIR            "index"
 #define  IB_SOURCE_DIR           "source"
 #define  IB_LOGGER_NAME          "ibase.log"
@@ -331,12 +328,18 @@ typedef struct _XHEADER
     int64_t category;
     double  rank;
 }XHEADER;
-
+typedef struct _MHEADER
+{
+    short status;
+    short secid;
+    int   crc;
+    int   docid;
+}MHEADER;
 /* doc header for index */
 typedef struct _IHEADER
 {
-    int     status;
-    int     slevel;
+    short     status;
+    short     slevel;
     int     terms_total;
     int     crc;
     int64_t globalid;
@@ -585,7 +588,6 @@ typedef struct _IBIO
 /* state */
 typedef struct _IBSTATE
 {
-    int     kmaproot;
     int     used_for;
     int     termid;
     int     docid;
@@ -599,12 +601,13 @@ typedef struct _IBSTATE
     int     long_index_fields_num;
     int     double_index_from;
     int     double_index_fields_num;
-    int     bits;
     int     nsecs;
-    int     secs[IB_SEC_MAX];
     int64_t ttotal;
     int64_t dtotal;
+    int     secs[IB_SEC_MAX];
+    int     ids[IB_SEC_MAX]; 
     void    *mfields[IB_SEC_MAX][IB_FIELDS_MAX];
+    IBIO    headers[IB_SEC_MAX];
 }IBSTATE;
 
 #define IB_REQ_QPARSE            1
@@ -676,7 +679,7 @@ typedef struct _IBASE
 {
     IBIO stateio;
     IBIO termstateio;
-    IBIO headersio;
+    IBIO mheadersio;
     IBIO intidxio;
     IBIO longidxio;
     IBIO doubleidxio;
@@ -732,7 +735,6 @@ typedef struct _IBASE
     int     (*set_long_index)(struct _IBASE *ibase, int secid, int int_index_from, int int_fields_num);
     int     (*set_double_index)(struct _IBASE *ibase, int secid, int double_index_from, int double_fields_num);
     int     (*add_document)(struct _IBASE *ibase, IBDATA *block);
-    int     (*update_document)(struct _IBASE *ibase, IBDATA *block);
     int     (*enable_document)(struct _IBASE *ibase, int64_t globalid);
     int     (*disable_document)(struct _IBASE *ibase, int64_t globalid);
     int     (*enable_term)(struct _IBASE *ibase, int termid);

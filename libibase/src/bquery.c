@@ -375,7 +375,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
         itermlist = ibase_pop_itermlist(ibase);
         topmap = ibase_pop_stree(ibase);
         fmap = ibase_pop_stree(ibase);
-        headers = (IHEADER *)(ibase->headersio.map);
+        headers = (IHEADER *)(ibase->state->headers[secid].map);
         if((p1 = query->ravgdl) <= 0.0) p1 = 1.0;
         if((query->flag & IB_QUERY_RSORT)) is_sort_reverse = 1;        
         else if((query->flag & IB_QUERY_SORT)) is_sort_reverse = 0;

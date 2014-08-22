@@ -288,6 +288,7 @@ int db_pwrite(DB *db, int index, void *data, int ndata, off_t offset)
     }
     return n;
 }
+
 /* set block incre mode */
 int db_set_block_incre_mode(DB *db, int mode)
 {

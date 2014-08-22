@@ -49,7 +49,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
             goto end;
         }
         topmap = ibase_pop_stree(ibase);
-        headers = (IHEADER *)(ibase->headersio.map);
+        headers = (IHEADER *)(ibase->state->headers[secid].map);
         if((query->flag & IB_QUERY_RSORT)) is_sort_reverse = 1;        
         else if((query->flag & IB_QUERY_SORT)) is_sort_reverse = 0;
         else is_sort_reverse = 1;

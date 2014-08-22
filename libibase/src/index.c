@@ -19,7 +19,8 @@
 #include "imap.h"
 #include "lmap.h"
 #include "dmap.h"
-#define PIHEADER(ibase, docid) &(((IHEADER *)(ibase->headersio.map))[docid])
+#define PIHEADER(ibase, secid, docid) &(((IHEADER *)(ibase->state->headers[secid].map))[docid])
+#define PMHEADER(ibase, docid) &(((MHEADER *)(ibase->mheadersio.map))[docid])
 #ifndef LLI
 #define LLI(x) ((long long int) x)
 #endif
@@ -109,7 +110,7 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
     off_t size = 0;
 
     if((docheader = (DOCHEADER *)block->data) 
-            && docheader->secid >= 0 && docheader->secid < IB_SEC_MAX
+            && (secid = docheader->secid) >= 0 && docheader->secid < IB_SEC_MAX
             && ibase_check_index_state(ibase, docheader) == 0)
     {
         index = ibase->mindex[docheader->secid];
@@ -118,17 +119,17 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
         if(ibase->state->used_for == IB_USED_FOR_INDEXD)
         {
             /* add to source */
-            if(((off_t)docid * (off_t)sizeof(IHEADER)) >= ibase->headersio.end)
+            if(((off_t)docid * (off_t)sizeof(IHEADER)) >= ibase->state->headers[secid].end)
             {
-                ibase->headersio.old = ibase->headersio.end;
+                ibase->state->headers[secid].old = ibase->state->headers[secid].end;
                 size = (off_t)((docid / IB_HEADERS_BASE) + 1) 
                     * (off_t)IB_HEADERS_BASE * (off_t)sizeof(IHEADER);
-                ret = ftruncate(ibase->headersio.fd, size);
-                ibase->headersio.end = size;
-                memset(ibase->headersio.map + ibase->headersio.old, 0, 
-                        ibase->headersio.end -  ibase->headersio.old);
+                ret = ftruncate(ibase->state->headers[secid].fd, size);
+                ibase->state->headers[secid].end = size;
+                memset(ibase->state->headers[secid].map + ibase->state->headers[secid].old, 0, 
+                        ibase->state->headers[secid].end -  ibase->state->headers[secid].old);
             }
-            if((iheader = PIHEADER(ibase, docid)))
+            if((iheader = PIHEADER(ibase, docheader->secid, docid)))
             {
                 iheader->status      = docheader->status;
                 iheader->terms_total = docheader->terms_total;
@@ -213,7 +214,6 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
         }
         if(ibase->state->used_for == IB_USED_FOR_INDEXD)
         {
-            secid = docheader->secid;
             /* index int */
             if((n = ibase->state->int_index_fields_num) > 0 
                     && (intlist = (int *)(block->data + docheader->intblock_off)))
@@ -251,13 +251,6 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
                 }
             }
         }
-        if(ibase->state->used_for != IB_USED_FOR_QPARSERD 
-                && ibase->state->mmsource_status != IB_MMSOURCE_NULL)
-        {
-                ACCESS_LOGGER(ibase->logger, "docid:%lld c_size:%d c_zsize:%d size:%d", docheader->globalid, docheader->content_size, docheader->content_zsize, docheader->prevnext_off);
-                docheader->size = docheader->prevnext_off;
-                ret = db_set_data(PDB(ibase->source), docid, block->data, docheader->size);
-        }
         ret = 0;
     }
     return ret;
@@ -277,22 +270,22 @@ int ibase_update_index(IBASE *ibase, int docid, IBDATA *block)
 
     if(ibase && block && block->data && block->ndata > 0 
             && (docheader =  (DOCHEADER *)(block->data))
-            && docheader->secid >= 0 && docheader->secid < IB_SEC_MAX
+            && (secid = docheader->secid) >= 0 && docheader->secid < IB_SEC_MAX
             && ibase_check_index_state(ibase, docheader) == 0)
     {
         if(ibase->state->used_for == IB_USED_FOR_INDEXD)
         {
-            if(((off_t)docid * (off_t)sizeof(IHEADER)) >= ibase->headersio.end)
+            if(((off_t)docid * (off_t)sizeof(IHEADER)) >= ibase->state->headers[secid].end)
             {
-                ibase->headersio.old = ibase->headersio.end;
+                ibase->state->headers[secid].old = ibase->state->headers[secid].end;
                 size = (off_t)((docid / IB_HEADERS_BASE) + 1) 
                     * (off_t)IB_HEADERS_BASE * (off_t)sizeof(IHEADER);
-                ret = ftruncate(ibase->headersio.fd, size);
-                ibase->headersio.end = size;
-                memset(ibase->headersio.map + ibase->headersio.old, 0, 
-                        ibase->headersio.end -  ibase->headersio.old);
+                ret = ftruncate(ibase->state->headers[secid].fd, size);
+                ibase->state->headers[secid].end = size;
+                memset(ibase->state->headers[secid].map + ibase->state->headers[secid].old, 0, 
+                        ibase->state->headers[secid].end -  ibase->state->headers[secid].old);
             }
-            if((iheader = PIHEADER(ibase, docid)))
+            if((iheader = PIHEADER(ibase, docheader->secid, docid)))
             {
                 iheader->status      = docheader->status;
                 iheader->terms_total = docheader->terms_total;
@@ -343,33 +336,30 @@ int ibase_update_index(IBASE *ibase, int docid, IBDATA *block)
                 }   
             }
         }
-        if(ibase->state->used_for != IB_USED_FOR_QPARSERD 
-                && ibase->state->mmsource_status != IB_MMSOURCE_NULL)
-        {
-            ACCESS_LOGGER(ibase->logger, "docid:%lld/%d c_size:%d c_zsize:%d size:%d", docheader->globalid, docid, docheader->content_size, docheader->content_zsize, docheader->prevnext_off);
-            docheader->size = docheader->prevnext_off;
-            ret = db_set_data(PDB(ibase->source), docid, block->data, docheader->size);
-        }
         ret = 0;
     }
     return ret;
 }
 
 /* del index */
-int ibase_del_index(IBASE *ibase, int docid)
+int ibase_del_index(IBASE *ibase, int localid)
 {
+    MHEADER *mheader = NULL;
     IHEADER *iheader = NULL;
     int ret = -1;
 
-    if((iheader = PIHEADER(ibase, docid))) 
+    if((mheader = PMHEADER(ibase, localid))) 
     {
         ibase->state->dtotal--;
         ibase->state->ttotal -= iheader->terms_total;
-        iheader->status = -1;
+        if(mheader->docid > 0 && (iheader = PIHEADER(ibase, mheader->secid, mheader->docid)))
+        {
+            iheader->status = -1;
+        }
         if(ibase->state->used_for == IB_USED_FOR_INDEXD 
                 && ibase->state->mmsource_status != IB_MMSOURCE_NULL)
         {
-            ret = db_del_data(PDB(ibase->source), docid);
+            ret = db_del_data(PDB(ibase->source), localid);
         }
         ret = 0;        
     }
@@ -379,60 +369,80 @@ int ibase_del_index(IBASE *ibase, int docid)
 /* add document */
 int ibase_add_document(IBASE *ibase, IBDATA *block)
 {
-    int ret = -1, docid = 0, n = 0, newid = 0;
+    int ret = -1, localid = 0, secid = 0, n = 0, newid = 0;
     DOCHEADER *docheader = NULL;
-    IHEADER *iheader = NULL;
+    MHEADER *mheader = NULL;
     char line[IB_LINE_MAX];
+    off_t size = 0;
 
     if(ibase && block && block->ndata > 0 && (docheader = (DOCHEADER *)(block->data)) 
+            && (secid = docheader->secid) >= 0 && secid < IB_SEC_MAX
             && docheader->globalid && (n = sprintf(line, "%lld", IBLL(docheader->globalid))))
     {
         MUTEX_LOCK(ibase->mutex);
-        if((docid = mmtrie_xadd(ibase->docmap, line, n)) > 0)
+        if((localid = mmtrie_xadd(ibase->docmap, line, n)) > 0)
         {
-            if(docid <= ibase->state->docid) 
+            if(localid <= ibase->state->docid) 
             {
                 if(ibase->state->used_for == IB_USED_FOR_INDEXD)
                 {
-                    if((iheader = PIHEADER(ibase, docid)))
+                    if((mheader = PMHEADER(ibase, localid)))
                     {
                         /* disabled */
                         if(docheader->status < 0)
                         {
-                            iheader->status = -1;
-                            DEBUG_LOGGER(ibase->logger, "Update docid:%d globalid:%lld status:%d", docid, IBLL(docheader->globalid), docheader->status);
+                            mheader->status = -1;
+                            DEBUG_LOGGER(ibase->logger, "Update docid:%d globalid:%lld status:%d", localid, IBLL(docheader->globalid), docheader->status);
                             ret = 0;
                         }
-                        else if(docheader->crc != iheader->crc) 
+                        else if(docheader->crc != mheader->crc) 
                         {
-                            ibase_del_index(ibase, docid);
-                            mmtrie_del(ibase->docmap, line, n);
-                            newid = mmtrie_xadd(ibase->docmap, line, n);
-                            ibase->state->docid = newid;
-                            DEBUG_LOGGER(ibase->logger, "over_reindex[%lld/%d]{crc:%d rank:%f slevel:%d category:%lld}", IBLL(docheader->globalid), docid, docheader->crc, docheader->rank, docheader->slevel, LLI(docheader->category));
+                            ibase_del_index(ibase, localid);
+                            newid = ++(ibase->state->ids[secid]);
+                            DEBUG_LOGGER(ibase->logger, "ready_reindex[%lld/%d]{crc:%d rank:%f slevel:%d category:%lld}", IBLL(docheader->globalid), localid, docheader->crc, docheader->rank, docheader->slevel, LLI(docheader->category));
+                            mheader->docid = newid;
+                            mheader->crc = docheader->crc;
                             ret = ibase_index(ibase, newid, block);
-                            DEBUG_LOGGER(ibase->logger, "over_reindex[%lld/%d]{crc:%d rank:%f slevel:%d category:%lld}", IBLL(docheader->globalid), docid, docheader->crc, docheader->rank, docheader->slevel, LLI(docheader->category));
+                            DEBUG_LOGGER(ibase->logger, "over_reindex[%lld/%d]{crc:%d rank:%f slevel:%d category:%lld}", IBLL(docheader->globalid), localid, docheader->crc, docheader->rank, docheader->slevel, LLI(docheader->category));
                         }
                         else
                         {
-                            DEBUG_LOGGER(ibase->logger, "update_index[%lld/%d]{crc:%d rank:%f slevel:%d category:%lld}", IBLL(docheader->globalid), docid, docheader->crc, docheader->rank, docheader->slevel, LLI(docheader->category));
-                            ret = ibase_update_index(ibase, docid, block);
-                            iheader->status = 0;
-                            DEBUG_LOGGER(ibase->logger, "over_update_index[%lld/%d]{crc:%d rank:%f slevel:%d category:%lld}", IBLL(docheader->globalid), docid, docheader->crc, docheader->rank, docheader->slevel, LLI(docheader->category));
+                            DEBUG_LOGGER(ibase->logger, "update_index[%lld/%d]{crc:%d rank:%f slevel:%d category:%lld}", IBLL(docheader->globalid), localid, docheader->crc, docheader->rank, docheader->slevel, LLI(docheader->category));
+                            ret = ibase_update_index(ibase, mheader->docid, block);
+                            DEBUG_LOGGER(ibase->logger, "over_update_index[%lld/%d]{crc:%d rank:%f slevel:%d category:%lld}", IBLL(docheader->globalid), localid, docheader->crc, docheader->rank, docheader->slevel, LLI(docheader->category));
                         }
                     }
-                }
-                else
-                {
-                    ret = ibase_update_index(ibase, docid, block);
-                    DEBUG_LOGGER(ibase->logger, "over_update_index[%lld/%d]{crc:%d rank:%f slevel:%d category:%lld}", IBLL(docheader->globalid), docid, docheader->crc, docheader->rank, docheader->slevel, LLI(docheader->category));
                 }
             }
             else
             {
-                ibase->state->docid = docid;
-                DEBUG_LOGGER(ibase->logger, "new_index[%lld/%d]{crc:%d rank:%f slevel:%d category:%lld}", IBLL(docheader->globalid), docid, docheader->crc, docheader->rank, docheader->slevel, LLI(docheader->category));
-                ret = ibase_index(ibase, docid, block);
+                if(((off_t)localid * (off_t)sizeof(MHEADER)) >= ibase->mheadersio.end)
+                {
+                    ibase->mheadersio.old = ibase->mheadersio.end;
+                    size = (off_t)((localid / IB_HEADERS_BASE) + 1) 
+                        * (off_t)IB_HEADERS_BASE * (off_t)sizeof(MHEADER);
+                    ret = ftruncate(ibase->mheadersio.fd, size);
+                    ibase->mheadersio.end = size;
+                    memset(ibase->mheadersio.map + ibase->mheadersio.old, 0, 
+                            ibase->mheadersio.end -  ibase->mheadersio.old);
+                }
+                ibase->state->docid = localid;
+                if((mheader = PMHEADER(ibase, localid)))
+                {
+                    mheader->status = 0;
+                    mheader->docid = ++(ibase->state->ids[secid]);
+                    mheader->secid = docheader->secid;
+                    mheader->crc = docheader->crc;
+                    DEBUG_LOGGER(ibase->logger, "new_index[%lld/%d]{crc:%d rank:%f slevel:%d category:%lld}", IBLL(docheader->globalid), localid, docheader->crc, docheader->rank, docheader->slevel, LLI(docheader->category));
+                    ret = ibase_index(ibase, mheader->docid, block);
+                }
+            }
+            if(ibase->state->used_for != IB_USED_FOR_QPARSERD 
+                    && ibase->state->mmsource_status != IB_MMSOURCE_NULL)
+            {
+                ACCESS_LOGGER(ibase->logger, "docid:%lld/%d c_size:%d c_zsize:%d size:%d", docheader->globalid, localid, docheader->content_size, docheader->content_zsize, docheader->prevnext_off);
+                docheader->size = docheader->prevnext_off;
+                ret = db_set_data(PDB(ibase->source), localid, block->data, docheader->size);
             }
         }
         else
@@ -445,74 +455,6 @@ int ibase_add_document(IBASE *ibase, IBDATA *block)
     return ret;
 }
 
-/* update document */
-int ibase_update_document(IBASE *ibase, IBDATA *block)
-{
-    int ret = -1, docid = 0, n = 0, newid = 0;
-    DOCHEADER *docheader = NULL;
-    IHEADER *iheader = NULL;
-    char line[IB_LINE_MAX];
-
-    if(ibase && block && block->ndata > 0 && (docheader = (DOCHEADER *)(block->data)) 
-            && docheader->globalid && (n = sprintf(line, "%lld", IBLL(docheader->globalid))))
-    {
-        MUTEX_LOCK(ibase->mutex);
-        if((docid = mmtrie_xadd(ibase->docmap, line, n)) > 0)
-        {
-            if(docid <= ibase->state->docid) 
-            {
-                if(ibase->state->used_for == IB_USED_FOR_INDEXD)
-                {
-                    if((iheader = PIHEADER(ibase, docid)))
-                    {
-                        /* disabled */
-                        if(docheader->status < 0)
-                        {
-                            iheader->status = -1;
-                            DEBUG_LOGGER(ibase->logger, "Update docid:%d globalid:%lld status:%d", docid, IBLL(docheader->globalid), docheader->status);
-                            ret = 0;
-                        }
-                        else if(docheader->crc != iheader->crc) 
-                        {
-                            ibase_del_index(ibase, docid);
-                            mmtrie_del(ibase->docmap, line, n);
-                            newid = mmtrie_xadd(ibase->docmap, line, n);
-                            ibase->state->docid = newid;
-                            DEBUG_LOGGER(ibase->logger, "over_reindex[%lld/%d]{crc:%d rank:%f slevel:%d category:%lld}", IBLL(docheader->globalid), docid, docheader->crc, docheader->rank, docheader->slevel, LLI(docheader->category));
-                            ret = ibase_index(ibase, newid, block);
-                            DEBUG_LOGGER(ibase->logger, "over_reindex[%lld/%d]{crc:%d rank:%f slevel:%d category:%lld}", IBLL(docheader->globalid), docid, docheader->crc, docheader->rank, docheader->slevel, LLI(docheader->category));
-                        }
-                        else
-                        {
-                            DEBUG_LOGGER(ibase->logger, "update_index[%lld/%d]{crc:%d rank:%f slevel:%d category:%lld}", IBLL(docheader->globalid), docid, docheader->crc, docheader->rank, docheader->slevel, LLI(docheader->category));
-                            ret = ibase_update_index(ibase, docid, block);
-                            iheader->status = 0;
-                            DEBUG_LOGGER(ibase->logger, "over_update_index[%lld/%d]{crc:%d rank:%f slevel:%d category:%lld}", IBLL(docheader->globalid), docid, docheader->crc, docheader->rank, docheader->slevel, LLI(docheader->category));
-                        }
-                    }
-                }
-                else
-                {
-                    ret = ibase_update_index(ibase, docid, block);
-                    DEBUG_LOGGER(ibase->logger, "over_update_index[%lld/%d]{crc:%d rank:%f slevel:%d category:%lld}", IBLL(docheader->globalid), docid, docheader->crc, docheader->rank, docheader->slevel, LLI(docheader->category));
-                }
-            }
-            else
-            {
-                ibase->state->docid = docid;
-                DEBUG_LOGGER(ibase->logger, "new_index[%lld/%d]{crc:%d rank:%f slevel:%d category:%lld}", IBLL(docheader->globalid), docid, docheader->crc, docheader->rank, docheader->slevel, LLI(docheader->category));
-                ret = ibase_index(ibase, docid, block);
-            }
-        }
-        else
-        {
-            FATAL_LOGGER(ibase->logger, "new_index[%lld]{crc:%d rank:%f slevel:%d category:%lld} failed, %s", IBLL(docheader->globalid), docheader->crc, docheader->rank, docheader->slevel, LLI(docheader->category), strerror(errno));
-
-        }
-        MUTEX_UNLOCK(ibase->mutex);
-    }
-    return ret;
-}
 /* delete document */
 int ibase_del_document(IBASE *ibase, int docid)
 {    

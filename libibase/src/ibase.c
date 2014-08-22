@@ -28,7 +28,8 @@
 #define ISSIGN(p) (*p == '@' || *p == '.' || *p == '-' || *p == '_')
 #define ISNUM(p) ((*p >= '0' && *p <= '9'))
 #define ISCHAR(p) ((*p >= 'A' && *p <= 'Z')||(*p >= 'a' && *p <= 'z'))
-#define PIHEADER(ibase, docid) &(((IHEADER *)(ibase->headersio.map))[docid])
+#define PIHEADER(ibase, secid, docid) &(((IHEADER *)(ibase->state->headers[secid].map))[docid])
+#define PMHEADER(ibase, docid) &(((MHEADER *)(ibase->mheadersio.map))[docid])
 #ifndef LLI
 #define LLI(x) ((long long int) x)
 #endif
@@ -223,17 +224,17 @@ int ibase_set_basedir(IBASE *ibase, char *dir, int used_for, int mmsource_status
         if(used_for == IB_USED_FOR_INDEXD)
         {
             /* headers */
-            sprintf(path, "%s/%s", dir, IB_HEADERS_NAME);
-            if((ibase->headersio.fd = open(path, O_CREAT|O_RDWR, 0644)) > 0
-                    && fstat(ibase->headersio.fd, &st) == 0)
+            sprintf(path, "%s/%s", dir, IB_MHEADER_NAME);
+            if((ibase->mheadersio.fd = open(path, O_CREAT|O_RDWR, 0644)) > 0
+                    && fstat(ibase->mheadersio.fd, &st) == 0)
             {
-                ibase->headersio.end = st.st_size;
-                size = (off_t)sizeof(IHEADER) * (off_t)IB_HEADERS_MAX;
+                ibase->mheadersio.end = st.st_size;
+                size = (off_t)sizeof(MHEADER) * (off_t)IB_HEADERS_MAX;
                 if(st.st_size > size) size = st.st_size;
-                if((ibase->headersio.map = (char *)mmap(NULL, size,
-                                PROT_READ|PROT_WRITE, MAP_SHARED, ibase->headersio.fd, 0)) != (void *)-1)
+                if((ibase->mheadersio.map = (char *)mmap(NULL, size,
+                                PROT_READ|PROT_WRITE, MAP_SHARED, ibase->mheadersio.fd, 0)) != (void *)-1)
                 {
-                    ibase->headersio.size = size;
+                    ibase->mheadersio.size = size;
                 }
                 else
                 {
@@ -243,7 +244,7 @@ int ibase_set_basedir(IBASE *ibase, char *dir, int used_for, int mmsource_status
             }
             else
             {
-                fprintf(stderr, "open headersio[%s] failed, %s\n", path, strerror(errno));
+                fprintf(stderr, "open mheadersio[%s] failed, %s\n", path, strerror(errno));
                 _exit(-1);
             }
         }
@@ -302,6 +303,31 @@ int ibase_set_basedir(IBASE *ibase, char *dir, int used_for, int mmsource_status
                         ibase->state->mfields[x][i] = dmap_init(path);
                     }
                 }
+                sprintf(path, "%s/headers/%d.header", dir, x);
+                ibase_mkdir(path);
+                if((ibase->state->headers[x].fd = open(path, O_CREAT|O_RDWR, 0644)) > 0
+                        && fstat(ibase->state->headers[x].fd, &st) == 0)
+                {
+                    ibase->state->headers[x].end = st.st_size;
+                    size = (off_t)sizeof(IHEADER) * (off_t)IB_HEADERS_MAX;
+                    if(st.st_size > size) size = st.st_size;
+                    if((ibase->state->headers[x].map = (char *)mmap(NULL,size,PROT_READ|PROT_WRITE,
+                                    MAP_SHARED, ibase->state->headers[x].fd, 0)) != (void *)-1)
+                    {
+                        ibase->state->headers[x].size = size;
+                    }
+                    else
+                    {
+                        fprintf(stderr, "mmap headers file (%s) failed, %s\r\n", path, strerror(errno));
+                        _exit(-1);
+                    }
+                }
+                else
+                {
+                    fprintf(stderr, "open headersio[%s] failed, %s\n", path, strerror(errno));
+                    _exit(-1);
+                }
+
             }
             sprintf(path, "%s/%s/mm", dir, IB_INDEX_DIR);
             ibase->index = mdb_init(path, 0);
@@ -325,6 +351,8 @@ int ibase_set_basedir(IBASE *ibase, char *dir, int used_for, int mmsource_status
 void ibase_check_mindex(IBASE *ibase, int secid)
 {
     char path[IB_PATH_MAX];
+    struct stat st = {0};
+    off_t size = 0;
 
     if(ibase && secid >= 0 && secid < IB_SEC_MAX)
     {
@@ -334,6 +362,33 @@ void ibase_check_mindex(IBASE *ibase, int secid)
             ibase->mindex[secid] = mdb_init(path, 1);
             ibase->state->secs[ibase->state->nsecs++] = secid;
             mdb_set_block_incre_mode(ibase->mindex[secid], DB_BLOCK_INCRE_DOUBLE);
+        }
+        if(!ibase->state->headers[secid].map)
+        {
+            sprintf(path, "%s/headers/%d.header", ibase->basedir, secid);
+            ibase_mkdir(path);
+            if((ibase->state->headers[secid].fd = open(path, O_CREAT|O_RDWR, 0644)) > 0
+                    && fstat(ibase->state->headers[secid].fd, &st) == 0)
+            {
+                ibase->state->headers[secid].end = st.st_size;
+                size = (off_t)sizeof(IHEADER) * (off_t)IB_HEADERS_MAX;
+                if(st.st_size > size) size = st.st_size;
+                if((ibase->state->headers[secid].map = (char *)mmap(NULL,size,PROT_READ|PROT_WRITE,
+                                MAP_SHARED, ibase->state->headers[secid].fd, 0)) != (void *)-1)
+                {
+                    ibase->state->headers[secid].size = size;
+                }
+                else
+                {
+                    FATAL_LOGGER(ibase->logger, "mmap headers file (%s) failed, %s", path, strerror(errno));
+                    _exit(-1);
+                }
+            }
+            else
+            {
+                FATAL_LOGGER(ibase->logger, "open headersio[%s] failed, %s", path, strerror(errno));
+                _exit(-1);
+            }
         }
     }
     return ;
@@ -366,44 +421,6 @@ void ibase_check_int_idx(IBASE *ibase, int secid, int no)
         ibase->state->mfields[secid][no] = imap_init(path);
     }
     return ;
-}
-
-/* check int index  */
-int ibase_check_int_index(IBASE *ibase)
-{
-    char path[IB_PATH_MAX];
-    struct stat st = {0};
-    off_t size = 0;
-
-    if(ibase->state->used_for == IB_USED_FOR_INDEXD 
-            && ibase->state->int_index_fields_num > 0 
-            && ibase->intidxio.map == NULL)
-    {
-        sprintf(path, "%s/%s", ibase->basedir, IB_INTIDX_NAME);
-        if((ibase->intidxio.fd = open(path, O_CREAT|O_RDWR, 0644)) > 0
-                && fstat(ibase->intidxio.fd, &st) == 0)
-        {
-            ibase->intidxio.end = st.st_size;
-            size = (off_t)sizeof(int) * (off_t)ibase->state->int_index_fields_num * (off_t)IB_HEADERS_MAX;
-            if(st.st_size > size) size = st.st_size;
-            if((ibase->intidxio.map = (char *)mmap(NULL, size,
-                            PROT_READ|PROT_WRITE, MAP_SHARED, ibase->intidxio.fd, 0)) != (void *)-1)
-            {
-                ibase->intidxio.size = size;
-            }
-            else
-            {
-                fprintf(stderr, "mmap intindex file (%s) failed, %s\r\n", path, strerror(errno));
-                _exit(-1);
-            }
-        }
-        else
-        {
-            fprintf(stderr, "open intidxio[%s] failed, %s\n", path, strerror(errno));
-            _exit(-1);
-        }
-    }
-    return 0;
 }
 
 /* ibasee  set numeric index /int/double fields */
@@ -441,44 +458,6 @@ void ibase_check_long_idx(IBASE *ibase, int secid, int no)
     return ;
 }
 
-/* check long index  */
-int ibase_check_long_index(IBASE *ibase)
-{
-    char path[IB_PATH_MAX];
-    struct stat st = {0};
-    off_t size = 0;
-
-    if(ibase->state->used_for == IB_USED_FOR_INDEXD 
-            && ibase->state->long_index_fields_num > 0
-            && ibase->longidxio.map == NULL)
-    {
-        sprintf(path, "%s/%s", ibase->basedir, IB_LONGIDX_NAME);
-        if((ibase->longidxio.fd = open(path, O_CREAT|O_RDWR, 0644)) > 0
-                && fstat(ibase->longidxio.fd, &st) == 0)
-        {
-            ibase->longidxio.end = st.st_size;
-            size = (off_t)sizeof(int64_t) * (off_t)ibase->state->long_index_fields_num * (off_t)IB_HEADERS_MAX;
-            if(st.st_size > size) size = st.st_size;
-            if((ibase->longidxio.map = (char *)mmap(NULL, size,
-                            PROT_READ|PROT_WRITE, MAP_SHARED, ibase->longidxio.fd, 0)) != (void *)-1)
-            {
-                ibase->longidxio.size = size;
-            }
-            else
-            {
-                fprintf(stderr, "mmap longindex file (%s) failed, %s\r\n", path, strerror(errno));
-                _exit(-1);
-            }
-        }
-        else
-        {
-            fprintf(stderr, "open longidxio[%s] failed, %s\n", path, strerror(errno));
-            _exit(-1);
-        }
-    }
-    return 0;
-} 
-
 /* ibasee  set long index  fields */
 int ibase_set_long_index(IBASE *ibase, int secid, int long_index_from, int long_fields_num)
 {
@@ -512,44 +491,6 @@ void ibase_check_double_idx(IBASE *ibase, int secid, int no)
         ibase->state->mfields[secid][no] = dmap_init(path);
     }
     return ;
-}
-
-/* double index  */
-int ibase_check_double_index(IBASE *ibase)
-{
-    char path[IB_PATH_MAX];
-    struct stat st = {0};
-    off_t size = 0;
-
-    if(ibase->state->used_for == IB_USED_FOR_INDEXD 
-            && ibase->state->double_index_fields_num > 0
-            && ibase->doubleidxio.map  == NULL)
-    {
-        sprintf(path, "%s/%s", ibase->basedir, IB_DOUBLEIDX_NAME);
-        if((ibase->doubleidxio.fd = open(path, O_CREAT|O_RDWR, 0644)) > 0
-                && fstat(ibase->doubleidxio.fd, &st) == 0)
-        {
-            ibase->doubleidxio.end = st.st_size;
-            size = (off_t)sizeof(double) * (off_t)ibase->state->double_index_fields_num * (off_t)IB_HEADERS_MAX;
-            if(st.st_size > size) size = st.st_size;
-            if((ibase->doubleidxio.map = (char *)mmap(NULL, size, PROT_READ|PROT_WRITE,
-                            MAP_SHARED, ibase->doubleidxio.fd, 0)) != (void *)-1)
-            {
-                ibase->doubleidxio.size = size;
-            }
-            else
-            {
-                fprintf(stderr, "mmap double index file(%s) failed, %s\r\n", path, strerror(errno));
-                _exit(-1);
-            }
-        }
-        else
-        {
-            fprintf(stderr, "open doubleidxio[%s] failed, %s\n", path, strerror(errno));
-            _exit(-1);
-        }
-    }
-    return 0;
 }
 
 /* ibasee  set numeric index /int/double fields */
@@ -1222,7 +1163,6 @@ int ibase_update_terms_modtime(IBASE *ibase, int docid)
     int n = 0, off = 0, size = 0;
     TERMSTATE *termstate = NULL;
     DOCHEADER *docheader = NULL;
-    //IHEADER *headers = NULL;
     STERM *termlist = NULL;
     char *data = NULL;
 
@@ -1255,23 +1195,26 @@ int ibase_update_terms_modtime(IBASE *ibase, int docid)
 /* set xheader */
 int ibase_set_xheader(IBASE *ibase, XHEADER *xheader)
 {
-    int docid = 0, ret = -1;
+    int localid = 0, ret = -1;
     int64_t globalid = -1;
-    IHEADER *headers = NULL;
+    MHEADER *mheaders = NULL;
+    IHEADER *iheader = NULL;
 
     if(ibase && ibase->state->used_for == IB_USED_FOR_INDEXD 
             && xheader && (globalid = (int64_t)xheader->globalid))
     {
         MUTEX_LOCK(ibase->mutex);
-        if((headers = (IHEADER *)(ibase->headersio.map)) 
-                && (docid = ibase_docid(ibase, globalid)) > 0 
-                && docid <= ibase->state->docid)
+        if((mheaders = (MHEADER *)(ibase->mheadersio.map)) 
+                && (localid = ibase_docid(ibase, globalid)) > 0 
+                && localid <= ibase->state->docid)
         {
-            headers[docid].rank      = xheader->rank;
-            headers[docid].category  = xheader->category;
-            headers[docid].slevel    = xheader->slevel;
+            if((iheader = PIHEADER(ibase, mheaders[localid].secid, mheaders[localid].docid))) 
+            {
+                iheader->rank      = xheader->rank;
+                iheader->category  = xheader->category;
+                iheader->slevel    = xheader->slevel;
+            }
             ret = 0;
-            //ret = ibase_update_terms_modtime(ibase, docid);
         }
         MUTEX_UNLOCK(ibase->mutex);
     }
@@ -1349,20 +1292,23 @@ int ibase_set_double_fields(IBASE *ibase, int64_t globalid, double *vals)
 /* set rank */
 int ibase_set_rank(IBASE *ibase, int64_t globalid, double rank)
 {
-    int docid = 0, ret = -1;
-    IHEADER *headers = NULL;
+    int localid = 0, ret = -1;
+    MHEADER *mheaders = NULL;
+    IHEADER *iheader = NULL;
 
     if(ibase && ibase->state->used_for == IB_USED_FOR_INDEXD && globalid)
     {
         MUTEX_LOCK(ibase->mutex);
-        if((headers = (IHEADER *)(ibase->headersio.map)) 
-                && (docid = ibase_docid(ibase, globalid)) > 0 
-                && docid <= ibase->state->docid)
+        if((mheaders = (MHEADER *)(ibase->mheadersio.map)) 
+                && (localid = ibase_docid(ibase, globalid)) > 0 
+                && localid <= ibase->state->docid)
         {
-            headers[docid].rank = rank;
-            ACCESS_LOGGER(ibase->logger, "set_rank(%f) to docid[%d/%d]", rank, globalid, docid);
+            if((iheader = PIHEADER(ibase, mheaders[localid].secid, mheaders[localid].docid))) 
+            {
+                iheader->rank = rank;
+                ACCESS_LOGGER(ibase->logger, "set_rank(%f) to docid[%d/%d]", rank, globalid, localid);
+            }
             ret = 0;
-            //ret = ibase_update_terms_modtime(ibase, docid);
         }
         MUTEX_UNLOCK(ibase->mutex);
     }
@@ -1372,19 +1318,22 @@ int ibase_set_rank(IBASE *ibase, int64_t globalid, double rank)
 /* set category */
 int ibase_set_category(IBASE *ibase, int64_t globalid, int64_t category)
 {
-    int docid = 0, ret = -1;
-    IHEADER *headers = NULL;
+    int localid = 0, ret = -1;
+    MHEADER *mheaders = NULL;
+    IHEADER *iheader = NULL;
 
     if(ibase && ibase->state->used_for == IB_USED_FOR_INDEXD && globalid)
     {
         MUTEX_LOCK(ibase->mutex);
-        if((headers = (IHEADER *)(ibase->headersio.map)) 
-                && (docid = ibase_docid(ibase, globalid)) > 0 
-                && docid <= ibase->state->docid)
+        if((mheaders = (MHEADER *)(ibase->mheadersio.map)) 
+                && (localid = ibase_docid(ibase, globalid)) > 0 
+                && localid <= ibase->state->docid)
         {
-            headers[docid].category = category;
-            ACCESS_LOGGER(ibase->logger, "set_category(%lld) to docid[%d/%d]", IBLL(category), globalid, docid);
-            //ibase_update_terms_modtime(ibase, docid);
+            if((iheader = PIHEADER(ibase, mheaders[localid].secid, mheaders[localid].docid))) 
+            {
+                iheader->category = category;
+                ACCESS_LOGGER(ibase->logger, "set_category(%lld) to docid[%d/%d]", IBLL(category), globalid, localid);
+            }
             ret = 0;
         }
         MUTEX_UNLOCK(ibase->mutex);
@@ -1395,19 +1344,22 @@ int ibase_set_category(IBASE *ibase, int64_t globalid, int64_t category)
 /* set slevel */
 int ibase_set_slevel(IBASE *ibase, int64_t globalid, int slevel)
 {
-    int docid = 0, ret = -1;
-    IHEADER *headers = NULL;
+    int localid = 0, ret = -1;
+    MHEADER *mheaders = NULL;
+    IHEADER *iheader = NULL;
 
     if(ibase && ibase->state->used_for == IB_USED_FOR_INDEXD && globalid)
     {
         MUTEX_LOCK(ibase->mutex);
-        if((headers = (IHEADER *)(ibase->headersio.map)) 
-                && (docid = ibase_docid(ibase, globalid)) > 0 
-                && docid <= ibase->state->docid)
+        if((mheaders = (MHEADER *)(ibase->mheadersio.map)) 
+                && (localid = ibase_docid(ibase, globalid)) > 0 
+                && localid <= ibase->state->docid)
         {
-            headers[docid].slevel = slevel;
-            ACCESS_LOGGER(ibase->logger, "set_slevel(%d) to docid[%lld/%d]", slevel, IBLL(globalid), docid);
-            //ibase_update_terms_modtime(ibase, docid);
+            if((iheader = PIHEADER(ibase, mheaders[localid].secid, mheaders[localid].docid))) 
+            {
+                iheader->slevel = slevel;
+                ACCESS_LOGGER(ibase->logger, "set_slevel(%d) to docid[%lld/%d]", slevel, IBLL(globalid), localid);
+            }
             ret = 0;
         }
         MUTEX_UNLOCK(ibase->mutex);
@@ -1518,18 +1470,16 @@ int ibase_set_mmsource_status(IBASE *ibase, int status)
 /* enable document */
 int ibase_enable_document(IBASE *ibase, int64_t globalid)
 {
-    IHEADER *headers = NULL;
+    MHEADER *mheaders = NULL;
     int docid = 0;
 
     if(ibase && ibase->state->used_for == IB_USED_FOR_INDEXD && globalid)
     {
         MUTEX_LOCK(ibase->mutex);
         if((docid = ibase_docid(ibase, globalid))>= 0 && docid <= ibase->state->docid 
-                && (headers = (IHEADER *)ibase->headersio.map))
+                && (mheaders = (MHEADER *)ibase->mheadersio.map))
         {
-            headers[docid].status = 0;
-            //headers[docid].globalid &= ~(1 << 31); 
-            //ibase_update_terms_modtime(ibase, docid);
+            mheaders[docid].status = 0;
         }
         MUTEX_UNLOCK(ibase->mutex);
     }
@@ -1539,18 +1489,16 @@ int ibase_enable_document(IBASE *ibase, int64_t globalid)
 /* disable document */
 int ibase_disable_document(IBASE *ibase, int64_t globalid)
 {
-    IHEADER *headers = NULL;
+    MHEADER *mheaders = NULL;
     int docid = 0;
 
     if(ibase && ibase->state->used_for == IB_USED_FOR_INDEXD && globalid)
     {
         MUTEX_LOCK(ibase->mutex);
         if((docid = ibase_docid(ibase, globalid)) >= 0 && docid <= ibase->state->docid 
-                && (headers = (IHEADER *)ibase->headersio.map))
+                && (mheaders = (MHEADER *)ibase->mheadersio.map))
         {
-            headers[docid].status = -1;
-            //headers[docid].globalid |= 1 << 31; 
-            //ibase_update_terms_modtime(ibase, docid);
+            mheaders[docid].status = -1;
         }
         MUTEX_UNLOCK(ibase->mutex);
     }
@@ -1666,6 +1614,13 @@ void ibase_clean(IBASE *ibase)
             {
                 if(ibase->state->mfields[x][i]) dmap_close(ibase->state->mfields[x][i]);
             }
+            if(ibase->state->headers[x].map)
+            {
+                munmap(ibase->state->headers[x].map, ibase->state->headers[x].size);
+                ibase->state->headers[x].map = NULL;
+            }
+            if(ibase->state->headers[x].fd > 0)close(ibase->state->headers[x].fd);
+            ibase->state->headers[x].fd = 0;
         }
         /* source */
         if(ibase->source) db_clean(PDB(ibase->source));
@@ -1676,11 +1631,11 @@ void ibase_clean(IBASE *ibase)
         }
         if(ibase->stateio.fd > 0)close(ibase->stateio.fd);
         //headers
-        if(ibase->headersio.map)
+        if(ibase->mheadersio.map)
         {
-            munmap(ibase->headersio.map, ibase->headersio.size);
+            munmap(ibase->mheadersio.map, ibase->mheadersio.size);
         }
-        if(ibase->headersio.fd > 0)close(ibase->headersio.fd);
+        if(ibase->mheadersio.fd > 0)close(ibase->mheadersio.fd);
         if(ibase->termstateio.map)
         {
             munmap(ibase->termstateio.map, ibase->termstateio.size);
