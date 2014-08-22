@@ -372,6 +372,7 @@ int ibase_add_document(IBASE *ibase, IBDATA *block)
     int ret = -1, localid = 0, secid = 0, n = 0, newid = 0;
     DOCHEADER *docheader = NULL;
     MHEADER *mheader = NULL;
+    IHEADER *iheader = NULL;
     char line[IB_LINE_MAX];
     off_t size = 0;
 
@@ -379,19 +380,21 @@ int ibase_add_document(IBASE *ibase, IBDATA *block)
             && (secid = docheader->secid) >= 0 && secid < IB_SEC_MAX
             && docheader->globalid && (n = sprintf(line, "%lld", IBLL(docheader->globalid))))
     {
-        MUTEX_LOCK(ibase->mutex);
         if((localid = mmtrie_xadd(ibase->docmap, line, n)) > 0)
         {
+            MUTEX_LOCK(ibase->mutex);
             if(localid <= ibase->state->docid) 
             {
                 if(ibase->state->used_for == IB_USED_FOR_INDEXD)
                 {
-                    if((mheader = PMHEADER(ibase, localid)))
+                    if((mheader = PMHEADER(ibase, localid))
+                        && (iheader = PIHEADER(ibase, mheader->secid, mheader->docid)))
                     {
                         /* disabled */
                         if(docheader->status < 0)
                         {
                             mheader->status = -1;
+                            iheader->status = -1;
                             DEBUG_LOGGER(ibase->logger, "Update docid:%d globalid:%lld status:%d", localid, IBLL(docheader->globalid), docheader->status);
                             ret = 0;
                         }
@@ -437,20 +440,21 @@ int ibase_add_document(IBASE *ibase, IBDATA *block)
                     ret = ibase_index(ibase, mheader->docid, block);
                 }
             }
+            MUTEX_UNLOCK(ibase->mutex);
             if(ibase->state->used_for != IB_USED_FOR_QPARSERD 
-                    && ibase->state->mmsource_status != IB_MMSOURCE_NULL)
+                    && ibase->state->mmsource_status != IB_MMSOURCE_NULL && localid > 0)
             {
                 ACCESS_LOGGER(ibase->logger, "docid:%lld/%d c_size:%d c_zsize:%d size:%d", docheader->globalid, localid, docheader->content_size, docheader->content_zsize, docheader->prevnext_off);
                 docheader->size = docheader->prevnext_off;
                 ret = db_set_data(PDB(ibase->source), localid, block->data, docheader->size);
             }
+            ret = 0;
         }
         else
         {
             FATAL_LOGGER(ibase->logger, "new_index[%lld]{crc:%d rank:%f slevel:%d category:%lld} failed, %s", IBLL(docheader->globalid), docheader->crc, docheader->rank, docheader->slevel, LLI(docheader->category), strerror(errno));
 
         }
-        MUTEX_UNLOCK(ibase->mutex);
     }
     return ret;
 }
