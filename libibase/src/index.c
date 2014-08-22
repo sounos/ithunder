@@ -419,26 +419,29 @@ int ibase_add_document(IBASE *ibase, IBDATA *block)
             }
             else
             {
-                if(((off_t)localid * (off_t)sizeof(MHEADER)) >= ibase->mheadersio.end)
+                if(ibase->state->used_for == IB_USED_FOR_INDEXD)
                 {
-                    ibase->mheadersio.old = ibase->mheadersio.end;
-                    size = (off_t)((localid / IB_HEADERS_BASE) + 1) 
-                        * (off_t)IB_HEADERS_BASE * (off_t)sizeof(MHEADER);
-                    ret = ftruncate(ibase->mheadersio.fd, size);
-                    ibase->mheadersio.end = size;
-                    memset(ibase->mheadersio.map + ibase->mheadersio.old, 0, 
-                            ibase->mheadersio.end -  ibase->mheadersio.old);
+                    if(((off_t)localid * (off_t)sizeof(MHEADER)) >= ibase->mheadersio.end)
+                    {
+                        ibase->mheadersio.old = ibase->mheadersio.end;
+                        size = (off_t)((localid / IB_HEADERS_BASE) + 1) 
+                            * (off_t)IB_HEADERS_BASE * (off_t)sizeof(MHEADER);
+                        ret = ftruncate(ibase->mheadersio.fd, size);
+                        ibase->mheadersio.end = size;
+                        memset(ibase->mheadersio.map + ibase->mheadersio.old, 0, 
+                                ibase->mheadersio.end -  ibase->mheadersio.old);
+                    }
+                    if((mheader = PMHEADER(ibase, localid)))
+                    {
+                        mheader->status = 0;
+                        mheader->docid = ++(ibase->state->ids[secid]);
+                        mheader->secid = docheader->secid;
+                        mheader->crc = docheader->crc;
+                        DEBUG_LOGGER(ibase->logger, "new_index[%lld/%d]{crc:%d rank:%f slevel:%d category:%lld}", IBLL(docheader->globalid), localid, docheader->crc, docheader->rank, docheader->slevel, LLI(docheader->category));
+                        ret = ibase_index(ibase, mheader->docid, block);
+                    }
                 }
                 ibase->state->docid = localid;
-                if((mheader = PMHEADER(ibase, localid)))
-                {
-                    mheader->status = 0;
-                    mheader->docid = ++(ibase->state->ids[secid]);
-                    mheader->secid = docheader->secid;
-                    mheader->crc = docheader->crc;
-                    DEBUG_LOGGER(ibase->logger, "new_index[%lld/%d]{crc:%d rank:%f slevel:%d category:%lld}", IBLL(docheader->globalid), localid, docheader->crc, docheader->rank, docheader->slevel, LLI(docheader->category));
-                    ret = ibase_index(ibase, mheader->docid, block);
-                }
             }
             MUTEX_UNLOCK(ibase->mutex);
             if(ibase->state->used_for != IB_USED_FOR_QPARSERD 
