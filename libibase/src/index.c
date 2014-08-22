@@ -110,12 +110,14 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
     off_t size = 0;
 
     if((docheader = (DOCHEADER *)block->data) 
-            && (secid = docheader->secid) >= 0 && docheader->secid < IB_SEC_MAX
-            && ibase_check_index_state(ibase, docheader) == 0)
+            && (secid = docheader->secid) >= 0 && docheader->secid < IB_SEC_MAX)
     {
         index = ibase->mindex[docheader->secid];
-        ibase->state->dtotal++;
-        ibase->state->ttotal += (int64_t)docheader->terms_total;
+        if(docheader->dbid != -1)
+        {
+            ibase->state->dtotal++;
+            ibase->state->ttotal += (int64_t)docheader->terms_total;
+        }
         if(ibase->state->used_for == IB_USED_FOR_INDEXD)
         {
             /* add to source */
@@ -159,15 +161,15 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
                 ((TERMSTATE *)(ibase->termstateio.map))[termid].len = termlist[i].term_len;
                 ((TERMSTATE *)(ibase->termstateio.map))[termid].total++;
                 MUTEX_UNLOCK(ibase->mutex_termstate);
-                last_docid = 0;
-                if(mdb_get_tag(index, termid, &last_docid) == 0)
-                    ndocid = docid - last_docid;
-                else
-                {
-                    ndocid = docid;
-                }
                 if(ibase->state->index_status != IB_INDEX_DISABLED)
                 {
+                    last_docid = 0;
+                    if(mdb_get_tag(index, termid, &last_docid) == 0)
+                        ndocid = docid - last_docid;
+                    else
+                    {
+                        ndocid = docid;
+                    }
                     p = pp = buf;
                     if((ndata = ((sizeof(int) * 5 + termlist[i].prevnext_size))) > IB_BUF_SIZE)
                         p = pp = data = (char *)xmm_new(ndata);
@@ -270,8 +272,7 @@ int ibase_update_index(IBASE *ibase, int docid, IBDATA *block)
 
     if(ibase && block && block->data && block->ndata > 0 
             && (docheader =  (DOCHEADER *)(block->data))
-            && (secid = docheader->secid) >= 0 && docheader->secid < IB_SEC_MAX
-            && ibase_check_index_state(ibase, docheader) == 0)
+            && (secid = docheader->secid) >= 0 && docheader->secid < IB_SEC_MAX)
     {
         if(ibase->state->used_for == IB_USED_FOR_INDEXD)
         {
@@ -378,6 +379,7 @@ int ibase_add_document(IBASE *ibase, IBDATA *block)
 
     if(ibase && block && block->ndata > 0 && (docheader = (DOCHEADER *)(block->data)) 
             && (secid = docheader->secid) >= 0 && secid < IB_SEC_MAX
+            && ibase_check_index_state(ibase, docheader) == 0
             && docheader->globalid && (n = sprintf(line, "%lld", IBLL(docheader->globalid))))
     {
         if((localid = mmtrie_xadd(ibase->docmap, line, n)) > 0)
@@ -416,6 +418,11 @@ int ibase_add_document(IBASE *ibase, IBDATA *block)
                         }
                     }
                 }
+                else
+                {
+                    docheader->dbid = -1;
+                    ret = ibase_index(ibase, localid, block);
+                }
             }
             else
             {
@@ -440,6 +447,10 @@ int ibase_add_document(IBASE *ibase, IBDATA *block)
                         DEBUG_LOGGER(ibase->logger, "new_index[%lld/%d]{crc:%d rank:%f slevel:%d category:%lld}", IBLL(docheader->globalid), localid, docheader->crc, docheader->rank, docheader->slevel, LLI(docheader->category));
                         ret = ibase_index(ibase, mheader->docid, block);
                     }
+                }
+                else
+                {
+                    ret = ibase_index(ibase, localid, block);
                 }
                 ibase->state->docid = localid;
             }

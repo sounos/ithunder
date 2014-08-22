@@ -272,6 +272,7 @@ typedef struct _VDOUBLE
 #define IB_DOUBLE_SET   0x20
 #define IB_STATUS_SET   0x40
 #define IB_DUMP_SET     0x80
+#define IB_IGNORE_STAT  0x800
 /* document header */
 typedef struct _DOCHEADER
 {
