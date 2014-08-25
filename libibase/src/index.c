@@ -351,10 +351,10 @@ int ibase_del_index(IBASE *ibase, int localid)
 
     if((mheader = PMHEADER(ibase, localid))) 
     {
-        ibase->state->dtotal--;
-        ibase->state->ttotal -= iheader->terms_total;
         if(mheader->docid > 0 && (iheader = PIHEADER(ibase, mheader->secid, mheader->docid)))
         {
+            ibase->state->dtotal--;
+            ibase->state->ttotal -= iheader->terms_total;
             iheader->status = -1;
         }
         if(ibase->state->used_for == IB_USED_FOR_INDEXD 
