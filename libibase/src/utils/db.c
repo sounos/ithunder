@@ -948,7 +948,7 @@ int db__resize(DB *db, int id, int length)
                     {
                         if(db_pread(db, x, old, nold, (off_t)(old_lnk.blockid)*(off_t)DB_BASE_SIZE) <= 0)
                         {
-                            FATAL_LOGGER(db->logger, "read index[%d] dbx[%d] nold:%d data failed, %s", index, id, nold, strerror(errno));
+                            FATAL_LOGGER(db->logger, "read index[%d] dbx[%d] nold:%d data failed, %s", x, id, nold, strerror(errno));
                             _exit(-1);
                         }
                         if(db_pwrite(db, index, old, nold, (off_t)(lnk.blockid)*(off_t)DB_BASE_SIZE) <= 0)
