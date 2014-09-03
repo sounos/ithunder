@@ -946,7 +946,7 @@ int db__resize(DB *db, int id, int length)
                 {
                     if((old = db_new_data(db, nold)))
                     {
-                        if(db_pread(db, index, old, nold, (off_t)(old_lnk.blockid)*(off_t)DB_BASE_SIZE) <= 0)
+                        if(db_pread(db, x, old, nold, (off_t)(old_lnk.blockid)*(off_t)DB_BASE_SIZE) <= 0)
                         {
                             FATAL_LOGGER(db->logger, "read index[%d] dbx[%d] nold:%d data failed, %s", index, id, nold, strerror(errno));
                             _exit(-1);
