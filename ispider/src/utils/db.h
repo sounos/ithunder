@@ -1,21 +1,19 @@
 #include "mutex.h"
 #ifndef _DB_H_
 #define _DB_H_
-#ifdef HAVE_PTHREAD
 #include <pthread.h>
-#endif
-#define DB_LNK_MAX          2097152
+#define DB_LNK_MAX          8388608
 #define DB_LNK_INCREMENT    65536
 #define DB_DBX_MAX          2000000000
 #define DB_DBX_BASE         1000000
-#define DB_BASE_SIZE        16
+#define DB_BASE_SIZE        64
 #define DB_PATH_MAX         1024
 #define DB_DIR_FILES        64
 #define DB_BUF_SIZE         4096
-#define DB_XBLOCKS_MAX      14
+#define DB_XBLOCKS_MAX      15
 #define DB_MBLOCKS_MAX      1024
 #define DB_MBLOCK_BASE      4096
-#define DB_MBLOCK_MAX       33554432
+#define DB_MBLOCK_MAX       67108864
 #define DB_MUTEX_MAX        65536
 #define DB_USE_MMAP         0x01
 //#define  DB_MBLOCK_MAX      1048576
@@ -30,10 +28,10 @@
 //#define DB_MFILE_SIZE       33554432   //32M
 //#define DB_MFILE_SIZE       67108864   //64M
 //#define DB_MFILE_SIZE     134217728  //128M
-#define DB_MFILE_SIZE       268435456  //256M
-//#define DB_MFILE_SIZE     536870912  //512M
+//#define DB_MFILE_SIZE       268435456  //256M
+#define DB_MFILE_SIZE     536870912  //512M
 //#define DB_MFILE_SIZE       1073741824 //1G
-#define DB_MFILE_MAX        8129
+#define DB_MFILE_MAX        8192
 #define DB_BLOCK_INCRE_LEN      0x0
 #define DB_BLOCK_INCRE_DOUBLE   0x1
 typedef struct _DBX
@@ -49,10 +47,10 @@ typedef struct _XIO
     int     fd;
     int     bits;
     char    *map;
-    void    *mutex;
     off_t   old;
     off_t   end;
     off_t   size;
+    pthread_rwlock_t mutex;
 }XIO;
 typedef struct _XLNK
 {
@@ -87,10 +85,6 @@ typedef struct _DB
     int     block_max;
     off_t   mm_total;
     off_t   xx_total;
-    MUTEX   *mutex;
-    MUTEX   *mutex_lnk;
-    MUTEX   *mutex_dbx;
-    MUTEX   *mutex_mblock;
     void    *kmap;
     void    *logger;
     XSTATE  *state;
@@ -100,9 +94,11 @@ typedef struct _DB
     XIO     dbsio[DB_MFILE_MAX];
     XBLOCK  xblocks[DB_XBLOCKS_MAX];
     char    basedir[DB_PATH_MAX];
-#ifdef HAVE_PTHREAD
-    pthread_mutex_t mutexs[DB_MUTEX_MAX];
-#endif
+    pthread_rwlock_t mutex;
+    pthread_rwlock_t mutex_lnk;
+    pthread_rwlock_t mutex_dbx;
+    pthread_rwlock_t mutex_mblock;
+    pthread_rwlock_t mutexs[DB_MUTEX_MAX];
 }DB;
 /* initialize db */
 DB* db_init(char *dir, int is_mmap);
@@ -124,6 +120,8 @@ int db_xchunk_data(DB *db, char *key, int nkey, char *data, int ndata, int lengt
 int db_xset_data(DB *db, char *key, int nkey, char *data, int ndata);
 /* add data */
 int db_add_data(DB *db, int id, char *data, int ndata);
+/* resize */
+int db_xresize(DB *db, char *key, int nkey, int length);
 /* xadd data */
 int db_xadd_data(DB *db, char *key, int nkey, char *data, int ndata);
 /* get data */
@@ -136,6 +134,8 @@ int db_xget_data(DB *db, char *key, int nkey, char **data, int *ndata);
 int db_xget_data_len(DB *db, char *key, int nkey);
 /* check key dataid/len */
 int db_xcheck(DB *db, char *key, int nkey, int *len, time_t *mod_time);
+/* truncate block */
+void *db_truncate_block(DB *db, int id, int ndata);
 /* get data block address and len */
 int db_exists_block(DB *db, int id, char **ptr);
 /* read data */
@@ -146,6 +146,7 @@ int db_pread_data(DB *db, int id, char *data, int len, int off);
 int db_xread_data(DB *db, char *key, int nkey, char *data);
 /* xpread data */
 int db_xpread_data(DB *db, char *key, int nkey, char *data, int len, int off);
+char *db_new_data(DB *db, size_t size);
 /* free data */
 void db_free_data(DB *db, char *data, size_t size);
 /* delete data */
@@ -154,6 +155,8 @@ int db_del_data(DB *db, int id);
 int db_xdel_data(DB *db, char *key, int nkey);
 /* destroy */
 void db_destroy(DB *db);
+/* reset */
+void db_reset(DB *db);
 /* clean db */
 void db_clean(DB *db);
 #define PDB(xxx) ((DB *)xxx)
