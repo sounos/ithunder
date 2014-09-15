@@ -652,11 +652,9 @@ int mmdb_qstatus(MMDB *mmdb, int qid, int lifetime, int *new_query, int *have_re
             }
             if(qtasks[qid].mod_time < mmdb->start_time)
             {
+                memset(&(qtasks[qid]), 0, sizeof(QTASK));
                 qtasks[qid].mod_time = time(NULL);
                 qtasks[qid].status = M_STATUS_QUERY;
-                qtasks[qid].left = 0;
-                qtasks[qid].qres = NULL;
-                qtasks[qid].map = NULL;
                 status = M_STATUS_FREE;
                 *new_query = 1;
             }
