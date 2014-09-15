@@ -114,6 +114,8 @@ typedef struct _MMDB
     void    *queue;
     void    *logger;
     MUTEX   *mutex;
+    MUTEX   *mutex_qid;
+    MUTEX   *mutex_pid;
     MUTEX   *mutex_mmx;
     MUTEX   *mutex_state;
     MUTEX   *mutex_stree;

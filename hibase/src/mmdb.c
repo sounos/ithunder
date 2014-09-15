@@ -607,13 +607,13 @@ int mmdb_qid(MMDB *mmdb, char *s, char *es)
         md5((unsigned char *)line, n, key);
         if((qid = mmtrie_xadd(MMTR(mmdb->qmap), (char *)key, MD5_LEN)) > 0)
         {
-            MUTEX_LOCK(mmdb->mutex);
+            MUTEX_LOCK(mmdb->mutex_qid);
             if(qid > mmdb->state->qid_max) 
             {
                 CHECK_QTASKIO(mmdb, qid);
                 mmdb->state->qid_max = qid;
             }
-            MUTEX_UNLOCK(mmdb->mutex);
+            MUTEX_UNLOCK(mmdb->mutex_qid);
         }
         else
         {
@@ -840,7 +840,7 @@ int mmdb_over_merge(MMDB *mmdb, int qid, int pid, CQRES *cqres,
             ++i;
         }
         if((groupby = qtasks[qid].groupby)
-            && (cqres->qset.res.ngroups = PIMX(groupby)->count) > 0)
+                && (cqres->qset.res.ngroups = PIMX(groupby)->count) > 0)
         {
             i = 0;
             do
@@ -863,7 +863,8 @@ int mmdb_over_merge(MMDB *mmdb, int qid, int pid, CQRES *cqres,
             if(i > IB_TOPK_NUM) i = IB_TOPK_NUM;
             cqres->qset.res.qid = qid;
             cqres->qset.res.count = i;
-            if(pid > 0 && pid <= mmdb->state->pid_max && qset && recs && nrecs
+            if(pid > 0 && qset && recs && nrecs
+                    && pid <= (mmdb->qpageio.end/(off_t)sizeof(QPAGE)) 
                     && (qpages = (QPAGE *)(mmdb->qpageio.map)))
             {
                 memcpy(qset, &(cqres->qset), sizeof(IQSET));
@@ -878,7 +879,7 @@ int mmdb_over_merge(MMDB *mmdb, int qid, int pid, CQRES *cqres,
                 }
             }
         }
-                mmdb_push_qres(mmdb, qtasks[qid].qres);
+        mmdb_push_qres(mmdb, qtasks[qid].qres);
         mmdb_push_stree(mmdb, qtasks[qid].map);
         mmdb_push_mmx(mmdb, qtasks[qid].groupby);
         qtasks[qid].qres = NULL;
@@ -1117,12 +1118,14 @@ int mmdb_pid(MMDB *mmdb, int qid, int from, int count)
         if((n = sprintf(line, "%d:%d-%d", qid, from, count)) > 0
                 && (pid = db_data_id(PDB(mmdb->pdb), line, n)) > 0)
         {
-            mmdb_pmutex_lock(mmdb, pid);
+            MUTEX_LOCK(mmdb->mutex_pid);
             if(pid > mmdb->state->pid_max) 
             {
                 CHECK_QPAGEIO(mmdb, pid);
                 mmdb->state->pid_max = pid;
             }
+            MUTEX_UNLOCK(mmdb->mutex_pid);
+            mmdb_pmutex_lock(mmdb, pid);
             if((qpages = (QPAGE *)mmdb->qpageio.map)) 
             {
                 qpages[pid].from = from;
@@ -1243,10 +1246,16 @@ void mmdb_clear_cache(MMDB *mmdb)
     if(mmdb)
     {
         MUTEX_LOCK(mmdb->mutex);
+        MUTEX_LOCK(mmdb->mutex_qid);
+        MUTEX_LOCK(mmdb->mutex_pid);
         mmtrie_destroy(MMTR(mmdb->qmap));
         db_destroy(PDB(mmdb->rdb)); 
         db_destroy(PDB(mmdb->pdb)); 
+        mmdb->state->qid_max = 0;
+        mmdb->state->pid_max = 0;
         mmdb->state->cache_mod_time = time(NULL);
+        MUTEX_UNLOCK(mmdb->mutex_pid);
+        MUTEX_UNLOCK(mmdb->mutex_qid);
         MUTEX_UNLOCK(mmdb->mutex);
     }
     return ;
@@ -1261,6 +1270,8 @@ void mmdb_clean(MMDB *mmdb)
     {
         if(mmdb->queue){iqueue_clean(mmdb->queue);}
         MUTEX_DESTROY(mmdb->mutex);
+        MUTEX_DESTROY(mmdb->mutex_qid);
+        MUTEX_DESTROY(mmdb->mutex_pid);
         MUTEX_DESTROY(mmdb->mutex_mmx);
         MUTEX_DESTROY(mmdb->mutex_state);
         MUTEX_DESTROY(mmdb->mutex_stree);
@@ -1314,6 +1325,8 @@ MMDB *mmdb_init()
         mmdb->clean         = mmdb_clean;
         mmdb->queue         = iqueue_init();
         MUTEX_INIT(mmdb->mutex);
+        MUTEX_INIT(mmdb->mutex_qid);
+        MUTEX_INIT(mmdb->mutex_pid);
         MUTEX_INIT(mmdb->mutex_mmx);
         MUTEX_INIT(mmdb->mutex_state);
         MUTEX_INIT(mmdb->mutex_stree);
