@@ -390,7 +390,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
                     lto = query->long_range_list[i].to;
                     k -= long_index_from;
                     k += IB_LONG_OFF;
-                    //if(k == min_set_fid) continue;
+                    if(k == min_set_fid) continue;
                     if(!ibase->state->mfields[secid][k]) goto next;
                     xlong = LMAP_GET(ibase->state->mfields[secid][k], docid);
                     if((range_flag & IB_RANGE_FROM) && xlong < lfrom) goto next;
