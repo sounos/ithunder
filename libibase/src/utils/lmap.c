@@ -436,9 +436,13 @@ int lmap_find_kv(LMAP *lmap, int k, int64_t key)
             }
             if((x = ret) >= 0 && x < n)
             {
-                while(x >= 0 && key == kvs[x].key)
+                if(kvs[x].key < key && (x+1) < n) ret = ++x;
+                else
                 {
-                    ret = x--;
+                    while(x >= 0 && key == kvs[x].key)
+                    {
+                        ret = x--;
+                    }
                 }
             }
 
@@ -480,9 +484,13 @@ int lmap_find_kv2(LMAP *lmap, int k, int64_t key)
             }
             if((x = ret) >= 0 && x < n)
             {
-                while(x < n && key == kvs[x].key)
+                if(kvs[x].key > key && x > 0) ret = --x;
+                else
                 {
-                    ret = x++;
+                    while(x < n && key == kvs[x].key)
+                    {
+                        ret = x++;
+                    }
                 }
             }
         }
