@@ -342,7 +342,7 @@ int imap_find_slot(IMAP *imap, int32_t key)
                 x = (min + max) / 2;
                 if(x == min)
                 {
-                    ret = x;
+                    if(imap->slots[x].min >= key) ret = x;
                     break;
                 }
                 if(key >=  imap->slots[x].min && key <= imap->slots[x+1].min)
@@ -381,7 +381,7 @@ int imap_find_slot2(IMAP *imap, int32_t key)
                 x = (min + max) / 2;
                 if(x == min)
                 {
-                    ret = x;
+                    if(imap->slots[x].max <= key) ret = x;
                     break;
                 }
                 if(key >=  imap->slots[x].min && key <= imap->slots[x+1].min)
@@ -425,7 +425,7 @@ int imap_find_kv(IMAP *imap, int k, int32_t key)
                     x = (min + max) / 2;
                     if(x == min)
                     {
-                        ret = x;
+                        if(kvs[x].key >= key) ret = x;
                         break;
                     }
                     if(key ==  kvs[x].key)
@@ -438,13 +438,9 @@ int imap_find_kv(IMAP *imap, int k, int32_t key)
                 }
                 if((x = ret) >= 0 && x < n)
                 {
-                    if(kvs[x].key < key && (x+1) < n) ret = ++x;
-                    else
+                    while(x >= 0 && key == kvs[x].key)
                     {
-                        while(x >= 0 && key == kvs[x].key)
-                        {
-                            ret = x--;
-                        }
+                        ret = x--;
                     }
                 }
 
@@ -480,7 +476,7 @@ int imap_find_kv2(IMAP *imap, int k, int32_t key)
                     x = (min + max) / 2;
                     if(x == min)
                     {
-                        ret = x;
+                        if(kvs[x].key <= key) ret = x;
                         break;
                     }
                     if(key ==  kvs[x].key)
@@ -493,13 +489,9 @@ int imap_find_kv2(IMAP *imap, int k, int32_t key)
                 }
                 if((x = ret) >= 0 && x < n)
                 {
-                    if(kvs[x].key > key && x > 0) ret = --x;
-                    else
+                    while(x < n && key == kvs[x].key)
                     {
-                        while(x < n && key == kvs[x].key)
-                        {
-                            ret = x++;
-                        }
+                        ret = x++;
                     }
                 }
             }
@@ -614,6 +606,7 @@ int imap_rangefrom(IMAP *imap, int32_t key, u32_t *list) /* key = from */
         RWLOCK_RDLOCK(imap->rwlock);
         if((k = imap_find_slot(imap, key)) >= 0 && (i = imap_find_kv(imap, k, key)) >= 0)
         {
+            fprintf(stdout, "k:%d i:%d\n", k, i);
             kvs = imap->map + imap->slots[k].nodeid;
             n =  imap->slots[k].count;
             if(list)
@@ -858,6 +851,13 @@ int main()
             fprintf(stdout, "%d:{min:%d max:%d}(%d)\n", i, imap->slots[i].min, imap->slots[i].max, imap->slots[i].count);
         }
         */
+#ifdef TEST_RANGEFILTER
+            imap_set(imap, 1, 1234567);
+            imap_set(imap, 2, 1567890);
+            fprintf(stdout, "rangefrom():%d\n", imap_rangefrom(imap, 1569000, NULL));
+            fprintf(stdout, "rangeto():%d\n", imap_rangeto(imap, 1111111, NULL));
+            fprintf(stdout, "range():%d\n", imap_range(imap, 1111111, 1400000, NULL));
+#endif
 #ifdef TEST_RANGE
         srand(time(NULL));
         TIMER_RESET(timer);

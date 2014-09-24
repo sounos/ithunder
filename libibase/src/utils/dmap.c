@@ -342,7 +342,7 @@ int dmap_find_slot(DMAP *dmap, double key)
                 x = (min + max) / 2;
                 if(x == min)
                 {
-                    ret = x;
+                    if(dmap->slots[x].min >= key) ret = x;
                     break;
                 }
                 if(key >=  dmap->slots[x].min && key <= dmap->slots[x+1].min)
@@ -381,7 +381,7 @@ int dmap_find_slot2(DMAP *dmap, double key)
                 x = (min + max) / 2;
                 if(x == min)
                 {
-                    ret = x;
+                    if(dmap->slots[x].max <= key) ret = x;
                     break;
                 }
                 if(key >=  dmap->slots[x].min && key <= dmap->slots[x+1].min)
@@ -425,7 +425,7 @@ int dmap_find_kv(DMAP *dmap, int k, double key)
                     x = (min + max) / 2;
                     if(x == min)
                     {
-                        ret = x;
+                        if(kvs[x].key >= key) ret = x;
                         break;
                     }
                     if(key ==  kvs[x].key)
@@ -438,13 +438,9 @@ int dmap_find_kv(DMAP *dmap, int k, double key)
                 }
                 if((x = ret) >= 0 && x < n)
                 {
-                    if(kvs[x].key < key && (x+1) < n) ret = ++x;
-                    else
+                    while(x >= 0 && key == kvs[x].key)
                     {
-                        while(x >= 0 && key == kvs[x].key)
-                        {
-                            ret = x--;
-                        }
+                        ret = x--;
                     }
                 }
 
@@ -480,7 +476,7 @@ int dmap_find_kv2(DMAP *dmap, int k, double key)
                     x = (min + max) / 2;
                     if(x == min)
                     {
-                        ret = x;
+                        if(kvs[x].key <= key) ret = x;
                         break;
                     }
                     if(key ==  kvs[x].key)
@@ -493,13 +489,9 @@ int dmap_find_kv2(DMAP *dmap, int k, double key)
                 }
                 if((x = ret) >= 0 && x < n)
                 {
-                    if(kvs[x].key > key && x > 0) ret = --x;
-                    else
+                    while(x < n && key == kvs[x].key)
                     {
-                        while(x < n && key == kvs[x].key)
-                        {
-                            ret = x++;
-                        }
+                        ret = x++;
                     }
                 }
             }
@@ -614,6 +606,7 @@ int dmap_rangefrom(DMAP *dmap, double key, u32_t *list) /* key = from */
         RWLOCK_RDLOCK(dmap->rwlock);
         if((k = dmap_find_slot(dmap, key)) >= 0 && (i = dmap_find_kv(dmap, k, key)) >= 0)
         {
+            fprintf(stdout, "k:%d i:%d\n", k, i);
             kvs = dmap->map + dmap->slots[k].nodeid;
             n =  dmap->slots[k].count;
             if(list)
@@ -858,6 +851,13 @@ int main()
             fprintf(stdout, "%d:{min:%d max:%d}(%d)\n", i, dmap->slots[i].min, dmap->slots[i].max, dmap->slots[i].count);
         }
         */
+#ifdef TEST_RANGEFILTER
+            dmap_set(dmap, 1, 1234567);
+            dmap_set(dmap, 2, 1567890);
+            fprintf(stdout, "rangefrom():%d\n", dmap_rangefrom(dmap, 1569000, NULL));
+            fprintf(stdout, "rangeto():%d\n", dmap_rangeto(dmap, 1111111, NULL));
+            fprintf(stdout, "range():%d\n", dmap_range(dmap, 1111111, 1400000, NULL));
+#endif
 #ifdef TEST_RANGE
         srand(time(NULL));
         TIMER_RESET(timer);
