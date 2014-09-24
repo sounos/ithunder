@@ -415,37 +415,44 @@ int dmap_find_kv(DMAP *dmap, int k, double key)
         kvs = dmap->map + dmap->slots[k].nodeid;
         min = 0;
         max = n - 1; 
-        if(kvs[min].key >= key) ret = min;
-        else
+        if(max > 0)
         {
-            while(max > min)
+            if(kvs[min].key >= key) ret = min;
+            else
             {
-                x = (min + max) / 2;
-                if(x == min)
+                while(max > min)
                 {
-                    ret = x;
-                    break;
-                }
-                if(key ==  kvs[x].key)
-                {
-                    ret = x;
-                    break;
-                }
-                else if(key > kvs[x].key) min = x;
-                else max = x;
-            }
-            if((x = ret) >= 0 && x < n)
-            {
-                if(kvs[x].key < key && (x+1) < n) ret = ++x;
-                else
-                {
-                    while(x >= 0 && key == kvs[x].key)
+                    x = (min + max) / 2;
+                    if(x == min)
                     {
-                        ret = x--;
+                        ret = x;
+                        break;
+                    }
+                    if(key ==  kvs[x].key)
+                    {
+                        ret = x;
+                        break;
+                    }
+                    else if(key > kvs[x].key) min = x;
+                    else max = x;
+                }
+                if((x = ret) >= 0 && x < n)
+                {
+                    if(kvs[x].key < key && (x+1) < n) ret = ++x;
+                    else
+                    {
+                        while(x >= 0 && key == kvs[x].key)
+                        {
+                            ret = x--;
+                        }
                     }
                 }
-            }
 
+            }
+        }
+        else
+        {
+            if(kvs[min].key >= key) ret = min;
         }
         //fprintf(stdout, "find_kv(%d) min:%d max:%d count:%d ret:%d\n", key, dmap->slots[k].min, dmap->slots[k].max, dmap->slots[k].count, ret);
     }
@@ -463,36 +470,43 @@ int dmap_find_kv2(DMAP *dmap, int k, double key)
         kvs = dmap->map + dmap->slots[k].nodeid;
         min = 0;
         max = n - 1; 
-        if(kvs[max].key <= key) ret = max;
-        else
+        if(max > 0)
         {
-            while(max > min)
+            if(kvs[max].key <= key) ret = max;
+            else
             {
-                x = (min + max) / 2;
-                if(x == min)
+                while(max > min)
                 {
-                    ret = x;
-                    break;
-                }
-                if(key ==  kvs[x].key)
-                {
-                    ret = x;
-                    break;
-                }
-                else if(key > kvs[x].key) min = x;
-                else max = x;
-            }
-            if((x = ret) >= 0 && x < n)
-            {
-                if(kvs[x].key > key && x > 0) ret = --x;
-                else
-                {
-                    while(x < n && key == kvs[x].key)
+                    x = (min + max) / 2;
+                    if(x == min)
                     {
-                        ret = x++;
+                        ret = x;
+                        break;
+                    }
+                    if(key ==  kvs[x].key)
+                    {
+                        ret = x;
+                        break;
+                    }
+                    else if(key > kvs[x].key) min = x;
+                    else max = x;
+                }
+                if((x = ret) >= 0 && x < n)
+                {
+                    if(kvs[x].key > key && x > 0) ret = --x;
+                    else
+                    {
+                        while(x < n && key == kvs[x].key)
+                        {
+                            ret = x++;
+                        }
                     }
                 }
             }
+        }
+        else
+        {
+            if(kvs[min].key <= key) ret = min;
         }
     }
     return ret;
