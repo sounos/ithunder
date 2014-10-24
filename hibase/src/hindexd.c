@@ -572,6 +572,7 @@ int indexd_data_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *ch
     CB_DATA *block = NULL;
     ICHUNK *ichunk = NULL;
     BTERM *bterm = NULL;
+    SYNTERM *synterm = NULL;
     QTASK *qtask = NULL;
     IQSET *qset = NULL;
     IHEAD *req = NULL;
@@ -763,6 +764,19 @@ int indexd_data_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *ch
                             term = p;
                             p += bterm->len;
                             ibase_update_bterm(ibase, bterm, term);
+                        }
+                        goto end;
+                    }
+                    break;
+                case IB_REQ_UPDATE_SYNTERM:
+                    {
+                        p = chunk->data;
+                        end = (chunk->data + chunk->ndata);
+                        while(p < end)
+                        {
+                            synterm = (SYNTERM *)p;
+                            p += sizeof(SYNTERM);
+                            ibase_update_synterm(ibase, synterm);
                         }
                         goto end;
                     }

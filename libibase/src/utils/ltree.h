@@ -3,7 +3,7 @@
 #define LTREE_INCRE_NUM    1000000
 #define LTREE_NODES_MAX    2000000000
 #define LTREE_MUTEX_MAX    256
-#define LTREE_ROOT_MAX     10240
+#define LTREE_ROOT_MAX     1000000
 #include <inttypes.h>
 #include "mutex.h"
 typedef struct _LTNODE
@@ -18,8 +18,8 @@ typedef struct _LTNODE
 }LTNODE;
 typedef struct _LTROOT
 {
-    int status;
-    int bits;
+    int16_t  status;
+    int16_t  flag;
     uint32_t total;
     uint32_t rootid;
 }LTROOT;

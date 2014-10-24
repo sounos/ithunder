@@ -815,7 +815,7 @@ int mmdb_over_merge(MMDB *mmdb, int qid, int pid, CQRES *cqres,
 {
     int64_t score = 0, id = 0, xlong = 0, xdata = 0;
     void *map = NULL, *groupby = NULL;
-    int i = 0, x = 0, n = 0, to = 0; 
+    int i = 0, j = 0, x = 0, n = 0, to = 0; 
     QTASK *qtasks = NULL;
     QPAGE *qpages = NULL;
 
@@ -840,16 +840,16 @@ int mmdb_over_merge(MMDB *mmdb, int qid, int pid, CQRES *cqres,
         if((groupby = qtasks[qid].groupby)
                 && (cqres->qset.res.ngroups = PIMX(groupby)->count) > 0)
         {
-            i = 0;
+            j = 0;
             do
             {
                 IMMX_POP_MIN(groupby, xlong, xdata);
-                if(i < IB_GROUP_MAX)
+                if(j < IB_GROUP_MAX)
                 {
-                    cqres->qset.res.groups[i].key = xlong;
-                    cqres->qset.res.groups[i].val = xdata;
+                    cqres->qset.res.groups[j].key = xlong;
+                    cqres->qset.res.groups[j].val = xdata;
                 }
-                ++i;
+                ++j;
             }while(PIMX(groupby)->count > 0);
             if(cqres->qset.res.ngroups > IB_GROUP_MAX)
             {

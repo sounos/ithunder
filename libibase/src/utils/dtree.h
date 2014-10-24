@@ -3,7 +3,7 @@
 #define DTREE_INCRE_NUM    1000000
 #define DTREE_NODES_MAX    2000000000
 #define DTREE_MUTEX_MAX    256
-#define DTREE_ROOT_MAX     10240
+#define DTREE_ROOT_MAX     1000000
 #include <inttypes.h>
 #include "mutex.h"
 typedef struct _DTNODE
@@ -18,8 +18,8 @@ typedef struct _DTNODE
 }DTNODE;
 typedef struct _DTROOT
 {
-    int status;
-    int bits;
+    int16_t  status;
+    int16_t  flag;
     uint32_t total;
     uint32_t rootid;
 }DTROOT;

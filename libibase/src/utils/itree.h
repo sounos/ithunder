@@ -4,7 +4,7 @@
 #include "mutex.h"
 #define ITREE_INCRE_NUM    1000000
 #define ITREE_NODES_MAX    2000000000
-#define ITREE_ROOT_MAX     10240
+#define ITREE_ROOT_MAX     1000000
 typedef struct _ITNODE
 {
     uint32_t left;
@@ -16,8 +16,8 @@ typedef struct _ITNODE
 }ITNODE;
 typedef struct _ITROOT
 {
-    int status;
-    int bits;
+    uint16_t status;
+    uint16_t flag;
     uint32_t total;
     uint32_t rootid;
 }ITROOT;

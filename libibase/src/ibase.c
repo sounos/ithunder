@@ -24,6 +24,7 @@
 #include "imap.h"
 #include "lmap.h"
 #include "dmap.h"
+#include "itree.h"
 #define UCHR(p) ((unsigned char *)p)
 #define ISSIGN(p) (*p == '@' || *p == '.' || *p == '-' || *p == '_')
 #define ISNUM(p) ((*p >= '0' && *p <= '9'))
@@ -332,13 +333,9 @@ int ibase_set_basedir(IBASE *ibase, char *dir, int used_for, int mmsource_status
             sprintf(path, "%s/%s/mm", dir, IB_INDEX_DIR);
             ibase->index = mdb_init(path, 0);
         }
-
+        sprintf(path, "%s/%s", dir, IB_SYNDB_DIR);
+        ibase->syndb = db_init(path, 1);
         /* check int/long/double index*/
-        /*
-        ibase_check_int_index(ibase);
-        ibase_check_long_index(ibase);
-        ibase_check_double_index(ibase);
-        */
         TIMER_SAMPLE(timer);
         DEBUG_LOGGER(ibase->logger, "resume ibase time used:%lld", PT_USEC_U(timer));
         TIMER_CLEAN(timer);
@@ -361,7 +358,7 @@ void ibase_check_mindex(IBASE *ibase, int secid)
             sprintf(path, "%s/%s/%d", ibase->basedir, IB_INDEX_DIR, secid);
             ibase->mindex[secid] = mdb_init(path, 1);
             ibase->state->secs[ibase->state->nsecs++] = secid;
-            mdb_set_block_incre_mode(ibase->mindex[secid], DB_BLOCK_INCRE_DOUBLE);
+            mdb_set_block_incre_mode(ibase->mindex[secid], MDB_BLOCK_INCRE_DOUBLE);
         }
         if(!ibase->state->headers[secid].map)
         {
@@ -1577,6 +1574,29 @@ int ibase_update_bterm(IBASE *ibase, BTERM *bterm, char *term)
     return 0;
 }
 
+/* synonym term */
+int ibase_update_synterm(IBASE *ibase, SYNTERM *term)
+{
+    TERMSTATE *termstatelist = NULL;
+    int id = 0, i = 0;
+
+    if(ibase && term && term->synid > 0 && term->count > 0)
+    {
+        db_set_data(PDB(ibase->syndb),term->synid,(char *)term->syns,term->count*sizeof(int32_t));
+        for(i = 0; i < term->count; i++)
+        {
+            id = term->syns[i];
+            MUTEX_LOCK(ibase->mutex_termstate);
+            if(id > ibase->state->termid){ADD_TERMSTATE(ibase, id);}
+            MUTEX_UNLOCK(ibase->mutex_termstate);
+            if((termstatelist = (TERMSTATE *)ibase->termstateio.map))
+            {
+                termstatelist[id].synid = term->synid;
+            }
+        }
+    }
+    return 0;
+}
 
 /* set log level */
 int ibase_set_log_level(IBASE *ibase, int level)
@@ -1584,7 +1604,7 @@ int ibase_set_log_level(IBASE *ibase, int level)
     if(ibase && ibase->logger)
     {
         LOGGER_SET_LEVEL(ibase->logger, level);
-        if(ibase->index){LOGGER_SET_LEVEL(PDB(ibase->index)->logger, level);}
+        if(ibase->index){LOGGER_SET_LEVEL(PMDB(ibase->index)->logger, level);}
         if(ibase->source){LOGGER_SET_LEVEL(PDB(ibase->source)->logger, level);}
     }
     return 0;
@@ -1598,6 +1618,7 @@ void ibase_clean(IBASE *ibase)
     if(ibase)
     {
         if(ibase->index) mdb_clean(PMDB(ibase->index));
+        if(ibase->syndb) db_clean(PDB(ibase->syndb));
         for(k = 0; k < ibase->state->nsecs; k++)
         {
             x = ibase->state->secs[k];

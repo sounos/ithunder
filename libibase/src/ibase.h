@@ -77,6 +77,7 @@ extern "C" {
 #define  IB_USED_FOR_QDOCD      0x01
 #define  IB_USED_FOR_QPARSERD   0x02
 #define  IB_SEC_MAX             8192
+#define  IB_SYNTERM_MAX         16
 #define  IBLL(xxx) ((long long int)(xxx))
 /*
  * ;16384=16K 32768=32K 65536=64K 131072=128K 262144=256K 524288=512K 786432=768K 
@@ -88,6 +89,8 @@ extern "C" {
 #define  IB_STATE_NAME           "ibase.state"
 #define  IB_DOCMAP_NAME          "ibase.docmap"
 #define  IB_MHEADER_NAME         "ibase.mheader"
+#define  IB_ITREE_NAME           "ibase.itree"
+#define  IB_SYNDB_DIR            "syndb"
 #define  IB_IDX_DIR              "idx"
 #define  IB_INDEX_DIR            "index"
 #define  IB_SOURCE_DIR           "source"
@@ -185,12 +188,19 @@ typedef struct _STERM
     int prevnext_count;
     int prevnext_size;
 }STERM;
+typedef struct _SYNTERM
+{
+    int synid;
+    int count;
+    int syns[IB_SYNTERM_MAX];
+}SYNTERM;
 /* term state */
 typedef struct _TERMSTATE
 {
     short   status;
     short   len;
     int     total;
+    int     synid;
     //int     last_docid;
     //int     mod_time;
 }TERMSTATE;
@@ -442,12 +452,14 @@ typedef struct _LBITS
 #define QTERM_BIT_NEXT      0x10
 #define QTERM_BIT_FORBIDDEN 0x20
 #define QTERM_BIT_DOWN      0x40
+#define QTERM_BIT_SYN       0x80
 /* query term */
 typedef struct _QTERM
 {
     short flag;
     short size;
     int   id;
+    int   synid;
     int   prev;
     int   next;
     int   bithit;
@@ -721,9 +733,10 @@ typedef struct _IBASE
     ICHUNK  *qchunks[IB_CHUNKS_MAX];
     void *mindex[IB_SEC_MAX];
     void *index; /* index db */
-    void *mmtree; /* int tree */
-    void *mmtree64;/* long tree */
-    void *dtree64;/* double tree */
+    void *syndb; /* synonym db */
+    void *itree; /* int tree */
+    void *ltree;/* long tree */
+    void *dtree;/* double tree */
     void *mmtrie; /* dict */
     void *xmmtrie; /* dict */
     void *docmap; /* globalid to docid map*/
