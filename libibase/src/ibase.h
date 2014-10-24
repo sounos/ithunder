@@ -9,6 +9,7 @@ extern "C" {
 #define  IB_KEYTERM_MAX         256
 #ifndef  IB_QUERY_MAX
 #define  IB_QUERY_MAX           32
+#define  IB_QUERY2_MAX          64
 #endif
 #define  IB_IDX_MAX             32
 #define  IB_INT_OFF             32
@@ -159,15 +160,17 @@ typedef struct _ITERM
     int termid;
     int docid;
     int ndocid;
-    int term_count;
     int fields;
+    int term_count;
     int prevnext_size;
-    int no;
     int last;
-    int term_len;
     int weight;
     int bithit;
     int bitnot;
+    int16_t bits;
+    int16_t no;
+    int16_t synno;
+    int16_t term_len;
     char *p;
     char *end;
     char *sprevnext;

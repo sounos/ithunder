@@ -618,7 +618,7 @@ void ibase_push_itermlist(IBASE *ibase, ITERM *itermlist)
         }
         else
         {
-            xmm_free(itermlist, sizeof(ITERM) * IB_QUERY_MAX);
+            xmm_free(itermlist, sizeof(ITERM) * IB_QUERY2_MAX);
         }
         MUTEX_UNLOCK(ibase->mutex_itermlist);
     }
@@ -638,12 +638,12 @@ ITERM *ibase_pop_itermlist(IBASE *ibase)
         {
             x = --(ibase->nqiterms);
             itermlist = ibase->qiterms[x];
-            memset(itermlist, 0, sizeof(ITERM) * IB_QUERY_MAX);
+            memset(itermlist, 0, sizeof(ITERM) * IB_QUERY2_MAX);
             ibase->qiterms[x] = NULL;
         }
         else
         {
-            itermlist = (ITERM *)xmm_mnew(IB_QUERY_MAX * sizeof(ITERM));
+            itermlist = (ITERM *)xmm_mnew(IB_QUERY2_MAX * sizeof(ITERM));
         }
         MUTEX_UNLOCK(ibase->mutex_itermlist);
     }
@@ -837,6 +837,10 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                         {
                             if((termid=mmtrie_get((MMTRIE *)(ibase->mmtrie), line, nterm)) > 0)
                             {
+                                if(termstates[termid].synid > 0) 
+                                {
+                                    termid = termstates[termid].synid;
+                                }
                                 ACCESS_LOGGER(ibase->logger, "found termid:%d term:%s len:%d in query_str:%s ", termid, line, nterm, query_str);
                                 if(nqterms <= IB_QUERY_MAX)
                                 {
@@ -1073,6 +1077,11 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                     query->qterms[i].idf = log(((double)N-(double )n+0.5f)/((double)n + 0.5f));
                     ACCESS_LOGGER(ibase->logger, "terms[%d] n:%lld N:%lld idf:%f", termid, (long long)n, (long long)N, query->qterms[i].idf);
                     if(query->qterms[i].idf < 0) query->qterms[i].idf = 1.0f;
+                    if(termstates[termid].synid > 0) 
+                    {
+                        query->qterms[i].flag |= QTERM_BIT_SYN;
+                        query->qterms[i].synid = synid;
+                    }
                     if(termstates[termid].status == IB_BTERM_BLOCK)
                     {
                         query->flag |= IB_QUERY_FORBIDDEN;

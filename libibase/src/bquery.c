@@ -301,14 +301,14 @@ void ibase_unindex(IBASE *ibase, ITERM *itermlist, XMAP *_xmap_,
         }
         itermlist[_x_].xnode.which = _x_;
         itermlist[_x_].xnode.docid = itermlist[_x_].docid;
-        itermlist[_x_].xnode.bithits = 1 << _x_;
+        itermlist[_x_].xnode.bithits = 1 << itermlist[_x_].synno;
         itermlist[_x_].xnode.bitfields = itermlist[_x_].fields;
         itermlist[_x_].xnode.bithit = 0;
         itermlist[_x_].xnode.bitnot = 0;
         if((itermlist[_x_].fields & itermlist[_x_].bithit) == itermlist[_x_].bithit) 
-            itermlist[_x_].xnode.bithit |= 1 << _x_;
+            itermlist[_x_].xnode.bithit |= 1 << itermlist[_x_].synno;
         if(itermlist[_x_].fields & itermlist[_x_].bitnot) 
-            itermlist[_x_].xnode.bitnot |= 1 << _x_;
+            itermlist[_x_].xnode.bitnot |= 1 << itermlist[_x_].synno;
         if(itermlist[_x_].fields & qfhits)
             itermlist[_x_].xnode.nhitfields = 1;
         else
@@ -338,11 +338,11 @@ void ibase_unindex(IBASE *ibase, ITERM *itermlist, XMAP *_xmap_,
 ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
 {
     int i = 0, x = 0, n = 0, mm = 0, nn = 0, k = 0, z = 0, *np = NULL, nqterms = 0, nquerys = 0, 
-        is_query_phrase =  0, docid = 0, ifrom = -1, is_sort_reverse = 0, gid = 0, 
-        max = 0, int_index_from = 0, int_index_to = 0, ito = -1, double_index_from = 0, 
-        xno = 0, min = 0,double_index_to = 0, range_flag = 0, prev = 0, last = -1, 
+        is_query_phrase =  0, docid = 0, ifrom = -1, is_sort_reverse = 0, gid = 0, max = 0, 
+        int_index_from = 0, int_index_to = 0, ito = -1, double_index_from = 0, xno = 0, min = 0,
+        double_index_to = 0, range_flag = 0, prev = 0, last = -1, syns[IB_SYNTERM_MAX], 
         no = 0, next = 0, fid = 0, nxrecords = 0, is_field_sort = 0, scale = 0, is_groupby = 0, 
-        total = 0, ignore_rank = 0, long_index_from = 0, long_index_to = 0, nx = 0, 
+        total = 0, ignore_rank = 0, long_index_from = 0, long_index_to = 0, nx = 0, nn = 0, 
         kk = 0, prevnext = 0, ii = 0, jj = 0, imax = 0, imin = 0, xint = 0, bithit = 0;
     double score = 0.0, p1 = 0.0, p2 = 0.0, dfrom = 0.0,
            tf = 1.0, Py = 0.0, Px = 0.0, dto = 0.0, xdouble = 0.0;
@@ -435,6 +435,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
         if(gid > 0){groupby = ibase_pop_mmx(ibase);};
         TIMER_INIT(timer);
         //read index 
+        nn = nqterms;
         for(i = 0; i < nqterms; i++)
         {
             itermlist[i].idf = query->qterms[i].idf;
@@ -457,6 +458,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
                 itermlist[i].end = itermlist[i].mm.data + itermlist[i].mm.ndata;
                 itermlist[i].docid = 0;
                 itermlist[i].last = -1;
+                itermlist[i].synno = i;
                 MUTEX_LOCK(ibase->mutex_termstate);
                 termstates = (TERMSTATE *)(ibase->termstateio.map);
                 itermlist[i].term_len = termstates[itermlist[i].termid].len;
@@ -464,6 +466,33 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
                 x = i;
                 ibase_unindex(ibase, itermlist, xmap, is_query_phrase, query->qfhits, x);
                 //UNINDEX(ibase, is_query_phrase, itermlist, xmap, x, n, np);
+            }
+            /* synonym term */
+            if((query->qterms[i].flag & QTERM_BIT_SYN) && nn < IB_QUERY2_MAX)
+            {
+                /* read syndb*/ 
+                if((n = db_read_data(PDB(ibase->syndb), query->qterms[i].synid, syns)) > 0)
+                {
+                    n /= sizeof(int32_t);
+                    for(j = 0; j < n; j++)
+                    {
+                        k = syns[j];
+                        memcpy(&(itermlist[nn]), &(itermlist[i]), sizeof(ITERM)); 
+                        if(k != itermlist[i].termid && (itermlist[nn].mm.ndata = mdb_get_data(PMDB(index), k, &(itermlist[nn].mm.data))) > 0)
+                        {
+                            total += itermlist[nn].mm.ndata;
+                            itermlist[nn].p = itermlist[nn].mm.data;
+                            itermlist[nn].end = itermlist[nn].mm.data + itermlist[nn].mm.ndata;
+                            itermlist[nn].synno = i;
+                            MUTEX_LOCK(ibase->mutex_termstate);
+                            termstates = (TERMSTATE *)(ibase->termstateio.map);
+                            itermlist[nn].term_len = termstates[k].len;
+                            MUTEX_UNLOCK(ibase->mutex_termstate);
+                            ibase_unindex(ibase, itermlist, xmap, is_query_phrase, query->qfhits, nn);
+                            ++nn;
+                        }
+                    }
+                }
             }
         }
         TIMER_SAMPLE(timer);
