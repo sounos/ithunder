@@ -268,7 +268,7 @@ void ibase_unindex(IBASE *ibase, ITERM *itermlist, XMAP *_xmap_,
             itermlist[_x_].docid +=  itermlist[_x_].ndocid;
             _np_ = &(itermlist[_x_].term_count);
             UZVBCODE(itermlist[_x_].p, _n_, _np_);
-            _np_ = &(itermlist[_x_].no);
+            _np_ = (int *)&(itermlist[_x_].no);
             UZVBCODE(itermlist[_x_].p, _n_, _np_);
             _np_ = &(itermlist[_x_].fields);
             UZVBCODE(itermlist[_x_].p, _n_, _np_);
@@ -340,10 +340,11 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
     int i = 0, x = 0, n = 0, mm = 0, nn = 0, k = 0, z = 0, *np = NULL, nqterms = 0, nquerys = 0, 
         is_query_phrase =  0, docid = 0, ifrom = -1, is_sort_reverse = 0, gid = 0, max = 0, 
         int_index_from = 0, int_index_to = 0, ito = -1, double_index_from = 0, xno = 0, min = 0,
-        double_index_to = 0, range_flag = 0, prev = 0, last = -1, syns[IB_SYNTERM_MAX], 
-        no = 0, next = 0, fid = 0, nxrecords = 0, is_field_sort = 0, scale = 0, is_groupby = 0, 
-        total = 0, ignore_rank = 0, long_index_from = 0, long_index_to = 0, nx = 0, nn = 0, 
-        kk = 0, prevnext = 0, ii = 0, jj = 0, imax = 0, imin = 0, xint = 0, bithit = 0;
+        double_index_to = 0, range_flag = 0, prev = 0, last = -1, no = 0, next = 0, fid = 0, 
+        nxrecords = 0, is_field_sort = 0, scale = 0, is_groupby = 0, total = 0, ignore_rank = 0, 
+        long_index_from = 0, long_index_to = 0, nx = 0, kk = 0, prevnext = 0, ii = 0, jj = 0, 
+        imax = 0, imin = 0, xint = 0, bithit = 0;
+        //syns[IB_SYNTERM_MAX], 
     double score = 0.0, p1 = 0.0, p2 = 0.0, dfrom = 0.0,
            tf = 1.0, Py = 0.0, Px = 0.0, dto = 0.0, xdouble = 0.0;
     int64_t bits = 0, lfrom = 0, lto = 0, base_score = 0, 
@@ -440,6 +441,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
         {
             itermlist[i].idf = query->qterms[i].idf;
             itermlist[i].termid = query->qterms[i].id;
+            itermlist[i].synno = query->qterms[i].synno;
             itermlist[i].bithit = query->qterms[i].bithit;
             itermlist[i].bitnot = query->qterms[i].bitnot;
             bithit |= 1 << i;
@@ -458,7 +460,6 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
                 itermlist[i].end = itermlist[i].mm.data + itermlist[i].mm.ndata;
                 itermlist[i].docid = 0;
                 itermlist[i].last = -1;
-                itermlist[i].synno = i;
                 MUTEX_LOCK(ibase->mutex_termstate);
                 termstates = (TERMSTATE *)(ibase->termstateio.map);
                 itermlist[i].term_len = termstates[itermlist[i].termid].len;
@@ -468,9 +469,9 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
                 //UNINDEX(ibase, is_query_phrase, itermlist, xmap, x, n, np);
             }
             /* synonym term */
+            /*
             if((query->qterms[i].flag & QTERM_BIT_SYN) && nn < IB_QUERY2_MAX)
             {
-                /* read syndb*/ 
                 if((n = db_read_data(PDB(ibase->syndb), query->qterms[i].synid, syns)) > 0)
                 {
                     n /= sizeof(int32_t);
@@ -494,6 +495,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
                     }
                 }
             }
+            */
         }
         TIMER_SAMPLE(timer);
         res->io_time = (int)PT_LU_USEC(timer);

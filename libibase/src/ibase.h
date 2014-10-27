@@ -463,6 +463,7 @@ typedef struct _QTERM
     short size;
     int   id;
     int   synid;
+    int   synno;
     int   prev;
     int   next;
     int   bithit;
@@ -767,6 +768,7 @@ typedef struct _IBASE
     int     (*set_long_field)(struct _IBASE *ibase, int64_t globalid, int field_no, int64_t val);
     int     (*set_double_field)(struct _IBASE *ibase, int64_t globalid, int field_no, double val);
     int     (*qparser)(struct _IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY *query);
+    int     (*synparser)(struct _IBASE *ibase,  IQUERY *query);
     int     (*set_index_status)(struct _IBASE *ibase, int status);
     int     (*set_phrase_status)(struct _IBASE *ibase, int status);
     int     (*set_compression_status)(struct _IBASE *ibase, int status);
@@ -814,8 +816,12 @@ int ibase_enable_term(IBASE *ibase, int termid);
 int ibase_disable_term(IBASE *ibase, int termid);
 /* block */
 int ibase_update_bterm(IBASE *ibase, BTERM *bterm, char *term);
+/* update synonym term */
+int ibase_update_synterm(IBASE *ibase, SYNTERM *term);
 /* query parser ,return term count */
 int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY *query);
+/* synonym parser */
+int ibase_synparser(IBASE *ibase, IQUERY *query);
 /* set index status */
 int ibase_set_index_status(IBASE *ibase, int status);
 /* set phrase status */

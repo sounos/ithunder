@@ -960,6 +960,10 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                         {
                             if((termid=mmtrie_get((MMTRIE *)(ibase->mmtrie), line, nterm)) > 0)
                             {
+                                if(termstates[termid].synid > 0) 
+                                {
+                                    termid = termstates[termid].synid;
+                                }
                                 ACCESS_LOGGER(ibase->logger, "found termid:%d term:%s len:%d in not_str:%s ", termid, line, nterm, not_str);
                                 if(nqterms <= IB_QUERY_MAX)
                                 {
@@ -1069,6 +1073,7 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                 z = list[i];
                 termid = query->qterms[i].id  = qterms[z].id;
                 query->qterms[i].size = qterms[z].size;
+                query->qterms[i].synno = i;
                 query->qterms[i].bitnot = qterms[z].bitnot;
                 query->qterms[i].bithit = qterms[z].bithit;
                 //fprintf(stdout, "i:%d termid:%d\n", i, qterms[z].id);
@@ -1080,7 +1085,7 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                     if(termstates[termid].synid > 0) 
                     {
                         query->qterms[i].flag |= QTERM_BIT_SYN;
-                        query->qterms[i].synid = synid;
+                        query->qterms[i].synid = termstates[termid].synid;
                     }
                     if(termstates[termid].status == IB_BTERM_BLOCK)
                     {
@@ -1128,6 +1133,46 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
     }
 #endif
     return -2;
+}
+
+/* synonym parser */
+int ibase_synparser(IBASE *ibase, IQUERY *query)
+{
+    int ret = -1, i = 0, j = 0, k = 0, old = 0, termid = 0, n = 0, N = 0, 
+        m = 0, syns[IB_SYNTERM_MAX];
+    TERMSTATE *termstates = NULL;
+
+    if(ibase && query && query->nqterms && (termstates = (TERMSTATE *)(ibase->termstateio.map)))
+    {
+        old = k = query->nqterms;
+        for(i = 0; i < query->nqterms; i++)
+        {
+            if((m = db_read_data(PDB(ibase->syndb), query->qterms[i].synid, (char *)syns)) > 0)
+            {
+                m /= sizeof(int32_t);
+                for(j = 0; j < m; j++)
+                {
+                    termid = syns[j];
+                    if(termid != query->qterms[i].synid && k < IB_QUERY2_MAX)
+                    {
+                        memcpy(&(query->qterms[k]), &(query->qterms[i]), sizeof(QTERM));
+                        query->qterms[k].size = termstates[termid].len;
+                        //fprintf(stdout, "i:%d termid:%d\n", i, qterms[z].id);
+                        if(termid <= ibase->state->termid && (n = (termstates[termid].total)) > 0)
+                        {
+                            query->qterms[k].idf = log(((double)N-(double )n+0.5f)/((double)n + 0.5f));
+                            if(query->qterms[k].idf < 0) query->qterms[k].idf = 1.0f;
+                            ++k;
+                        }
+                    }
+                }
+            }
+        }
+        query->nqterms = k;
+        query->nquerys += k - old; 
+        ret = query->nqterms;
+    }
+    return ret;
 }
 
 /* set index status */
@@ -1583,7 +1628,7 @@ int ibase_update_bterm(IBASE *ibase, BTERM *bterm, char *term)
     return 0;
 }
 
-/* synonym term */
+/* update synonym term */
 int ibase_update_synterm(IBASE *ibase, SYNTERM *term)
 {
     TERMSTATE *termstatelist = NULL;
@@ -1747,6 +1792,7 @@ IBASE *ibase_init()
         ibase->set_long_field           = ibase_set_long_field;
         ibase->set_double_field         = ibase_set_double_field;
         ibase->qparser                  = ibase_qparser;
+        ibase->synparser                = ibase_synparser;
         ibase->set_index_status         = ibase_set_index_status;
         ibase->set_phrase_status        = ibase_set_phrase_status;
         ibase->set_compression_status   = ibase_set_compression_status;
