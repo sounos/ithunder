@@ -34,8 +34,8 @@ extern "C" {
 #define  HI_TERM_SIZE           96
 #define  HI_BSTERM_MAX          10000000
 #define  HI_BSTERM_BASE         100000
-#define  HI_SMTERM_MAX          10000000
-#define  HI_SMTERM_BASE         100000
+#define  HI_SYNTERM_MAX          10000000
+#define  HI_SYNTERM_BASE         100000
 static char *server_type_list[] = {"DocNode", "ParserNode", "IndexNode"}; 
 #define  HI_SERVERLIST_NUM      2
 #define  HI_PHRASE_ENABELD      0x00
@@ -108,6 +108,8 @@ typedef struct _HISTATE
     int   double_index_from;
     int   double_index_count;
     int   bterm_id_max;
+    int   synterm_id_max;
+    int   bits;
     HINODE nodes[HI_NODE_MAX];
     char    dumpfile[FILE_PATH_MAX];
 }HISTATE;
@@ -208,6 +210,7 @@ typedef struct _HIDOC
     XMIO     xlongio;
     XMIO     xdoubleio;
     XMIO     bstermio;
+    XMIO     syntermio;
     XMIO     stermio;
     MMTRIE  *map;
     HISTATE *state;

@@ -94,6 +94,7 @@ static void *argvmap = NULL;
 #define E_OP_LIST_BTERMS        18
 #define E_OP_DEL_BTERM          19
 #define E_OP_LIST_DUMP          20
+#define E_OP_SET_SYNTERM        21
 static char *e_argvs[] =
 {
     "op",
@@ -134,10 +135,12 @@ static char *e_argvs[] =
 #define E_ARGV_DUMPFILE     17
     "status",
 #define E_ARGV_STATUS       18
-    "termid"
+    "termid",
 #define E_ARGV_TERMID       19
+    "synterms"
+#define E_ARGV_SYNTERMS     20
 };
-#define  E_ARGV_NUM         20
+#define  E_ARGV_NUM         21
 /* data handler */
 int hidocd_packet_reader(CONN *conn, CB_DATA *buffer);
 int hidocd_packet_handler(CONN *conn, CB_DATA *packet);
@@ -292,8 +295,8 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *http_req)
     char buf[HTTP_LINE_MAX], line[2048], *p = NULL, *end = NULL, *name = NULL,
          *bterms = NULL, *termlist = NULL, *doclist = NULL, *rank = NULL, *ip = NULL, 
          *category = NULL, *slevel = NULL, *bitxcat = NULL, *dumpfile = NULL, 
-         *fields = NULL, *idx_status = NULL, *term = NULL;
-    int ret = -1, i = 0, id = 0, x = 0, n = 0, type = -1, taskid = -1, nodeid = -1, 
+         *fields = NULL, *idx_status = NULL, *term = NULL, *syns[64], *synterms = NULL;
+    int ret = -1, i = 0, j = 0, id = 0, x = 0, n = 0, type = -1, taskid = -1, nodeid = -1, 
         port = -1, limit = -1, op = -1, len = 0, status = -1, termid = 0;
     int64_t globalid = 0;
     FXDOUBLE fxdoublelist[HI_FXDOUBLE_MAX];
@@ -366,6 +369,9 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *http_req)
                             break;
                         case E_ARGV_BTERMS:
                             bterms = p;
+                            break;
+                        case E_ARGV_SYNTERMS:
+                            synterms = p;
                             break;
                         case E_ARGV_DUMPFILE:
                             dumpfile = p;
@@ -581,6 +587,37 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *http_req)
                     else goto err_end;
                 }
                 break;
+            case E_OP_SET_SYNTERM:
+                {
+                    if((p = synterms))
+                    {
+                        while(*p != '\0')
+                        {
+                            while(*p != '\0' && *p == 0x20)++p;
+                            j = 0;
+                            while(*p != '\0' && *p != ',' && *p != ';')
+                            {
+                                while(*p != '\0' && *p == 0x20)++p;
+                                term = p;
+                                while(*p != '\0' && *p != 0x20 && *p != ',' && *p != ';')
+                                {
+                                    if(*p >= 'A' && *p <= 'Z') *p += 'a' - 'A';
+                                    ++p;
+                                }
+                                syns[j] = term;
+                                if(*p == 0x20){*p = 0; ++p;}
+                                while(*p != '\0' && *p == 0x20)++p;
+                                ++j;
+                                if(*p == ',' || *p == ';'){break;}
+                            }
+                            if(j > 0) hidoc->set_synterm(hidoc, syns, j);
+                            if(*p == ',' || *p == ';')++p;
+                        }
+                        goto syntermslist;
+                    }
+                    else goto err_end;
+                }
+                break;
             case E_OP_SET_BTERM:
                 {
                     if((p = bterms) && status > 0)
@@ -666,12 +703,12 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *http_req)
         return 0;
 end:
         p = buf;
-                        p += sprintf(p, "HTTP/1.0 200 OK\r\nContent-Type: text/html;charset=%s\r\n"
-                                "Content-Length: 0\r\n", http_default_charset);
-                        if((n = http_req->headers[HEAD_GEN_CONNECTION]) > 0)
-                            p += sprintf(p, "Connection: %s\r\n", (http_req->hlines + n));
-                        p += sprintf(p, "\r\n");
-                        return conn->push_chunk(conn, buf, p - buf);
+        p += sprintf(p, "HTTP/1.0 200 OK\r\nContent-Type: text/html;charset=%s\r\n"
+                "Content-Length: 0\r\n", http_default_charset);
+        if((n = http_req->headers[HEAD_GEN_CONNECTION]) > 0)
+            p += sprintf(p, "Connection: %s\r\n", (http_req->hlines + n));
+        p += sprintf(p, "\r\n");
+        return conn->push_chunk(conn, buf, p - buf);
 btermslist:
         len = sizeof(BSTERM) * hidoc->state->bterm_id_max;
         if((chunk = conn->newchunk(conn, len)))

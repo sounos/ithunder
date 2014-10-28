@@ -44,6 +44,7 @@
 #define HINDEX_NODEMAP_NAME     "hindex.namemap"
 #define HINDEX_MMQUEUE_NAME     "hindex.mmqueue"
 #define HINDEX_BSTERM_NAME      "hindex.bsterm"
+#define HINDEX_SYNTERM_NAME     "hindex.synterm"
 #define HINDEX_DB_DIR           "db"
 #define HINDEX_UPDATE_DIR       "update"
 #define HIDOC_GLOBALID_DEFAULT  200000000
@@ -247,6 +248,31 @@ int hidoc_set_basedir(HIDOC *hidoc, char *basedir)
         else
         {
             fprintf(stderr, "open bsterm file(%s) failed, %s\n", path, strerror(errno));
+            _exit(-1);
+        }
+        /* synterm file */
+        sprintf(path, "%s/%s", basedir, HINDEX_SYNTERM_NAME);
+        if((hidoc->syntermio.fd = open(path, O_CREAT|O_RDWR, 0644)) > 0
+                && fstat(hidoc->syntermio.fd, &st) == 0)
+        {
+            hidoc->syntermio.end = st.st_size;
+            size = sizeof(SYNTERM) * HI_SYNTERM_MAX;
+            if(st.st_size > size) size = st.st_size;
+            if((hidoc->syntermio.map = (char *)mmap(NULL, size, PROT_READ|PROT_WRITE, 
+                            MAP_SHARED, hidoc->syntermio.fd, 0)) 
+                    && hidoc->syntermio.map != (void *)-1)
+            {
+                hidoc->syntermio.size = size;
+            }
+            else
+            {
+                fprintf(stderr, "mmap synterm file (%s) failed, %s\n", path, strerror(errno));
+                _exit(-1);
+            }
+        }
+        else
+        {
+            fprintf(stderr, "open synterm file(%s) failed, %s\n", path, strerror(errno));
             _exit(-1);
         }
         /* index */
@@ -616,7 +642,19 @@ do                                                                              
                 hidoc->bstermio.end - hidoc->bstermio.old);                                 \
     }                                                                                       \
 }while(0)
-
+#define CHECK_SYNTERMIO(hidoc, xid)                                                          \
+do                                                                                          \
+{                                                                                           \
+    if((off_t)xid*(off_t)sizeof(SYNTERM) >= hidoc->syntermio.end)                             \
+    {                                                                                       \
+        hidoc->syntermio.old = hidoc->syntermio.end;                                          \
+        hidoc->syntermio.end = (xid / HI_SYNTERM_BASE)+1;                                     \
+        hidoc->syntermio.end *= (off_t)(sizeof(SYNTERM) * (off_t)HI_SYNTERM_BASE);             \
+        if(ftruncate(hidoc->syntermio.fd, hidoc->syntermio.end) != 0)break;                   \
+        memset(hidoc->syntermio.map + hidoc->syntermio.old, 0,                                \
+                hidoc->syntermio.end - hidoc->syntermio.old);                                 \
+    }                                                                                       \
+}while(0)
 #define CHECK_PACKETIO(hidoc)                                                               \
 do                                                                                          \
 {                                                                                           \
@@ -698,35 +736,45 @@ do                                                                              
                 hidoc->xdoubleio.end - hidoc->xdoubleio.old);                           \
     }                                                                                   \
 }while(0)
-/* set synonym terms status */
-int hidoc_set_bterm(HIDOC *hidoc, char *term, int nterm, int status)
-{
-    int ret = -1, termid = 0, xid = 0, n = 0;
-    char line[HI_LINE_SIZE];
-    BSTERM *bsterms = NULL;
 
-    if(hidoc && term && nterm > 0 
-            && (termid = mmtrie_xadd((MMTRIE *)(hidoc->xdict), term, nterm)) > 0
-            &&  (n = sprintf(line, "b:%d", termid)) > 0
-            && (xid = mmtrie_xadd((MMTRIE *)(hidoc->map), line, n)) > 0
-            && (bsterms = (BSTERM *)(hidoc->bstermio.map)))
+/* set synonym terms status */
+int hidoc_set_synterm(HIDOC *hidoc, char **synterms, int num)
+{
+    int ret = -1, i = 0, termid = 0, xid = 0, id = 0, n = 0;
+    SYNTERM synterm = {0}, *synterms = NULL;
+    char line[HI_LINE_SIZE], *p = NULL;
+
+    if(hidoc && syns && num > 0)
     {
-        MUTEX_LOCK(hidoc->mutex);
-        CHECK_BSTERMIO(hidoc, xid);
-        if(xid > hidoc->state->bterm_id_max) hidoc->state->bterm_id_max = xid;
-        if(nterm > HI_TERM_SIZE)
+        for(i = 0; i < num; i++)
         {
-            WARN_LOGGER(hidoc->logger, "term:%.*s too long than len:%d", nterm, term, HI_TERM_SIZE);
+            p = syns[i];
+            if(p && (termid = mmtrie_xadd((MMTRIE *)(hidoc->xdict), p, strlen(p))) > 0)
+            {
+                synterm.syns[i] = termid;
+                n = sprintf(line, "s:%d", termid);
+                if((id = mmtrie_get((MMTRIE *)(hidoc->map), line, n)) > 0)
+                {
+                    synterm.synid = termid;
+                    xid = id;
+                }
+            }
         }
-        else
+        if(xid == 0)
         {
-            bsterms[xid].bterm.id = termid;
-            bsterms[xid].bterm.status = status;
-            bsterms[xid].bterm.len = nterm;
-            memcpy(bsterms[xid].term, term, nterm);
-            ret = 0;
+            MUTEX_LOCK(hidoc->mutex);
+            xid = ++(hidoc->state->synterm_id_max);
+            CHECK_BSTERMIO(hidoc, xid);
+            MUTEX_UNLOCK(hidoc->mutex);
+            termid = synterm.syns[0];
+            n = sprintf(line, "s:%d", termid);
+            id = mmtrie_add((MMTRIE *)(hidoc->map), line, n, xid);
         }
-        MUTEX_UNLOCK(hidoc->mutex);
+        if(xid > 0 && (synterms = (SYNTERM *)(hidoc->bstermio.map)))
+        {
+            memcpy(&(synterms[xid]), &synterm, sizeof(SYNTERM);
+            ret = xid;
+        }
     }
     return ret;
 }
@@ -3517,6 +3565,8 @@ void hidoc_clean(HIDOC *hidoc)
         if(hidoc->xdoubleio.fd > 0) close(hidoc->xdoubleio.fd);
         if(hidoc->bstermio.map) munmap(hidoc->bstermio.map, hidoc->bstermio.size);
         if(hidoc->bstermio.fd > 0) close(hidoc->bstermio.fd);
+        if(hidoc->syntermio.map) munmap(hidoc->syntermio.map, hidoc->syntermio.size);
+        if(hidoc->syntermio.fd > 0) close(hidoc->syntermio.fd);
         if(hidoc->db) db_clean(PDB(hidoc->db));
         if(hidoc->update) db_clean(PDB(hidoc->update));
         if(hidoc->map) mmtrie_clean(hidoc->map);
