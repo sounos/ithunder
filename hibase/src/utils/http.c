@@ -1,10 +1,10 @@
 #include "http.h"
 #include "mtrie.h"
+#include "stime.h"
 #ifdef _HTTP_CHARSET_CONVERT
 #define _GNU_SOURCE
 #include <iconv.h>
 #include "chardet.h"
-#include "stime.h"
 #include "zstream.h"
 #define CHARSET_MAX 256
 #endif

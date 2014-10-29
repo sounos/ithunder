@@ -613,7 +613,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *http_req)
                             if(j > 0) hidoc->set_synterm(hidoc, syns, j);
                             if(*p == ',' || *p == ';')++p;
                         }
-                        goto syntermslist;
+                        //goto syntermslist;
                     }
                     else goto err_end;
                 }

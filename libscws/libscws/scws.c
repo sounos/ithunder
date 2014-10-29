@@ -28,7 +28,7 @@
 #define	SCWS_IS_SPECIAL(x,l)	scws_rule_checkbit(s->r,x,l,SCWS_RULE_SPECIAL)
 #define	SCWS_IS_NOSTATS(x,l)	scws_rule_checkbit(s->r,x,l,SCWS_RULE_NOSTATS)
 #define	SCWS_CHARLEN(x)			s->mblen[(x)]
-#define	SCWS_IS_ALNUM(x)		(((x)>=48&&(x)<=57)||((x)>=65&&(x)<=90)||((x)>=97&&(x)<=122))
+#define	SCWS_IS_ALNUM(x)		(((x)>=48&&(x)<=57)||((x)>=64&&(x)<=90)||((x)>=97&&(x)<=122))
 #define	SCWS_IS_ALPHA(x)		(((x)>=65&&(x)<=90)||((x)>=97&&(x)<=122))
 #define	SCWS_IS_UALPHA(x)		((x)>=65&&(x)<=90)
 #define	SCWS_IS_DIGIT(x)		((x)>=48&&(x)<=57)

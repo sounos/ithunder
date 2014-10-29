@@ -193,7 +193,7 @@ typedef struct _XMIO
 }XMIO;
 typedef struct _BSTERM
 {
-    BERM bterm;
+    BTERM bterm;
     char term[HI_TERM_SIZE];
 }BSTERM;
 /* idoc */
@@ -266,6 +266,7 @@ typedef struct _HIDOC
     int (*over_index)(struct _HIDOC *, int taskid, int id);
     int (*read_upindex)(struct _HIDOC *, int taskid, char *data, int *len, int *count);
     int (*over_upindex)(struct _HIDOC *, int taskid, int upid);
+    int (*set_synterm)(struct _HIDOC *, char **synterms, int num);
     int (*set_bterm)(struct _HIDOC *, char *, int nterm, int status);
     int (*update_bterm)(struct _HIDOC *, int termid, int status);
     int (*del_bterm)(struct _HIDOC *, int termid);

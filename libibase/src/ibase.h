@@ -643,6 +643,8 @@ typedef struct _IBSTATE
 #define IB_RESP_UPDATE_BTERM     14
 #define IB_REQ_CLEAR_CACHE       15
 #define IB_RESP_CLEAR_CACHE      16
+#define IB_REQ_UPDATE_SYNTERM    17
+#define IB_RESP_UPDATE_SYNTERM   18
 #define IB_STATUS_OK             0x00
 #define IB_STATUS_ERR            0x01
 #define IB_STATUS_FORBIDDEN      0x02

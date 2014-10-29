@@ -738,17 +738,17 @@ do                                                                              
 }while(0)
 
 /* set synonym terms status */
-int hidoc_set_synterm(HIDOC *hidoc, char **synterms, int num)
+int hidoc_set_synterm(HIDOC *hidoc, char **terms, int num)
 {
     int ret = -1, i = 0, termid = 0, xid = 0, id = 0, n = 0;
     SYNTERM synterm = {0}, *synterms = NULL;
     char line[HI_LINE_SIZE], *p = NULL;
 
-    if(hidoc && syns && num > 0)
+    if(hidoc && terms && num > 0)
     {
         for(i = 0; i < num; i++)
         {
-            p = syns[i];
+            p = terms[i];
             if(p && (termid = mmtrie_xadd((MMTRIE *)(hidoc->xdict), p, strlen(p))) > 0)
             {
                 synterm.syns[i] = termid;
@@ -772,201 +772,13 @@ int hidoc_set_synterm(HIDOC *hidoc, char **synterms, int num)
         }
         if(xid > 0 && (synterms = (SYNTERM *)(hidoc->bstermio.map)))
         {
-            memcpy(&(synterms[xid]), &synterm, sizeof(SYNTERM);
+            memcpy(&(synterms[xid]), &synterm, sizeof(SYNTERM));
             ret = xid;
         }
     }
     return ret;
 }
 
-/* update bterms status */
-int hidoc_update_bterm(HIDOC *hidoc, int termid, int status)
-{
-    BSTERM *bsterms = NULL;
-    int ret = -1;
-
-    if(hidoc && termid > 0 && (bsterms = (BSTERM *)(hidoc->bstermio.map)))
-    {
-        MUTEX_LOCK(hidoc->mutex);
-        if(termid <= hidoc->state->bterm_id_max)
-        {
-            bsterms[termid].bterm.status = status;
-            ret = 0;
-        }
-        MUTEX_UNLOCK(hidoc->mutex);
-    }
-    return ret;
-}
-
-/* delete bterm */
-int hidoc_del_bterm(HIDOC *hidoc, int termid)
-{
-    BSTERM *bsterms = NULL;
-    int ret = -1;
-
-    if(hidoc && termid > 0 && (bsterms = (BSTERM *)(hidoc->bstermio.map)))
-    {
-        MUTEX_LOCK(hidoc->mutex);
-        if(termid <= hidoc->state->bterm_id_max)
-        {
-            bsterms[termid].bterm.status = 0;
-            ret = 0;
-        }
-        MUTEX_UNLOCK(hidoc->mutex);
-    }
-    return ret;
-}
-
-/* list bterms */
-int hidoc_list_bterms(HIDOC *hidoc, char *out)
-{
-    char *p = NULL, *pp = NULL;
-    BSTERM *bsterms = NULL;
-    int i = 0, ret = 0;
-
-    if(hidoc && (p = out) && (bsterms = (BSTERM *)(hidoc->bstermio.map)))
-    {
-        MUTEX_LOCK(hidoc->mutex);
-        if(hidoc->state->bterm_id_max > 0)
-        {
-            p += sprintf(p, "({\"bterms\":{");
-            pp = p;
-            for(i = 1; i <= hidoc->state->bterm_id_max; i++)
-            {
-                if(bsterms[i].bterm.status > 0)
-                    p += sprintf(p, "\"%d\":{\"id\":\"%d\", \"status\":\"%d\", \"text\":\"%s\"},", i, bsterms[i].bterm.id, bsterms[i].bterm.status, bsterms[i].term);
-            }
-            if(p > pp)--p;
-            p += sprintf(p, "}})");
-            ret = p - out;
-        }
-        MUTEX_UNLOCK(hidoc->mutex);
-    }
-    return ret;
-}
-
-/* add block terms */
-int hidoc_add_bterm(HIDOC *hidoc, char *term, int nterm)
-{
-    int ret = -1, termid = 0, xid = 0, n = 0;
-    char line[HI_LINE_SIZE];
-    BSTERM *bsterms = NULL;
-
-    if(hidoc && term && nterm > 0 
-            && (termid = mmtrie_xadd((MMTRIE *)(hidoc->xdict), term, nterm)) > 0
-            &&  (n = sprintf(line, "b:%d", termid)) > 0
-            && (xid = mmtrie_xadd((MMTRIE *)(hidoc->map), line, n)) > 0
-            && (bsterms = (BSTERM *)(hidoc->bstermio.map)))
-    {
-        MUTEX_LOCK(hidoc->mutex);
-        CHECK_BSTERMIO(hidoc, xid);
-        if(xid > hidoc->state->bterm_id_max) hidoc->state->bterm_id_max = xid;
-        if(nterm > HI_TERM_SIZE)
-        {
-            WARN_LOGGER(hidoc->logger, "term:%.*s too long than len:%d", nterm, term, HI_TERM_SIZE);
-        }
-        else
-        {
-            bsterms[xid].bterm.id = termid;
-            bsterms[xid].bterm.status = IB_BTERM_BLOCK;
-            bsterms[xid].bterm.len = nterm;
-            memcpy(bsterms[xid].term, term, nterm);
-            ret = 0;
-        }
-        MUTEX_UNLOCK(hidoc->mutex);
-    }
-    return ret;
-}
-
-/* update bterm */
-int hidoc_sync_bterms(HIDOC *hidoc)
-{
-    struct timeval tv = {0};
-    int ret = -1;
-
-    if(hidoc && hidoc->state)
-    {
-        MUTEX_LOCK(hidoc->mutex);
-        gettimeofday(&tv, NULL);
-        hidoc->state->bterm_mod_time = (off_t)tv.tv_sec * (off_t)10000000 + (off_t)tv.tv_usec;
-        MUTEX_UNLOCK(hidoc->mutex);
-    }
-    return ret;
-}
-
-/* read bterm */
-int hidoc_read_bterms(HIDOC *hidoc, int taskid, char *data, int ndata)
-{
-    int k = 0, nodeid = -1, n = -1, i = 0, left = 0, ret = -1;
-    BSTERM *bsterms = NULL;
-    HINODE *nodes = NULL;
-    HITASK *tasks = NULL;
-    char *p = NULL;
-
-    if(hidoc && hidoc->state && (p = data) && (left = ndata) > 0 && hidoc->state->bterm_id_max > 0
-            && taskid > 0 && taskid < (HI_NODE_MAX * HI_TASKS_MAX))
-    {
-        MUTEX_LOCK(hidoc->mutex);
-        k = taskid % HI_TASKS_MAX;
-        if((nodeid = (taskid / HI_TASKS_MAX)) < HI_NODE_MAX 
-                && (nodes = hidoc->state->nodes) && (tasks = nodes[nodeid].tasks) 
-                && tasks[k].status > 0 && tasks[k].bterm_mod_time < hidoc->state->bterm_mod_time
-                && (bsterms = (BSTERM *)(hidoc->bstermio.map)))
-        {
-            for(i = 0; i <= hidoc->state->bterm_id_max; i++)
-            {
-                if(bsterms[i].bterm.len > 0)
-                {
-                    n = bsterms[i].bterm.len + sizeof(BTERM);
-                    if(left < n)
-                    {
-                        WARN_LOGGER(hidoc->logger, "Nospace bsterms[%d] taskid:%d", i, taskid);
-                        goto err;
-                    }
-                    else
-                    {
-                        memcpy(p, &(bsterms[i]), n);
-                        p += n;
-                        left -= n;
-                    }
-                }
-                else
-                {
-                        WARN_LOGGER(hidoc->logger, "Nocontent bsterms[%d] taskid:%d", i, taskid);
-                }
-            }
-            ret =  p - data;
-            tasks[k].bterm_last_time = hidoc->state->bterm_mod_time;
-        }
-err:
-        MUTEX_UNLOCK(hidoc->mutex);
-    }
-    return ret;
-}
-
-/* over update bterm */
-int hidoc_over_bterms(HIDOC *hidoc, int taskid)
-{
-    int k = 0, nodeid = -1, ret = -1;
-    HINODE *nodes = NULL;
-    HITASK *tasks = NULL;
-
-    if(hidoc && hidoc->state && taskid > 0 && taskid < (HI_NODE_MAX * HI_TASKS_MAX))
-    {
-        MUTEX_LOCK(hidoc->mutex);
-        k = taskid % HI_TASKS_MAX;
-        if((nodeid = (taskid / HI_TASKS_MAX)) < HI_NODE_MAX 
-                && (nodes = hidoc->state->nodes) && (tasks = nodes[nodeid].tasks) 
-                && tasks[k].status > 0)
-        {
-            tasks[k].bterm_mod_time = tasks[k].bterm_last_time;
-            ret = 0;
-        }
-        MUTEX_UNLOCK(hidoc->mutex);
-    }
-    return ret;
-}
-/* set block terms status */
 int hidoc_set_bterm(HIDOC *hidoc, char *term, int nterm, int status)
 {
     int ret = -1, termid = 0, xid = 0, n = 0;
@@ -3630,6 +3442,7 @@ HIDOC *hidoc_init()
         hidoc->over_index               = hidoc_over_index;
         hidoc->read_upindex             = hidoc_read_upindex;
         hidoc->over_upindex             = hidoc_over_upindex;
+        hidoc->set_synterm              = hidoc_set_synterm;
         hidoc->set_bterm                = hidoc_set_bterm;
         hidoc->update_bterm             = hidoc_update_bterm;
         hidoc->list_bterms              = hidoc_list_bterms;
