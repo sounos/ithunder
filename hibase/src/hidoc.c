@@ -737,6 +737,76 @@ do                                                                              
     }                                                                                   \
 }while(0)
 
+/* update synterm modtime */
+int hidoc_sync_synterms(HIDOC *hidoc)
+{
+    struct timeval tv = {0};
+    int ret = -1;
+
+    if(hidoc && hidoc->state)
+    {
+        MUTEX_LOCK(hidoc->mutex);
+        gettimeofday(&tv, NULL);
+        hidoc->state->synterm_mod_time = (off_t)tv.tv_sec * (off_t)10000000 + (off_t)tv.tv_usec;
+        MUTEX_UNLOCK(hidoc->mutex);
+    }
+    return ret;
+}
+
+/* read synterm */
+int hidoc_read_synterms(HIDOC *hidoc, int taskid, char *data, int ndata)
+{
+    int k = 0, nodeid = -1, left = 0, ret = -1;
+    SYNTERM *synterms = NULL;
+    HINODE *nodes = NULL;
+    HITASK *tasks = NULL;
+    char *p = NULL;
+
+    if(hidoc && hidoc->state && (p = data) && (left = ndata) > 0 && hidoc->state->synterm_id_max > 0
+            && taskid > 0 && taskid < (HI_NODE_MAX * HI_TASKS_MAX))
+    {
+        MUTEX_LOCK(hidoc->mutex);
+        k = taskid % HI_TASKS_MAX;
+        if((nodeid = (taskid / HI_TASKS_MAX)) < HI_NODE_MAX 
+                && (nodes = hidoc->state->nodes) && (tasks = nodes[nodeid].tasks) 
+                && tasks[k].status > 0 && tasks[k].synterm_mod_time < hidoc->state->synterm_mod_time
+                && (synterms = (SYNTERM *)(hidoc->syntermio.map)))
+        {
+            if(left >= (hidoc->state->synterm_id_max-1) * sizeof(SYNTERM))
+            {
+                ret = (hidoc->state->synterm_id_max-1) * sizeof(SYNTERM);
+                memcpy(data, &(synterms[1]), ret);
+            }
+            tasks[k].synterm_last_time = hidoc->state->synterm_mod_time;
+        }
+        MUTEX_UNLOCK(hidoc->mutex);
+    }
+    return ret;
+}
+
+/* over update synterm */
+int hidoc_over_synterms(HIDOC *hidoc, int taskid)
+{
+    int k = 0, nodeid = -1, ret = -1;
+    HINODE *nodes = NULL;
+    HITASK *tasks = NULL;
+
+    if(hidoc && hidoc->state && taskid > 0 && taskid < (HI_NODE_MAX * HI_TASKS_MAX))
+    {
+        MUTEX_LOCK(hidoc->mutex);
+        k = taskid % HI_TASKS_MAX;
+        if((nodeid = (taskid / HI_TASKS_MAX)) < HI_NODE_MAX 
+                && (nodes = hidoc->state->nodes) && (tasks = nodes[nodeid].tasks) 
+                && tasks[k].status > 0)
+        {
+            tasks[k].synterm_mod_time = tasks[k].synterm_last_time;
+            ret = 0;
+        }
+        MUTEX_UNLOCK(hidoc->mutex);
+    }
+    return ret;
+}
+
 /* set synonym terms status */
 int hidoc_set_synterm(HIDOC *hidoc, char **terms, int num)
 {
@@ -945,14 +1015,14 @@ int hidoc_read_bterms(HIDOC *hidoc, int taskid, char *data, int ndata)
                 && tasks[k].status > 0 && tasks[k].bterm_mod_time < hidoc->state->bterm_mod_time
                 && (bsterms = (BSTERM *)(hidoc->bstermio.map)))
         {
-            for(i = 0; i <= hidoc->state->bterm_id_max; i++)
+            for(i = 1; i <= hidoc->state->bterm_id_max; i++)
             {
                 if(bsterms[i].bterm.len > 0)
                 {
                     n = bsterms[i].bterm.len + sizeof(BTERM);
                     if(left < n)
                     {
-                        WARN_LOGGER(hidoc->logger, "Nospace bsterms[%d] taskid:%d", i, taskid);
+                        WARN_LOGGER(hidoc->logger, "No space left bsterms[%d] taskid:%d", i, taskid);
                         goto err;
                     }
                     else
@@ -3443,6 +3513,9 @@ HIDOC *hidoc_init()
         hidoc->read_upindex             = hidoc_read_upindex;
         hidoc->over_upindex             = hidoc_over_upindex;
         hidoc->set_synterm              = hidoc_set_synterm;
+        hidoc->sync_synterms            = hidoc_sync_synterms;
+        hidoc->read_synterms            = hidoc_read_synterms;
+        hidoc->over_synterms            = hidoc_over_synterms;
         hidoc->set_bterm                = hidoc_set_bterm;
         hidoc->update_bterm             = hidoc_update_bterm;
         hidoc->list_bterms              = hidoc_list_bterms;

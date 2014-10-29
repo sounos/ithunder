@@ -68,6 +68,8 @@ typedef struct _HITASK
     int    upover;
     int    nupdates;
     int    upcount;
+    off_t  synterm_mod_time;
+    off_t  synterm_last_time;
     off_t  bterm_mod_time;
     off_t  bterm_last_time;
 }HITASK;
@@ -90,6 +92,7 @@ typedef struct _HISTATE
     off_t dump_offset;
     off_t outdoc_offset;
     off_t bterm_mod_time;
+    off_t synterm_mod_time;
     int   ccompress_status;
     int   phrase_status;
     int   taskqid;
@@ -266,7 +269,10 @@ typedef struct _HIDOC
     int (*over_index)(struct _HIDOC *, int taskid, int id);
     int (*read_upindex)(struct _HIDOC *, int taskid, char *data, int *len, int *count);
     int (*over_upindex)(struct _HIDOC *, int taskid, int upid);
-    int (*set_synterm)(struct _HIDOC *, char **synterms, int num);
+    int (*set_synterm)(struct _HIDOC *, char **terms, int num);
+    int (*sync_synterms)(struct _HIDOC *);
+    int (*read_synterms)(struct _HIDOC *, int taskid, char *data, int len);
+    int (*over_synterms)(struct _HIDOC *, int taskid);
     int (*set_bterm)(struct _HIDOC *, char *, int nterm, int status);
     int (*update_bterm)(struct _HIDOC *, int termid, int status);
     int (*del_bterm)(struct _HIDOC *, int termid);

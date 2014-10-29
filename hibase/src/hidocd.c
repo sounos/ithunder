@@ -613,7 +613,8 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *http_req)
                             if(j > 0) hidoc->set_synterm(hidoc, syns, j);
                             if(*p == ',' || *p == ';')++p;
                         }
-                        //goto syntermslist;
+                        hidoc->sync_synterms(hidoc);
+                        goto end;
                     }
                     else goto err_end;
                 }
@@ -874,6 +875,10 @@ int hidocd_packet_handler(CONN *conn, CB_DATA *packet)
             {
                 hidoc->over_bterms(hidoc, conn->c_id);
             }
+            else if(resp->cmd == IB_RESP_UPDATE_SYNTERM) 
+            {
+                hidoc->over_synterms(hidoc, conn->c_id);
+            }
             return hidocd_ok_handler(conn);
         }
         else
@@ -993,6 +998,23 @@ int hidocd_ok_handler(CONN *conn)
                 {
                     req->id = conn->c_id;
                     req->cmd = IB_REQ_UPDATE_BTERM;
+                    req->nodeid = -1;
+                    req->length = len;
+                    len += sizeof(IHEAD);
+                    if(conn->send_chunk(conn, chunk, len) != 0)
+                        conn->freechunk(conn, chunk);
+                    else
+                    {
+                        conn->set_timeout(conn, task_wait_timeout);
+                    }
+                    return 0;
+                }
+                else if((len = hidoc->read_synterms(hidoc, conn->c_id, 
+                                (chunk->data + sizeof(IHEAD)), 
+                            task_chunk_size - sizeof(IHEAD))) > 0)
+                {
+                    req->id = conn->c_id;
+                    req->cmd = IB_REQ_UPDATE_SYNTERM;
                     req->nodeid = -1;
                     req->length = len;
                     len += sizeof(IHEAD);
