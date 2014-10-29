@@ -772,9 +772,9 @@ int hidoc_read_synterms(HIDOC *hidoc, int taskid, char *data, int ndata)
                 && tasks[k].status > 0 && tasks[k].synterm_mod_time < hidoc->state->synterm_mod_time
                 && (synterms = (SYNTERM *)(hidoc->syntermio.map)))
         {
-            if(left >= (hidoc->state->synterm_id_max-1) * sizeof(SYNTERM))
+            if(left >= hidoc->state->synterm_id_max * sizeof(SYNTERM))
             {
-                ret = (hidoc->state->synterm_id_max-1) * sizeof(SYNTERM);
+                ret = hidoc->state->synterm_id_max * sizeof(SYNTERM);
                 memcpy(data, &(synterms[1]), ret);
             }
             tasks[k].synterm_last_time = hidoc->state->synterm_mod_time;
@@ -825,7 +825,6 @@ int hidoc_set_synterm(HIDOC *hidoc, char **terms, int num)
                 n = sprintf(line, "s:%d", termid);
                 if((id = mmtrie_get((MMTRIE *)(hidoc->map), line, n)) > 0)
                 {
-                    synterm.synid = termid;
                     xid = id;
                 }
             }
@@ -836,13 +835,19 @@ int hidoc_set_synterm(HIDOC *hidoc, char **terms, int num)
             xid = ++(hidoc->state->synterm_id_max);
             CHECK_BSTERMIO(hidoc, xid);
             MUTEX_UNLOCK(hidoc->mutex);
-            termid = synterm.syns[0];
-            n = sprintf(line, "s:%d", termid);
-            id = mmtrie_add((MMTRIE *)(hidoc->map), line, n, xid);
+            for(i = 0; i < num; i++)
+            {
+                n = sprintf(line, "s:%d", synterm.syns[i]);
+                id = mmtrie_add((MMTRIE *)(hidoc->map), line, n, xid);
+            }
         }
         if(xid > 0 && (synterms = (SYNTERM *)(hidoc->bstermio.map)))
         {
+            synterm.synid = synterms[xid].synid;
+            if(!synterm.synid) synterm.synid = synterm.syns[0];
+            synterm.count = num;
             memcpy(&(synterms[xid]), &synterm, sizeof(SYNTERM));
+            //fprintf(stdout, "%s::%d term:%s synid:%d xid:%d count:%d\n", __FILE__, __LINE__, terms[0], synterm.synid, xid, num);
             ret = xid;
         }
     }

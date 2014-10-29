@@ -780,6 +780,46 @@
                     }
                 }
             }
+            //set synterms
+            function SetSynTerms(form)
+            {
+                var text = "";
+                var arr = null;
+                var xmlHttp = null;
+                var argv = "";
+                var obj = null;
+                if(form && (text = form['syntermslist'].value)) 
+                {
+                    if((arr = text.split("\n")) && arr.length > 0)
+                    {
+                        argv = "op=21&synterms=";
+                        for(i = 0; i < arr.length; i++)
+                        {
+                            argv += trim(arr[i])+";"; 
+                        }
+                    }
+                    if(argv && (xmlHttp = CreateXMLHTTP()) != null)
+                    {
+                        xmlHttp.open('POST', '/', true);
+                        xmlHttp.setRequestHeader("Content-Length", argv.length);
+                        xmlHttp.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
+                        xmlHttp.onreadystatechange=function()
+                        {
+                            if(xmlHttp.readyState==4)
+                            {
+                                if(xmlHttp.status == 200)
+                                {
+                                    form['syntermslist'].value = "";
+                                    alert("更新成功!");
+                                }
+                                else alert("操作失败!");
+                            }
+                        }
+                        xmlHttp.send(argv);
+                    }
+                }
+            }
+
             //reset dump
             function DumpReset(form)
             {
@@ -876,7 +916,7 @@
                             </div>
             <table width=100% height=100% cellspacing=0 border=0 valign=top align=left >
                 <tr>
-                    <td class='tasklist' valign=top width=500 height=100% >
+                    <td class='tasklist' valign=top width=400 height=100% >
                         <table cellspacing=0 border=0 valign=top align=left width=100% >
                         <tr>
                                 <td valign=top class='tasktitle' width=100% >
@@ -936,11 +976,24 @@
                         <tr>
                             <form name='bterms' action='javascript:void(0);' onsubmit='return AddBTerms(this);'>
                             <td valign=top width=100% >
-                            屏蔽词:<textarea name=btermslist rows=20 cols=20></textarea>
+                            屏蔽词:<textarea name=btermslist rows=8 cols=20></textarea>
                             状态:<select name=status >
                                 <option value=1 >屏蔽</option>
                                 <option value=2 selected>降权</option>
                             </select>
+                            <input type=submit value='OK'>
+                            </td>
+                            </form>
+                        </tr>
+                        <tr>
+                            <td valign=top class='tasktitle' width=100% >
+                                同义词表(每行一组,例子：肯德基 KFC)
+                            </td>
+                        </tr>
+                        <tr>
+                            <form name='synterms' action='javascript:void(0);' onsubmit='return SetSynTerms(this);'>
+                            <td valign=top width=100% >
+                            同义词:<textarea name=syntermslist rows=8 cols=20></textarea>
                             <input type=submit value='OK'>
                             </td>
                             </form>

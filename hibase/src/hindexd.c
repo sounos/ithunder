@@ -776,6 +776,7 @@ int indexd_data_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *ch
                         {
                             synterm = (SYNTERM *)p;
                             p += sizeof(SYNTERM);
+                            fprintf(stdout, "%s::%d synid:%d count:%d\n", __FILE__, __LINE__, synterm.synid, synterm.count);
                             ibase_update_synterm(ibase, synterm);
                         }
                         goto end;

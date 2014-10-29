@@ -593,25 +593,25 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *http_req)
                     {
                         while(*p != '\0')
                         {
-                            while(*p != '\0' && *p == 0x20)++p;
+                            while(*p == 0x20)++p;
                             j = 0;
                             while(*p != '\0' && *p != ',' && *p != ';')
                             {
-                                while(*p != '\0' && *p == 0x20)++p;
+                                while(*p == 0x20)++p;
                                 term = p;
-                                while(*p != '\0' && *p != 0x20 && *p != ',' && *p != ';')
+                                while(*p != '\0' && *p != 0x20 && *p != '|' 
+                                        && *p != ',' && *p != ';')
                                 {
                                     if(*p >= 'A' && *p <= 'Z') *p += 'a' - 'A';
                                     ++p;
                                 }
                                 syns[j] = term;
-                                if(*p == 0x20){*p = 0; ++p;}
-                                while(*p != '\0' && *p == 0x20)++p;
+                                if(*p == '|'){*p++ = 0;}
+                                while(*p == 0x20)++p;
                                 ++j;
-                                if(*p == ',' || *p == ';'){break;}
                             }
+                            if(*p == ',' || *p == ';')*p++ = 0;
                             if(j > 0) hidoc->set_synterm(hidoc, syns, j);
-                            if(*p == ',' || *p == ';')++p;
                         }
                         hidoc->sync_synterms(hidoc);
                         goto end;
