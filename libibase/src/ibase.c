@@ -1157,6 +1157,7 @@ int ibase_synparser(IBASE *ibase, IQUERY *query)
                     {
                         memcpy(&(query->qterms[k]), &(query->qterms[i]), sizeof(QTERM));
                         query->qterms[k].size = termstates[termid].len;
+                        query->qterms[k].id = termid;
                         //fprintf(stdout, "i:%d termid:%d\n", i, qterms[z].id);
                         if(termid <= ibase->state->termid && (n = (termstates[termid].total)) > 0)
                         {
@@ -1169,7 +1170,7 @@ int ibase_synparser(IBASE *ibase, IQUERY *query)
             }
         }
         query->nqterms = k;
-        query->nquerys += k - old; 
+        //query->nquerys += k - old; 
         ret = query->nqterms;
     }
     return ret;

@@ -81,6 +81,7 @@ static void *logger = NULL;
 static char *ibase_basedir = NULL;
 static int  ibase_used_for = 0;
 static int  ibase_mmsource_status = 0;
+static int  ibase_ignore_secid = 0;
 //static int httpd_page_num  = 20;
 //static int httpd_page_max  = 50;
 static char *highlight_start = "<font color=red>";
@@ -277,6 +278,7 @@ int indexd_index_handler(CONN *conn)
                         }
                         db = pools[dbid];
                     }
+                    if(ibase_ignore_secid) docheader->secid = 0;
                     if((ibase_add_document(db, &block)) != 0)
                     {
                         FATAL_LOGGER(logger, "Add documents[%d][%d] failed, %s", i, docheader->globalid, strerror(errno));
@@ -776,7 +778,6 @@ int indexd_data_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *ch
                         {
                             synterm = (SYNTERM *)p;
                             p += sizeof(SYNTERM);
-                            fprintf(stdout, "%s::%d synid:%d count:%d\n", __FILE__, __LINE__, synterm.synid, synterm.count);
                             ibase_update_synterm(ibase, synterm);
                         }
                         goto end;
@@ -1531,6 +1532,12 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
         else ret = 0;
         /* synonym term */
         ret = ibase_synparser(db, query);
+        /*
+        for(i = 0; i < query->nqterms; i++)
+        {
+            fprintf(stdout, "%s::%d nqterms:%d/%d/%d synid:%d syno:%d termid:%d\n", __FILE__, __LINE__, query->nqterms, query->nvqterms, query->nquerys, query->qterms[i].synid, query->qterms[i].synno, query->qterms[i].id);
+        }
+        */
         //fprintf(stdout, "db:%p dbid:%d query_str:%s state:%p ret:%d query:%p\n", db, query->dbid, query_str, db->termstateio.map, ret, query);
     }
     return ret;
@@ -1912,6 +1919,7 @@ int sbase_initialize(SBASE *sbase, char *conf)
     sbase->set_evlog(sbase, iniparser_getstr(dict, "SBASE:evlogfile"));
     sbase->set_evlog_level(sbase, iniparser_getint(dict, "SBASE:evlog_level", 0));
     /* IBASE */
+    ibase_ignore_secid = iniparser_getint(dict, "IBASE:ignore_secid", 0);
     ibase_used_for = iniparser_getint(dict, "IBASE:used_for", 0);
     ibase_mmsource_status = iniparser_getint(dict, "IBASE:mmsource_status", 1);
     if((ibase_basedir = iniparser_getstr(dict, "IBASE:basedir")) == NULL) 

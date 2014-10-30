@@ -833,7 +833,7 @@ int hidoc_set_synterm(HIDOC *hidoc, char **terms, int num)
         {
             MUTEX_LOCK(hidoc->mutex);
             xid = ++(hidoc->state->synterm_id_max);
-            CHECK_BSTERMIO(hidoc, xid);
+            CHECK_SYNTERMIO(hidoc, xid);
             MUTEX_UNLOCK(hidoc->mutex);
             for(i = 0; i < num; i++)
             {
@@ -841,7 +841,7 @@ int hidoc_set_synterm(HIDOC *hidoc, char **terms, int num)
                 id = mmtrie_add((MMTRIE *)(hidoc->map), line, n, xid);
             }
         }
-        if(xid > 0 && (synterms = (SYNTERM *)(hidoc->bstermio.map)))
+        if(xid > 0 && (synterms = (SYNTERM *)(hidoc->syntermio.map)))
         {
             synterm.synid = synterms[xid].synid;
             if(!synterm.synid) synterm.synid = synterm.syns[0];

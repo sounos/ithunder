@@ -64,7 +64,7 @@ XMAP *ibase_pop_xmap(IBASE *ibase)
 do                                                                              \
 {                                                                               \
     _m_ = old->nhits++;                                                         \
-    old->nvhits += pxnode->nvhits;                                              \
+    if(!(pxnode->bithits & old->bithits)) old->nvhits += pxnode->nvhits;        \
     old->hits[_m_] = pxnode->which;                                             \
     old->bithits |= pxnode->bithits;                                            \
     old->bitfields |= pxnode->bitfields;                                        \
@@ -389,9 +389,9 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
         double_index_to = double_index_from + ibase->state->double_index_fields_num;
         if((query->flag & IB_QUERY_PHRASE)) is_query_phrase = 1;
         nqterms = query->nqterms;
-        if(query->nqterms > IB_QUERY_MAX) nqterms = IB_QUERY_MAX;
+        if(query->nqterms > IB_QUERY2_MAX) nqterms = IB_QUERY2_MAX;
         nquerys = query->nvqterms;
-        if(query->nvqterms > IB_QUERY_MAX) nquerys = IB_QUERY_MAX;
+        if(query->nvqterms > IB_QUERY2_MAX) nquerys = IB_QUERY2_MAX;
         if(topmap == NULL || fmap == NULL || xmap == NULL 
                 || itermlist == NULL || headers == NULL) goto end;
         if(nquerys > 0) scale = query->hitscale[nquerys-1];
@@ -444,7 +444,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
             itermlist[i].synno = query->qterms[i].synno;
             itermlist[i].bithit = query->qterms[i].bithit;
             itermlist[i].bitnot = query->qterms[i].bitnot;
-            bithit |= 1 << i;
+            bithit |= 1 << query->qterms[i].synno;
             if((query->qterms[i].flag & QTERM_BIT_DOWN) && query->qweight) 
             {
                 itermlist[i].weight = 0;
@@ -535,7 +535,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
             if(query->operators.bitsnot && (query->operators.bitsnot & xnode->bithits))
                 goto next;
             if((query->flag & IB_QUERY_BOOLAND) && query->operators.bitsand 
-            && (query->nqterms != query->nquerys || (query->operators.bitsand & xnode->bithits) != query->operators.bitsand))
+            && (query->nvqterms != query->nquerys || (query->operators.bitsand & xnode->bithits) != query->operators.bitsand))
                 goto next;
             if(query->flag & IB_QUERY_FIELDS)
             {
