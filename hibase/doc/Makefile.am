@@ -95,7 +95,6 @@ install-ini:
 			|| cp -p rc.hindexd $(initdir)/hiqparserd;\
 		test -f $(initdir)/hiqdocd \
 			|| cp -p rc.hindexd $(initdir)/hiqdocd;\
-		test -e $(initdir)/functions  || ln -sf $(rcdir)/functions $(initdir)/functions;\
 	fi
 	@perl -i -p -e  "s/hindex/hiqparser/g" $(initdir)/hiqparserd
 	@perl -i -p -e  "s/HINDEX/HIQPARSER/g" $(initdir)/hiqparserd
