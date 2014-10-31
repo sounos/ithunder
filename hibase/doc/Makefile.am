@@ -10,6 +10,7 @@ install: install-ini
 conftodir = "`echo $(sysconfdir)|sed -e 's|/usr/etc|/etc|'`"
 
 initdir = "$(DESTDIR)$(conftodir)/init.d"
+
 rcdir = "$(conftodir)/rc.d/init.d"
 
 sysconftodir = "$(DESTDIR)$(conftodir)"
