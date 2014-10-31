@@ -1531,7 +1531,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
         }
         else ret = 0;
         /* synonym term */
-        ret = ibase_synparser(db, query);
+        if(ret > 0) ret = ibase_synparser(db, query);
         /*
         for(i = 0; i < query->nqterms; i++)
         {
