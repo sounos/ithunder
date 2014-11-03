@@ -1303,6 +1303,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                 {
                     while(*p != '\0' && *p != ']')++p;
                 }
+                while(*p == ']' || *p == ',' || *p == ';') ++p;
                 if(p == last)break;
             }
         }
