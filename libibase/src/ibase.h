@@ -20,7 +20,8 @@ extern "C" {
 #define  IB_DOUBLE_TO           128
 #define  IB_DIS_OFF             128
 #define  IB_DIS_TO              160
-#define  IB_IN_MAX              256
+#define  IB_IN_MAX              512
+#define  IB_INFIELD_MAX         8
 #define  IB_SECURITY_OK         0x01
 #define  IB_SECURITY_FORBIDDEN  0xffffffff
 #define  IB_CATEGORY_MAX        64
@@ -253,6 +254,24 @@ typedef struct _FXINT
     int val;
     int no;
 }FXINT;
+typedef struct QINT
+{
+    int fieldid;
+    int num;
+    int32_t vals[IB_IN_MAX];
+}QINT;
+typedef struct QLONG
+{
+    int fieldid;
+    int num;
+    int64_t vals[IB_IN_MAX];
+}QLONG;
+typedef struct QDOUBLE
+{
+    int fieldid;
+    int num;
+    double vals[IB_IN_MAX];
+}QDOUBLE;
 typedef struct _FXLONG
 {
     int64_t id;
@@ -490,12 +509,12 @@ typedef struct _IQUERY
     short       from;
     short       count;
     short       secid;
+    short       dbid;
     short       ntop;
     short       nqterms;
     short       nquerys;
     short       orderby;
     short       groupby;
-    short       dbid;
     short       int_range_count;
     short       long_range_count;
     short       double_range_count;
@@ -503,12 +522,10 @@ typedef struct _IQUERY
     short       long_bits_count;
     short       status;
     short       nvqterms;
-    short       in_int_num;
-    short       in_int_fieldid;
-    short       in_long_num;
-    short       in_long_fieldid;
-    short       in_double_num;
-    short       in_double_fieldid;
+    short       int_in_num;
+    short       long_in_num;
+    short       double_in_num;
+    short       bits;
     short       hitscale[IB_QUERY_MAX]; 
     short       slevel_filter[IB_SLEVEL_MAX]; 
     int         flag;//is_sort/is_rsort/is_phrase/is_relevance/is_clear_cache/is_query_and/is_query_forbidden
@@ -538,9 +555,9 @@ typedef struct _IQUERY
     int64_t     category_filter;
     int64_t     catblock_filter;
     int64_t     multicat_filter;
-    int32_t     in_int_list[IB_IN_MAX];
-    int64_t     in_long_list[IB_IN_MAX];
-    double      in_double_list[IB_IN_MAX];
+    QINT        int_in_list[IB_INFIELD_MAX];
+    QLONG       long_in_list[IB_INFIELD_MAX];
+    QDOUBLE     double_in_list[IB_INFIELD_MAX];
 }IQUERY;
 
 /* weight */
