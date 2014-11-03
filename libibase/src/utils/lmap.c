@@ -30,7 +30,7 @@ LMAP *lmap_init(char *file)
            {
                 i = ftruncate(lmap->fd, sizeof(LMMSTATE));
                 memset(lmap->state, 0, sizeof(LMMSTATE));
-                lmap->size += sizeof(LMMSTATE);
+                lmap->size = sizeof(LMMSTATE);
                 for(i = 0; i < LMM_SLOT_MAX; i++)
                 {
                    lmap->state->slots[i].nodeid = -1;
@@ -51,7 +51,6 @@ LMAP *lmap_init(char *file)
             lmap->vmap = (LMMV *)mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_SHARED, lmap->vfd, 0);
             fstat(lmap->vfd, &st);
             lmap->vsize = st.st_size;
-            //fprintf(stdout, "vsize:%lld\n", lmap->vsize);
        }
        else
        {
@@ -77,7 +76,7 @@ int lmap_vset(LMAP *lmap, u32_t no, int64_t val)
             //memset(((char *)lmap->vmap+lmap->vsize), 0, size - lmap->vsize);
             i = lmap->vsize / sizeof(LMMV);
             n = size / sizeof(LMMV);
-            while(i < n) lmap->vmap[i++].off = -1;
+            while(i < n) {lmap->vmap[i].off = -1;lmap->vmap[i].val=0;++i;}
             lmap->vsize = size;
         }
         //lmap->vmap[no].val = val; 
@@ -114,7 +113,7 @@ int lmap_slot_new(LMAP *lmap)
         }
         else
         {
-            size = lmap->size + (off_t)sizeof(LMMKV) * (off_t)LMM_SLOT_NUM; 
+            size = (off_t)sizeof(LMMKV) * (off_t)LMM_SLOT_NUM + lmap->size; 
             n = ftruncate(lmap->fd, size);
             memset(((char *)lmap->state+lmap->size), 0, (size - lmap->size));
             ret = (lmap->size - (off_t)sizeof(LMMSTATE)) / (off_t)sizeof(LMMKV);
@@ -127,8 +126,8 @@ int lmap_slot_new(LMAP *lmap)
 int lmap_insert(LMAP *lmap, u32_t no, int64_t key)
 {
     int ret = -1, i = 0, k = -1, nodeid = 0, pos = 0, num = 0, 
-        n = 0, x = 0, min = 0, max = 0;
-    LMMKV *kvs = NULL, *kv = NULL;
+        n = 0, x = 0, min = 0, max = 0, m = 0, num2 = 0;
+    LMMKV *kvs = NULL, *kv = NULL, *kv1 = NULL, *kv2 = NULL;
     LMMV *vnodes = NULL;
 
     if(lmap && lmap->state && (vnodes = lmap->vmap))
@@ -149,7 +148,8 @@ int lmap_insert(LMAP *lmap, u32_t no, int64_t key)
                         k = x;
                         break;
                     }
-                    if(key >=  lmap->slots[x].min && key <= lmap->slots[x+1].min)
+                    if(key >=  lmap->slots[x].min && (key <= lmap->slots[x].max 
+                                || (x < (n - 1) && key <= lmap->slots[x+1].min)))
                     {
                         k = x;
                         break;
@@ -162,7 +162,7 @@ int lmap_insert(LMAP *lmap, u32_t no, int64_t key)
         /* 未满的slot 直接插入 */
         if(k >= 0 && k < n && lmap->slots[k].count < LMM_SLOT_NUM)
         {
-            x = lmap->slots[k].count++;
+            m = x = lmap->slots[k].count++;
             kvs = lmap->map + lmap->slots[k].nodeid;
             while(x > 0 && key < kvs[x-1].key)
             {
@@ -174,47 +174,28 @@ int lmap_insert(LMAP *lmap, u32_t no, int64_t key)
             kvs[x].key = key;
             kvs[x].val = no;
             lmap->vmap[no].off = (lmap->slots[k].nodeid + x);
-            if(key < lmap->slots[k].min) lmap->slots[k].min = key;
-            if(key > lmap->slots[k].max) lmap->slots[k].max = key;
+            lmap->slots[k].min = kvs[0].key;
+            lmap->slots[k].max = kvs[m].key;
         }
         else
         {
             nodeid = lmap_slot_new(lmap);
-            /* slot已满 转移元素到新的slot */
+            /* slot已满转移元素到新的slot */
             if(k >= 0 && k < n && lmap->slots[k].count == LMM_SLOT_NUM)
             {
-                kvs = lmap->map + lmap->slots[k].nodeid + LMM_SLOT2_NUM;
-                kv = lmap->map + nodeid;
+                kv1 = lmap->map + lmap->slots[k].nodeid + LMM_SLOT2_NUM;
+                kv2 = lmap->map + nodeid;
                 num = LMM_SLOT2_NUM;
-                x = 0;
-                for(i = 0; i < LMM_SLOT2_NUM; i++) 
+                if(key < kv1[0].key)
                 {
-                    if(key >= kvs->key && key < kvs[i].key && num == LMM_SLOT2_NUM) 
+                    /* 转移尾部一半元素到新slot */
+                    for(i = 0; i < LMM_SLOT2_NUM; i++)
                     {
-                        kv->key = key;
-                        kv->val = no;
-                        ++kv;
-                        ++x;
-                        lmap->vmap[no].off = (nodeid + x);
-                        num = LMM_SLOT2_NUM+1;
+                        kv2[i].key = kv1[i].key;
+                        kv2[i].val = kv1[i].val;
+                        lmap->vmap[(kv2[i].val)].off = (nodeid + i);
                     }
-                    kv->key = kvs[i].key;
-                    kv->val = kvs[i].val;
-                    ++kv;
-                    ++x;
-                    lmap->vmap[(kv->val)].off = (nodeid + x);
-                }
-                if(num == LMM_SLOT2_NUM && key >= kvs[i-1].key)
-                {
-                    kv->key = key;
-                    kv->val = no;
-                    ++kv;
-                    ++x;
-                    num = LMM_SLOT2_NUM+1;
-                    lmap->vmap[(kv->val)].off = (nodeid + x);
-                }
-                if(num == LMM_SLOT2_NUM)
-                {
+                    /* 插入到本slot */
                     kvs = lmap->map + lmap->slots[k].nodeid;
                     i = LMM_SLOT2_NUM;
                     while(i > 0 && key < kvs[i-1].key)
@@ -226,18 +207,39 @@ int lmap_insert(LMAP *lmap, u32_t no, int64_t key)
                     }
                     kvs[i].key = key;
                     kvs[i].val = no;
-                    lmap->vmap[no].off = (lmap->slots[k].nodeid + i);
-                    lmap->slots[k].min = kvs[0].key;
-                    lmap->slots[k].max = kvs[LMM_SLOT2_NUM].key;
-                    lmap->slots[k].count = LMM_SLOT2_NUM + 1;
+                    lmap->vmap[(kvs[i].val)].off = (lmap->slots[k].nodeid + i);
+                    num = LMM_SLOT2_NUM;
+                    num2 = LMM_SLOT2_NUM + 1;
                 }
                 else
                 {
-                    kvs = lmap->map + lmap->slots[k].nodeid;
-                    lmap->slots[k].min = kvs[0].key;
-                    lmap->slots[k].max = kvs[LMM_SLOT2_NUM-1].key;
-                    lmap->slots[k].count = LMM_SLOT2_NUM;
+                    i = 0;
+                    x = 0;
+                    while(i < LMM_SLOT2_NUM)
+                    {
+                        if(key <= kv1[i].key && x == i)
+                        {
+                            kv2->key = key;
+                            kv2->val = no;
+                            lmap->vmap[(kv2->val)].off = (nodeid + x);
+                            ++x;
+                            ++kv2;
+                        }
+                        kv2->key = kv1[i].key;
+                        kv2->val = kv1[i].val;
+                        lmap->vmap[(kv2->val)].off = (nodeid + x);
+                        ++kv2;
+                        ++x;
+                        ++i;
+                    }
+                    num = LMM_SLOT2_NUM + 1;
+                    num2 = LMM_SLOT2_NUM;
                 }
+                /* rebuild slot */
+                kvs = lmap->map + lmap->slots[k].nodeid;
+                lmap->slots[k].count = num2;
+                lmap->slots[k].min = kvs[0].key; 
+                lmap->slots[k].max = kvs[num2-1].key; 
                 pos = k+1;
                 k = lmap->state->count++; 
                 while(k > pos)
@@ -247,17 +249,16 @@ int lmap_insert(LMAP *lmap, u32_t no, int64_t key)
                     lmap->roots[x] = k;
                     --k;
                 }
-                lmap->roots[x] = k;
             }
             else
             {
-                /* 创建新的slot */
+                /* 插入新的slot */
                 kv = lmap->map + nodeid;
                 kv->key = key;
                 kv->val = no;
                 lmap->vmap[no].off = nodeid;
                 num = 1;
-                k = lmap->state->count++; 
+                m = k = lmap->state->count++; 
                 while(k > 0 && key <= lmap->slots[k].min)
                 {
                     memcpy(&(lmap->slots[k]), &(lmap->slots[k-1]), sizeof(LMMSLOT));
@@ -273,7 +274,6 @@ int lmap_insert(LMAP *lmap, u32_t no, int64_t key)
             lmap->slots[k].count = num;
             x = (lmap->slots[k].nodeid / LMM_SLOT_NUM);
             lmap->roots[x] = k;
-            //fprintf(stdout, "%s::%d k:%d min:%d max:%d num:%d/%d\n", __FILE__, __LINE__, k, lmap->slots[k].min, lmap->slots[k].max, num, lmap->state->count);
         }
     }
     return ret;
@@ -345,7 +345,8 @@ int lmap_find_slot(LMAP *lmap, int64_t key)
                     if(lmap->slots[x].min >= key) ret = x;
                     break;
                 }
-                if(key >=  lmap->slots[x].min && key <= lmap->slots[x+1].min)
+                if(key >=  lmap->slots[x].min && (key <= lmap->slots[x].max 
+                            || (x < (n - 1) && key <= lmap->slots[x+1].min)))
                 {
                     ret = x;
                     break;
@@ -384,7 +385,8 @@ int lmap_find_slot2(LMAP *lmap, int64_t key)
                     if(lmap->slots[x].max <= key) ret = x;
                     break;
                 }
-                if(key >=  lmap->slots[x].min && key <= lmap->slots[x+1].min)
+                if(key >=  lmap->slots[x].min && (key <= lmap->slots[x].max 
+                            || (x < (n - 1) && key <= lmap->slots[x+1].min)))
                 {
                     ret = x;
                     break;
@@ -606,7 +608,7 @@ int lmap_rangefrom(LMAP *lmap, int64_t key, u32_t *list) /* key = from */
         RWLOCK_RDLOCK(lmap->rwlock);
         if((k = lmap_find_slot(lmap, key)) >= 0 && (i = lmap_find_kv(lmap, k, key)) >= 0)
         {
-            fprintf(stdout, "k:%d i:%d\n", k, i);
+            //fprintf(stdout, "k:%d i:%d\n", k, i);
             kvs = lmap->map + lmap->slots[k].nodeid;
             n =  lmap->slots[k].count;
             if(list)
