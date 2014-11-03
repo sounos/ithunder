@@ -577,7 +577,7 @@ int dmap_range(DMAP *dmap, double from, double to, u32_t *list)
                 kvs = dmap->map + dmap->slots[k].nodeid;
                 for(x = i; x < n; x++) list[z++] = kvs[x].val;
             }
-            for(j = i+1; j < kk; j++)
+            for(j = k+1; j < kk; j++)
             {
                 ret += dmap->slots[j].count;
                 if(list)

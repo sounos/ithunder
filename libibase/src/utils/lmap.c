@@ -577,7 +577,7 @@ int lmap_range(LMAP *lmap, int64_t from, int64_t to, u32_t *list)
                 kvs = lmap->map + lmap->slots[k].nodeid;
                 for(x = i; x < n; x++) list[z++] = kvs[x].val;
             }
-            for(j = i+1; j < kk; j++)
+            for(j = k+1; j < kk; j++)
             {
                 ret += lmap->slots[j].count;
                 if(list)

@@ -577,7 +577,7 @@ int imap_range(IMAP *imap, int32_t from, int32_t to, u32_t *list)
                 kvs = imap->map + imap->slots[k].nodeid;
                 for(x = i; x < n; x++) list[z++] = kvs[x].val;
             }
-            for(j = i+1; j < kk; j++)
+            for(j = k+1; j < kk; j++)
             {
                 ret += imap->slots[j].count;
                 if(list)
