@@ -776,7 +776,7 @@ void imap_close(IMAP *imap)
 #ifdef IMAP_TEST
 #include "timer.h"
 #define MASK  120000
-//gcc -O2 -o imap imap.c -DIMAP_TEST -DTEST_IN -DHAVE_PTHREAD -lpthread && ./imap
+//rm -rf /tmp/1.idx* && gcc -O2 -o imap imap.c -DIMAP_TEST -DTEST_IN -DHAVE_PTHREAD -lpthread && ./imap
 int main()
 {
     IMAP *imap = NULL;
@@ -791,6 +791,10 @@ int main()
     {
         res = (int32_t *)calloc(60000000, sizeof(int32_t));
         TIMER_INIT(timer);
+#ifdef TEST_DEB
+            n = imap_in(imap, 169, NULL);
+            fprintf(stdout, "169:%d\n", n);
+#endif
 #ifdef TEST_IN
         for(i = 0; i < all_mask; i++)
         {
