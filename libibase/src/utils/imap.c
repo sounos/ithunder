@@ -140,9 +140,11 @@ int imap_insert(IMAP *imap, u32_t no, int32_t key)
 
     if(imap && imap->state && (vnodes = imap->vmap))
     {
-        k = imap_find_slot2(imap, key);
+        k = imap_find_slot(imap, key);
         /* 未满的slot 直接插入 */
-        if(k >= 0 && k < n && imap->slots[k].count < IMM_SLOT_NUM)
+        if(k >= 0 && k < n && key >= imap->slots[k].min 
+                && key <= imap->slots[k].max
+                && imap->slots[k].count < IMM_SLOT_NUM)
         {
             m = x = imap->slots[k].count++;
             kvs = imap->map + imap->slots[k].nodeid;
