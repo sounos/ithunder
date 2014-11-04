@@ -773,8 +773,8 @@ int main()
 {
     IMAP *imap = NULL;
     int i = 0, j = 0, n = 0, total = 0, no = 0, stat[MASK], stat2[MASK];
-    int32_t val = 0, from = 0, to = 0, *res = NULL;
-    int32_t inputs[256], nos[256], last[256];
+    int32_t val = 0, from = 0, to = 0, *res = NULL, all_mask = 10240;
+    int32_t inputs[256], nos[256], last[256], tall[10240];
     int32_t all = 0;
     time_t stime = 0, etime = 0;
     void *timer = NULL;
@@ -783,6 +783,24 @@ int main()
     {
         res = (int32_t *)calloc(60000000, sizeof(int32_t));
         TIMER_INIT(timer);
+#ifdef TEST_IN
+        for(i = 0; i < all_mask; i++)
+        {
+            tall[i] = 0;
+        }
+        for(i = 0; i < 60000000; i++)
+        {
+            no = (rand()%all_mask);
+            imap_set(imap, i, no);
+            tall[no]++;
+        }
+        for(i = 0; i < all_mask; i++)
+        {
+            n = imap_in(imap, i, NULL);
+            if(n != tall[i])
+                fprintf(stdout, "%d:[%d/%d]\n", i, n, tall[i]);
+        }
+#endif
 #ifdef TEST_INS
         //fprintf(stdout, "sizeof(stat):%d\n", sizeof(stat));
         memset(stat, 0, sizeof(stat));
