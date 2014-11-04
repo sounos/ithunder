@@ -153,7 +153,8 @@ int imap_insert(IMAP *imap, u32_t no, int32_t key)
                     x = (min + max) / 2;
                     if(x == min)
                     {
-                        k = x;
+                        if(key >= imap->slots[max].min) k = max;
+                        else k = x;
                         break;
                     }
                     if(key >=  imap->slots[x].min && (key <= imap->slots[x].max 
@@ -350,7 +351,8 @@ int imap_find_slot(IMAP *imap, int32_t key)
                 x = (min + max) / 2;
                 if(x == min)
                 {
-                    if(imap->slots[x].min >= key) ret = x;
+                    if(key <= imap->slots[x].max) ret = x;
+                    else if(key <= imap->slots[max].max) ret = max;
                     break;
                 }
                 if(key >=  imap->slots[x].min && (key <= imap->slots[x].max 
@@ -390,7 +392,8 @@ int imap_find_slot2(IMAP *imap, int32_t key)
                 x = (min + max) / 2;
                 if(x == min)
                 {
-                    if(imap->slots[x].max <= key) ret = x;
+                    if(key >= imap->slots[max].min) ret = max;
+                    else if(key >= imap->slots[x].min) ret = x;
                     break;
                 }
                 if(key >=  imap->slots[x].min && (key <= imap->slots[x].max 
@@ -436,6 +439,7 @@ int imap_find_kv(IMAP *imap, int k, int32_t key)
                     if(x == min)
                     {
                         if(kvs[x].key >= key) ret = x;
+                        else if(kvs[max].key >= key) ret = max;
                         break;
                     }
                     if(key ==  kvs[x].key)
@@ -486,7 +490,8 @@ int imap_find_kv2(IMAP *imap, int k, int32_t key)
                     x = (min + max) / 2;
                     if(x == min)
                     {
-                        if(kvs[x].key <= key) ret = x;
+                        if(kvs[max].key <= key) ret = max;
+                        else if(kvs[x].key <= key) ret = x;
                         break;
                     }
                     if(key ==  kvs[x].key)
@@ -527,7 +532,7 @@ int imap_in(IMAP *imap, int32_t key, u32_t *list)
         do
         {
             kvs = imap->map + imap->slots[k].nodeid;
-            if(key == kvs[i].key && i < imap->slots[k].count)
+            if(i >= 0 && key == kvs[i].key && i < imap->slots[k].count)
             {
                 if(key == imap->slots[k].max)
                 {

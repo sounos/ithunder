@@ -153,7 +153,8 @@ int lmap_insert(LMAP *lmap, u32_t no, int64_t key)
                     x = (min + max) / 2;
                     if(x == min)
                     {
-                        k = x;
+                        if(key >= lmap->slots[max].min) k = max;
+                        else k = x;
                         break;
                     }
                     if(key >=  lmap->slots[x].min && (key <= lmap->slots[x].max 
@@ -350,7 +351,8 @@ int lmap_find_slot(LMAP *lmap, int64_t key)
                 x = (min + max) / 2;
                 if(x == min)
                 {
-                    if(lmap->slots[x].min >= key) ret = x;
+                    if(key <= lmap->slots[x].max) ret = x;
+                    else if(key <= lmap->slots[max].max) ret = max;
                     break;
                 }
                 if(key >=  lmap->slots[x].min && (key <= lmap->slots[x].max 
@@ -390,7 +392,8 @@ int lmap_find_slot2(LMAP *lmap, int64_t key)
                 x = (min + max) / 2;
                 if(x == min)
                 {
-                    if(lmap->slots[x].max <= key) ret = x;
+                    if(key >= lmap->slots[max].min) ret = max;
+                    else if(key >= lmap->slots[x].min) ret = x;
                     break;
                 }
                 if(key >=  lmap->slots[x].min && (key <= lmap->slots[x].max 
@@ -436,6 +439,7 @@ int lmap_find_kv(LMAP *lmap, int k, int64_t key)
                     if(x == min)
                     {
                         if(kvs[x].key >= key) ret = x;
+                        else if(kvs[max].key >= key) ret = max;
                         break;
                     }
                     if(key ==  kvs[x].key)
@@ -486,7 +490,8 @@ int lmap_find_kv2(LMAP *lmap, int k, int64_t key)
                     x = (min + max) / 2;
                     if(x == min)
                     {
-                        if(kvs[x].key <= key) ret = x;
+                        if(kvs[max].key <= key) ret = max;
+                        else if(kvs[x].key <= key) ret = x;
                         break;
                     }
                     if(key ==  kvs[x].key)
@@ -527,7 +532,7 @@ int lmap_in(LMAP *lmap, int64_t key, u32_t *list)
         do
         {
             kvs = lmap->map + lmap->slots[k].nodeid;
-            if(key == kvs[i].key && i < lmap->slots[k].count)
+            if(i >= 0 && key == kvs[i].key && i < lmap->slots[k].count)
             {
                 if(key == lmap->slots[k].max)
                 {
@@ -776,7 +781,7 @@ void lmap_close(LMAP *lmap)
 #ifdef LMAP_TEST
 #include "timer.h"
 #define MASK  120000
-//gcc -O2 -o lmap lmap.c -DLMAP_TEST -DTEST_IN -DHAVE_PTHREAD -lpthread && ./lmap
+//rm -rf /tmp/1.idx* && gcc -O2 -o lmap lmap.c -DLMAP_TEST -DTEST_IN -DHAVE_PTHREAD -lpthread && ./lmap
 int main()
 {
     LMAP *lmap = NULL;
@@ -791,6 +796,10 @@ int main()
     {
         res = (int64_t *)calloc(60000000, sizeof(int64_t));
         TIMER_INIT(timer);
+#ifdef TEST_DEB
+            n = lmap_in(lmap, 169, NULL);
+            fprintf(stdout, "169:%d\n", n);
+#endif
 #ifdef TEST_IN
         for(i = 0; i < all_mask; i++)
         {

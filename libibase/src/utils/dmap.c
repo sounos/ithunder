@@ -153,7 +153,8 @@ int dmap_insert(DMAP *dmap, u32_t no, double key)
                     x = (min + max) / 2;
                     if(x == min)
                     {
-                        k = x;
+                        if(key >= dmap->slots[max].min) k = max;
+                        else k = x;
                         break;
                     }
                     if(key >=  dmap->slots[x].min && (key <= dmap->slots[x].max 
@@ -350,7 +351,8 @@ int dmap_find_slot(DMAP *dmap, double key)
                 x = (min + max) / 2;
                 if(x == min)
                 {
-                    if(dmap->slots[x].min >= key) ret = x;
+                    if(key <= dmap->slots[x].max) ret = x;
+                    else if(key <= dmap->slots[max].max) ret = max;
                     break;
                 }
                 if(key >=  dmap->slots[x].min && (key <= dmap->slots[x].max 
@@ -390,7 +392,8 @@ int dmap_find_slot2(DMAP *dmap, double key)
                 x = (min + max) / 2;
                 if(x == min)
                 {
-                    if(dmap->slots[x].max <= key) ret = x;
+                    if(key >= dmap->slots[max].min) ret = max;
+                    else if(key >= dmap->slots[x].min) ret = x;
                     break;
                 }
                 if(key >=  dmap->slots[x].min && (key <= dmap->slots[x].max 
@@ -436,6 +439,7 @@ int dmap_find_kv(DMAP *dmap, int k, double key)
                     if(x == min)
                     {
                         if(kvs[x].key >= key) ret = x;
+                        else if(kvs[max].key >= key) ret = max;
                         break;
                     }
                     if(key ==  kvs[x].key)
@@ -486,7 +490,8 @@ int dmap_find_kv2(DMAP *dmap, int k, double key)
                     x = (min + max) / 2;
                     if(x == min)
                     {
-                        if(kvs[x].key <= key) ret = x;
+                        if(kvs[max].key <= key) ret = max;
+                        else if(kvs[x].key <= key) ret = x;
                         break;
                     }
                     if(key ==  kvs[x].key)
@@ -527,7 +532,7 @@ int dmap_in(DMAP *dmap, double key, u32_t *list)
         do
         {
             kvs = dmap->map + dmap->slots[k].nodeid;
-            if(key == kvs[i].key && i < dmap->slots[k].count)
+            if(i >= 0 && key == kvs[i].key && i < dmap->slots[k].count)
             {
                 if(key == dmap->slots[k].max)
                 {
@@ -776,7 +781,7 @@ void dmap_close(DMAP *dmap)
 #ifdef DMAP_TEST
 #include "timer.h"
 #define MASK  120000
-//gcc -O2 -o dmap dmap.c -DDMAP_TEST -DTEST_IN -DHAVE_PTHREAD -lpthread && ./dmap
+//rm -rf /tmp/1.idx* && gcc -O2 -o dmap dmap.c -DDMAP_TEST -DTEST_IN -DHAVE_PTHREAD -lpthread && ./dmap
 int main()
 {
     DMAP *dmap = NULL;
@@ -791,6 +796,10 @@ int main()
     {
         res = (double *)calloc(60000000, sizeof(double));
         TIMER_INIT(timer);
+#ifdef TEST_DEB
+            n = dmap_in(dmap, 169, NULL);
+            fprintf(stdout, "169:%d\n", n);
+#endif
 #ifdef TEST_IN
         for(i = 0; i < all_mask; i++)
         {
