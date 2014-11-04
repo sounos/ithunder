@@ -101,8 +101,8 @@ int imap_vget(IMAP *imap, u32_t no, int32_t *val)
 /* new bolt  */
 int imap_slot_new(IMAP *imap)
 {
+    int ret = -1, i = 0, n = 0, id = 0;
     off_t size = 0;
-    int ret = -1, n = 0;
 
     if(imap && imap->state)
     {
@@ -113,10 +113,18 @@ int imap_slot_new(IMAP *imap)
         }
         else
         {
-            size = (off_t)sizeof(IMMKV) * (off_t)IMM_SLOT_NUM + imap->size; 
+            size = (off_t)sizeof(IMMKV) * (off_t)IMM_SLOT_NUM * IMM_SLOT_INC + imap->size; 
             n = ftruncate(imap->fd, size);
             memset(((char *)imap->state+imap->size), 0, (size - imap->size));
             ret = (imap->size - (off_t)sizeof(IMMSTATE)) / (off_t)sizeof(IMMKV);
+            id = ret + IMM_SLOT_NUM;
+            i = 1;
+            while(i < IMM_SLOT_INC)
+            {
+                imap->state->qleft[(imap->state->nleft++)] = id;
+                id += IMM_SLOT_NUM;
+                ++i;
+            }
             imap->size = size;
         }
     }
@@ -768,13 +776,13 @@ void imap_close(IMAP *imap)
 #ifdef IMAP_TEST
 #include "timer.h"
 #define MASK  120000
-//gcc -o imap imap.c -DIMAP_TEST -DTEST_INS -DHAVE_PTHREAD -lpthread && ./imap
+//gcc -O2 -o imap imap.c -DIMAP_TEST -DTEST_IN -DHAVE_PTHREAD -lpthread && ./imap
 int main()
 {
     IMAP *imap = NULL;
     int i = 0, j = 0, n = 0, total = 0, no = 0, stat[MASK], stat2[MASK];
-    int32_t val = 0, from = 0, to = 0, *res = NULL, all_mask = 10240;
-    int32_t inputs[256], nos[256], last[256], tall[10240];
+    int32_t val = 0, from = 0, to = 0, *res = NULL, all_mask = 1024;
+    int32_t inputs[256], nos[256], last[256], tall[1024];
     int32_t all = 0;
     time_t stime = 0, etime = 0;
     void *timer = NULL;
@@ -788,7 +796,7 @@ int main()
         {
             tall[i] = 0;
         }
-        for(i = 0; i < 60000000; i++)
+        for(i = 0; i < 40000000; i++)
         {
             no = (rand()%all_mask);
             imap_set(imap, i, no);

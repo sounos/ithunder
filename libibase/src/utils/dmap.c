@@ -101,8 +101,8 @@ int dmap_vget(DMAP *dmap, u32_t no, double *val)
 /* new bolt  */
 int dmap_slot_new(DMAP *dmap)
 {
+    int ret = -1, i = 0, n = 0, id = 0;
     off_t size = 0;
-    int ret = -1, n = 0;
 
     if(dmap && dmap->state)
     {
@@ -113,10 +113,18 @@ int dmap_slot_new(DMAP *dmap)
         }
         else
         {
-            size = (off_t)sizeof(DMMKV) * (off_t)DMM_SLOT_NUM + dmap->size; 
+            size = (off_t)sizeof(DMMKV) * (off_t)DMM_SLOT_NUM * DMM_SLOT_INC + dmap->size; 
             n = ftruncate(dmap->fd, size);
             memset(((char *)dmap->state+dmap->size), 0, (size - dmap->size));
             ret = (dmap->size - (off_t)sizeof(DMMSTATE)) / (off_t)sizeof(DMMKV);
+            id = ret + DMM_SLOT_NUM;
+            i = 1;
+            while(i < DMM_SLOT_INC)
+            {
+                dmap->state->qleft[(dmap->state->nleft++)] = id;
+                id += DMM_SLOT_NUM;
+                ++i;
+            }
             dmap->size = size;
         }
     }
@@ -768,13 +776,13 @@ void dmap_close(DMAP *dmap)
 #ifdef DMAP_TEST
 #include "timer.h"
 #define MASK  120000
-//gcc -o dmap dmap.c -DDMAP_TEST -DTEST_INS -DHAVE_PTHREAD -lpthread && ./dmap
+//gcc -O2 -o dmap dmap.c -DDMAP_TEST -DTEST_IN -DHAVE_PTHREAD -lpthread && ./dmap
 int main()
 {
     DMAP *dmap = NULL;
     int i = 0, j = 0, n = 0, total = 0, no = 0, stat[MASK], stat2[MASK];
-    double val = 0, from = 0, to = 0, *res = NULL;
-    double inputs[256], nos[256], last[256];
+    double val = 0, from = 0, to = 0, *res = NULL, all_mask = 1024;
+    double inputs[256], nos[256], last[256], tall[1024];
     double all = 0;
     time_t stime = 0, etime = 0;
     void *timer = NULL;
@@ -783,6 +791,24 @@ int main()
     {
         res = (double *)calloc(60000000, sizeof(double));
         TIMER_INIT(timer);
+#ifdef TEST_IN
+        for(i = 0; i < all_mask; i++)
+        {
+            tall[i] = 0;
+        }
+        for(i = 0; i < 40000000; i++)
+        {
+            no = (rand()%all_mask);
+            dmap_set(dmap, i, no);
+            tall[no]++;
+        }
+        for(i = 0; i < all_mask; i++)
+        {
+            n = dmap_in(dmap, i, NULL);
+            if(n != tall[i])
+                fprintf(stdout, "%d:[%d/%d]\n", i, n, tall[i]);
+        }
+#endif
 #ifdef TEST_INS
         //fprintf(stdout, "sizeof(stat):%d\n", sizeof(stat));
         memset(stat, 0, sizeof(stat));

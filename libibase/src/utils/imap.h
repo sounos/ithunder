@@ -3,9 +3,10 @@
 #include <inttypes.h>
 #include <pthread.h>
 #define IMM_SLOT_MAX     524288
+#define IMM_SLOT_INC     2000
 #define IMM_SLOT_NUM     1024
 #define IMM_SLOT2_NUM    512 /* half of IMM_SLOT_NUM */
-#define IMM_IMMV_INC     1000000
+#define IMM_IMMV_INC     2000000
 #define IMM_NODES_MAX    4294967296
 #pragma pack(push, 4)
 #ifndef U32_T
