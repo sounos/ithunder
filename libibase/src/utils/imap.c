@@ -140,34 +140,7 @@ int imap_insert(IMAP *imap, u32_t no, int32_t key)
 
     if(imap && imap->state && (vnodes = imap->vmap))
     {
-        if((n = imap->state->count) > 0)
-        {
-            max = n - 1;
-            min = 0;
-            if(key <= imap->slots[min].max) k = min;
-            else if(key >= imap->slots[max].min) k = max;
-            else
-            {
-                while(max > min)
-                {
-                    x = (min + max) / 2;
-                    if(x == min)
-                    {
-                        if(key >= imap->slots[max].min) k = max;
-                        else k = x;
-                        break;
-                    }
-                    if(key >=  imap->slots[x].min && (key <= imap->slots[x].max 
-                                || (x < (n - 1) && key <= imap->slots[x+1].min)))
-                    {
-                        k = x;
-                        break;
-                    }
-                    else if(key > imap->slots[x].max) min = x;
-                    else max = x;
-                }
-            }
-        }
+        k = imap_find_slot2(imap, key);
         /* 未满的slot 直接插入 */
         if(k >= 0 && k < n && imap->slots[k].count < IMM_SLOT_NUM)
         {
@@ -786,8 +759,8 @@ int main()
 {
     IMAP *imap = NULL;
     int i = 0, j = 0, n = 0, total = 0, no = 0, stat[MASK], stat2[MASK];
-    int32_t val = 0, from = 0, to = 0, *res = NULL, all_mask = 1024;
-    int32_t inputs[256], nos[256], last[256], tall[1024];
+    int32_t val = 0, from = 0, to = 0, *res = NULL, all_mask = 100000;
+    int32_t inputs[256], nos[256], last[256], tall[100000];
     int32_t all = 0;
     time_t stime = 0, etime = 0;
     void *timer = NULL;
@@ -797,15 +770,27 @@ int main()
         res = (int32_t *)calloc(60000000, sizeof(int32_t));
         TIMER_INIT(timer);
 #ifdef TEST_DEB
-            n = imap_in(imap, 169, NULL);
-            fprintf(stdout, "169:%d\n", n);
+        /*
+            n = imap_in(imap, 16615, NULL);
+            fprintf(stdout, "16615:%d\n", n);
+        */
+        n = 0;
+        for(i = 0; i < imap->state->count; i++)
+        {
+            if(imap->slots[i].min <= 26650 && imap->slots[i].max >= 26650)
+            {
+                fprintf(stdout, "%d:[min:%d max:%d]\n", i, imap->slots[i].min, imap->slots[i].max);
+            }
+            n+= imap->slots[i].count;
+        }
+        fprintf(stdout, "total:%d\n", n);
 #endif
 #ifdef TEST_IN
         for(i = 0; i < all_mask; i++)
         {
             tall[i] = 0;
         }
-        for(i = 0; i < 40000000; i++)
+        for(i = 40000000; i > 0; i--)
         {
             no = (rand()%all_mask);
             imap_set(imap, i, no);

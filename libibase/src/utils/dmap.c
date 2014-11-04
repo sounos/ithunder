@@ -140,34 +140,7 @@ int dmap_insert(DMAP *dmap, u32_t no, double key)
 
     if(dmap && dmap->state && (vnodes = dmap->vmap))
     {
-        if((n = dmap->state->count) > 0)
-        {
-            max = n - 1;
-            min = 0;
-            if(key <= dmap->slots[min].max) k = min;
-            else if(key >= dmap->slots[max].min) k = max;
-            else
-            {
-                while(max > min)
-                {
-                    x = (min + max) / 2;
-                    if(x == min)
-                    {
-                        if(key >= dmap->slots[max].min) k = max;
-                        else k = x;
-                        break;
-                    }
-                    if(key >=  dmap->slots[x].min && (key <= dmap->slots[x].max 
-                                || (x < (n - 1) && key <= dmap->slots[x+1].min)))
-                    {
-                        k = x;
-                        break;
-                    }
-                    else if(key > dmap->slots[x].max) min = x;
-                    else max = x;
-                }
-            }
-        }
+        k = dmap_find_slot2(dmap, key);
         /* 未满的slot 直接插入 */
         if(k >= 0 && k < n && dmap->slots[k].count < DMM_SLOT_NUM)
         {
@@ -786,8 +759,8 @@ int main()
 {
     DMAP *dmap = NULL;
     int i = 0, j = 0, n = 0, total = 0, no = 0, stat[MASK], stat2[MASK];
-    double val = 0, from = 0, to = 0, *res = NULL, all_mask = 1024;
-    double inputs[256], nos[256], last[256], tall[1024];
+    double val = 0, from = 0, to = 0, *res = NULL, all_mask = 100000;
+    double inputs[256], nos[256], last[256], tall[100000];
     double all = 0;
     time_t stime = 0, etime = 0;
     void *timer = NULL;
@@ -797,15 +770,27 @@ int main()
         res = (double *)calloc(60000000, sizeof(double));
         TIMER_INIT(timer);
 #ifdef TEST_DEB
-            n = dmap_in(dmap, 169, NULL);
-            fprintf(stdout, "169:%d\n", n);
+        /*
+            n = dmap_in(dmap, 16615, NULL);
+            fprintf(stdout, "16615:%d\n", n);
+        */
+        n = 0;
+        for(i = 0; i < dmap->state->count; i++)
+        {
+            if(dmap->slots[i].min <= 26650 && dmap->slots[i].max >= 26650)
+            {
+                fprintf(stdout, "%d:[min:%d max:%d]\n", i, dmap->slots[i].min, dmap->slots[i].max);
+            }
+            n+= dmap->slots[i].count;
+        }
+        fprintf(stdout, "total:%d\n", n);
 #endif
 #ifdef TEST_IN
         for(i = 0; i < all_mask; i++)
         {
             tall[i] = 0;
         }
-        for(i = 0; i < 40000000; i++)
+        for(i = 40000000; i > 0; i--)
         {
             no = (rand()%all_mask);
             dmap_set(dmap, i, no);
