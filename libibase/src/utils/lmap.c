@@ -584,6 +584,7 @@ int lmap_range(LMAP *lmap, int64_t from, int64_t to, u32_t *list)
         kk = lmap_find_slot2(lmap, to);
         i = lmap_find_kv(lmap, k, from);
         ii = lmap_find_kv2(lmap, kk, to);
+        if(k == -1 || kk == -1 || i == -1 || ii == -1) goto end;
         if(k == kk)
         {
             ret = ii + 1 - i;
@@ -618,6 +619,7 @@ int lmap_range(LMAP *lmap, int64_t from, int64_t to, u32_t *list)
                 for(x = 0; x <= ii; x++) list[z++] = kvs[x].val;
             }
         }
+end:
         RWLOCK_UNLOCK(lmap->rwlock);
     }
     return ret;
@@ -798,8 +800,8 @@ int main()
 {
     LMAP *lmap = NULL;
     int i = 0, j = 0, n = 0, total = 0, no = 0, stat[MASK], stat2[MASK];
-    int64_t val = 0, from = 0, to = 0, *res = NULL, all_mask = 100000;
-    int64_t inputs[256], nos[256], last[256], tall[100000];
+    int64_t val = 0, from = 0, to = 0, *res = NULL, all_mask = 200000;
+    int64_t inputs[256], nos[256], last[256], tall[200000];
     int64_t all = 0;
     time_t stime = 0, etime = 0;
     void *timer = NULL;
@@ -831,12 +833,39 @@ int main()
         {
             tall[i] = 0;
         }
-        for(i = 40000000; i > 0; i--)
+        for(i = 80000000; i > 0; i--)
         {
             no = (rand()%all_mask);
             lmap_set(lmap, i, no);
             tall[no]++;
         }
+        for(i = 0; i < all_mask; i++)
+        {
+            n = lmap_in(lmap, i, NULL);
+            if(n != tall[i])
+                fprintf(stdout, "%d:[%d/%d]\n", i, n, tall[i]);
+        }
+#endif
+#ifdef TEST_ALL
+        for(i = 0; i < all_mask; i++)
+        {
+            tall[i] = 0;
+        }
+        for(i = 80000000; i > 0; i--)
+        {
+            no = (rand()%all_mask);
+            lmap_set(lmap, i, no);
+            tall[no]++;
+        }
+        no = (rand()%all_mask);
+        total = 0;for(i = no; i < all_mask; i++) total += tall[i];
+        fprintf(stdout, "rangefrom(%d):%d/%d\n", no, lmap_rangefrom(lmap, no, NULL), total);
+        total = 0;for(i = 0; i <= no; i++) total += tall[i];
+        fprintf(stdout, "rangeto(%d):%d/%d\n", no, lmap_rangeto(lmap, no, NULL), total);
+        from = (rand()%all_mask);
+        to = all_mask;
+        total = 0;for(i = from; i <= to; i++) total += tall[i];
+        fprintf(stdout, "range(%d,%d):%d/%d\n", no, lmap_range(lmap, from, to, NULL), total);
         for(i = 0; i < all_mask; i++)
         {
             n = lmap_in(lmap, i, NULL);
