@@ -2345,9 +2345,15 @@ int hidoc_parse_document(HIDOC *hidoc, int no, HINDEX *hindex)
                     if(read(hidoc->state->dumps[no].fd, path, fheader.size) == fheader.size)
                     {
                         path[fheader.size] = 0;
-                        WARN_LOGGER(hidoc->logger, "reset_dump(%s)", path);
-                        hidoc_set_dump(hidoc, no, path);
-                        ret = 0;
+                        if((ret = hidoc_set_dump(hidoc, no, path)) < 0)
+                        {
+                            WARN_LOGGER(hidoc->logger, "reset_dump(%s) failed", path);
+                            hidoc->state->dumps[no].offset -= (off_t)sizeof(FHEADER);
+                        }
+                        else
+                        {
+                            WARN_LOGGER(hidoc->logger, "reset_dump(%s) failed", path);
+                        }
                     }
                     else
                     {
