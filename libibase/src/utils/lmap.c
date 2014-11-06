@@ -863,9 +863,10 @@ int main()
         total = 0;for(i = 0; i <= no; i++) total += tall[i];
         fprintf(stdout, "rangeto(%d):%d/%d\n", no, lmap_rangeto(lmap, no, NULL), total);
         from = (rand()%all_mask);
-        to = all_mask;
+        to = (rand()%all_mask);
+        if(from > to){from += to; to = from - to; from = from - to;}
         total = 0;for(i = from; i <= to; i++) total += tall[i];
-        fprintf(stdout, "range(%d,%d):%d/%d\n", no, lmap_range(lmap, from, to, NULL), total);
+        fprintf(stdout, "range(%d,%d):%d/%d\n", from, no, lmap_range(lmap, from, to, NULL), total);
         for(i = 0; i < all_mask; i++)
         {
             n = lmap_in(lmap, i, NULL);

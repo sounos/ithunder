@@ -6,7 +6,7 @@
 #define DMM_SLOT_INC     2000
 #define DMM_SLOT_NUM     1024
 #define DMM_SLOT2_NUM    512 /* half of DMM_SLOT_NUM */
-#define DMM_DMMV_INC     2000000
+#define DMM_DMMV_INC     1000000
 #define DMM_NODES_MAX    4294967296
 #pragma pack(push, 4)
 #ifndef U32_T
