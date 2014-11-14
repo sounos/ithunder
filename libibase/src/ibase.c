@@ -400,7 +400,7 @@ int ibase_get_secs(IBASE *ibase, int64_t nosec, int *secs)
         n = ibase->state->nsecs;
         for(i = 0; i < n; i++)
         {
-            if(!(nosec & (int64_t)(1 << i)))
+            if(!(nosec & ((int64_t)1 << i)))
             {
                 *secs++ = ibase->state->secs[i];
                 ++ret;
