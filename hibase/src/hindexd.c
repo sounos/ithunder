@@ -172,8 +172,8 @@ static char *e_argvs[] =
 #define E_ARGV_DBID         39
     "secid",
 #define E_ARGV_SECID        40
-    "nosec",
-#define E_ARGV_NOSEC        41
+    "nosecs",
+#define E_ARGV_NOSECS       41
     ""
 };
 #define  E_ARGV_NUM         42
@@ -648,7 +648,7 @@ int indexd_data_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *ch
                                 }
                                 pthread_mutex_unlock(&gmutex);
                                 if(qtask && (qtask->db = db) 
-                                 && (qtask->nsecs=ibase_get_secs(db,pquery->nosec,qtask->secs))>0)
+                                 && (qtask->nsecs=ibase_get_secs(db,pquery->nosecs,qtask->secs))>0)
                                 {
                                     memcpy(&(qtask->query), pquery, sizeof(IQUERY));
                                     memcpy(&(qtask->req), req, sizeof(IHEAD));
@@ -901,7 +901,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
     char *p = NULL, *query_str = NULL, *not_str = "", *display = NULL, *range_filter = NULL,
          *hitscale = NULL, *slevel_filter = NULL, *catfilter = NULL, *catgroup = NULL, 
          *multicat = NULL, *catblock = NULL, *xup = NULL, *xdown = NULL, *range_from = NULL, 
-         *range_to = NULL, *bitfields = NULL, *last = NULL, *in = NULL, *in_ptr = NULL,*nosec=NULL,
+         *range_to = NULL, *bitfields = NULL, *last = NULL, *in=NULL,*in_ptr = NULL,*nosecs=NULL,
          *geofilter = NULL, *keys = NULL, *keyslist[IB_IDX_MAX], *notlist[IB_IDX_MAX];
     int ret = -1, n = 0, i = 0, k = 0, j = 0, id = 0, phrase = 0, booland = 0, fieldsfilter = -1, 
         orderby = 0, order = 0, field_id = 0, int_index_from = 0, int_index_to = 0, 
@@ -1044,8 +1044,8 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                         case E_ARGV_SECID:
                             query->secid = atoi(p);
                             break;
-                        case E_ARGV_NOSEC:
-                            nosec = p;
+                        case E_ARGV_NOSECS:
+                            nosecs = p;
                             break;
                         default :
                             break;
@@ -1203,9 +1203,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                 if(p == last)break;
             }
         }
-        query->nosec = 0;
-        if((p = nosec))
-
+        if((p = nosecs))
         {
             i = 0;
             while(*p != '\0') 
@@ -1214,7 +1212,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                 while(*p == 0x20 || *p == '\t' || *p == ',' || *p == ';')++p;
                 if(*p >= '0' && *p <= '9' && (i = atoi(p)) >= 0 && i < IB_SEC_MAX) 
                 {
-                    query->nosec |= (int64_t)1 << i;
+                    query->nosecs[i] = 1;
                 }
                 while(*p >= '0' && *p <= '9')++p;
                 ++i;
@@ -1634,7 +1632,7 @@ int httpd_query_handler(CONN *conn, IQUERY *query)
                 }
                 pthread_mutex_unlock(&gmutex);
                 if(qtask && (qtask->db = db) 
-                        && (qtask->nsecs = ibase_get_secs(db, query->nosec, qtask->secs)) > 0)
+                        && (qtask->nsecs = ibase_get_secs(db, query->nosecs, qtask->secs)) > 0)
                 {
                     memcpy(&(qtask->query), query, sizeof(IQUERY));
                     qtask->qsecs = qtask->nsecs;
