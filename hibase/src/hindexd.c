@@ -35,7 +35,6 @@
 #define HTTP_NOT_FOUND          "HTTP/1.0 404 Not Found\r\nContent-Length:0\r\n\r\n" 
 #define HTTP_NOT_MODIFIED       "HTTP/1.0 304 Not Modified\r\nContent-Length:0\r\n\r\n"
 #define HTTP_NO_CONTENT         "HTTP/1.0 204 No Content\r\nContent-Length:0\r\n\r\n"
-#define IB_DB_MAX  64
 #ifndef LL64
 #define LL64(xxxx) ((long long int)xxxx)
 #endif
