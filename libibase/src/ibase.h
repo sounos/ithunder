@@ -880,7 +880,7 @@ int ibase_set_log_level(IBASE *ibase, int level);
 /* query with bitmap merging */
 //ICHUNK *ibase_mquery(IBASE *ibase, IQUERY *query);
 /* get secs */
-int ibase_get_secs(IBASE *ibase, int nosec, int *secs);
+int ibase_get_secs(IBASE *ibase, int64_t nosec, int *secs);
 /* query with binary list merging */
 ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid);
 ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid);
