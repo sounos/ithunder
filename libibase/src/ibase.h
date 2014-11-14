@@ -78,7 +78,8 @@ extern "C" {
 #define  IB_USED_FOR_INDEXD     0x00
 #define  IB_USED_FOR_QDOCD      0x01
 #define  IB_USED_FOR_QPARSERD   0x02
-#define  IB_SEC_MAX             8192
+#define  IB_DB_MAX              64
+#define  IB_SEC_MAX             64
 #define  IB_SYNTERM_MAX         16
 #define  IBLL(xxx) ((long long int)(xxx))
 /*
@@ -540,6 +541,7 @@ typedef struct _IQUERY
     int         base_xcatup;
     int         base_xcatdown;
     int         base_rank;
+    int64_t     nosec;
     IOPERATOR   operators;
     IRANGE      int_range_list[IB_INT_INDEX_MAX];
     LRANGE      long_range_list[IB_LONG_INDEX_MAX];
@@ -878,7 +880,7 @@ int ibase_set_log_level(IBASE *ibase, int level);
 /* query with bitmap merging */
 //ICHUNK *ibase_mquery(IBASE *ibase, IQUERY *query);
 /* get secs */
-int ibase_get_secs(IBASE *ibase, int *secs);
+int ibase_get_secs(IBASE *ibase, int nosec, int *secs);
 /* query with binary list merging */
 ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid);
 ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid);
