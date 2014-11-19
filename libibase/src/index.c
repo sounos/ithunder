@@ -106,13 +106,13 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
     double *doublelist = NULL;
     IHEADER *iheader = NULL;
     STERM *termlist = NULL;
-    void *index = NULL;
+    MDB *index = NULL;
     off_t size = 0;
 
     if((docheader = (DOCHEADER *)block->data) 
             && (secid = docheader->secid) >= 0 && docheader->secid < IB_SEC_MAX)
     {
-        index = ibase->mindex[docheader->secid];
+        index = (MDB *)(ibase->mindex[docheader->secid]);
         if(docheader->dbid != -1)
         {
             ibase->state->dtotal++;
@@ -195,14 +195,14 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
                         memcpy(p, prevnext, termlist[i].prevnext_size);
                         p += termlist[i].prevnext_size;
                     }
-                    if(mdb_add_data(PMDB(index), termid, pp, (p - pp)) <= 0)
+                    if(mdb_add_data(index, termid, pp, (p - pp)) <= 0)
                     {
                         FATAL_LOGGER(ibase->logger, "index term[%d] failed, %s", 
                                 termid, strerror(errno));
                         if(data){free(data); data = NULL;}
                         _exit(-1);
                     }
-                    mdb_set_tag(PMDB(index), termid, docid);
+                    mdb_set_tag(index, termid, docid);
                     if(data){xmm_free(data, ndata); data = NULL;}
                 }
             }

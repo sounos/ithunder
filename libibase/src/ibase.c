@@ -824,11 +824,11 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                                 if(*((unsigned char *)pp) > 127)
                                 {
                                     n = 0;
-                                    if(*((unsigned char*)s) >= 252) n = 6;
-                                    else if(*((unsigned char *)s) >= 248) n = 5;
-                                    else if(*((unsigned char *)s) >= 240) n = 4;
-                                    else if(*((unsigned char *)s) >= 224) n = 3;
-                                    else if(*((unsigned char *)s) >= 192) n = 2;
+                                    if(*((unsigned char*)pp) >= 252) n = 6;
+                                    else if(*((unsigned char *)pp) >= 248) n = 5;
+                                    else if(*((unsigned char *)pp) >= 240) n = 4;
+                                    else if(*((unsigned char *)pp) >= 224) n = 3;
+                                    else if(*((unsigned char *)pp) >= 192) n = 2;
                                     else n = 1;
                                     while(n-- > 0)*p++ = *pp++;
                                     size++;
