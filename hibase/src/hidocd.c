@@ -954,11 +954,13 @@ void hidocd_task_handler(void *arg)
     {
         if(hidoc->parse_document(hidoc, id, tasks[id].hindex) >= 0)
         {
-            //DEBUG_LOGGER(logger, "over for tasks[%d]", id);
+            DEBUG_LOGGER(logger, "over for tasks[%d]", id);
             hidocd->newtask(hidocd, &hidocd_task_handler, (void *)(((long )id+1)));
+            DEBUG_LOGGER(logger, "new task[%d] qdaemons:%d", id, hidocd->nqdaemons);
         }
         else 
         {
+            DEBUG_LOGGER(logger, "retasks[%d] qdaemons", id, hidocd->nqdaemons);
             tasks[id].status = 0;
             iqueue_push(taskqueue, id);
         }
@@ -1288,7 +1290,7 @@ int sbase_initialize(SBASE *sbase, char *conf)
     hidocd->service_type = iniparser_getint(dict, "HIDOCD:service_type", C_SERVICE);
     hidocd->service_name = iniparser_getstr(dict, "HIDOCD:service_name");
     hidocd->nprocthreads = iniparser_getint(dict, "HIDOCD:nprocthreads", 1);
-    hidocd->ndaemons = ntask;
+    hidocd->ndaemons = ntask * 2;
     hidocd->niodaemons = iniparser_getint(dict, "HIDOCD:niodaemons", 1);
     hidocd->use_cond_wait = iniparser_getint(dict, "HIDOCD:use_cond_wait", 0);
     if(iniparser_getint(dict, "HIDOCD:use_cpu_set", 0) > 0) hidocd->flag |= SB_CPU_SET;
