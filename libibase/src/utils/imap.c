@@ -810,6 +810,15 @@ int main()
     {
         res = (int32_t *)calloc(60000000, sizeof(int32_t));
         TIMER_INIT(timer);
+#ifdef TEST_RFROM
+            imap_set(imap, 1, 22);
+            imap_set(imap, 2, 25);
+            imap_set(imap, 3, 20);
+            imap_set(imap, 4, 13);
+            imap_set(imap, 6, 22);
+            n = imap_rangefrom(imap, 21, NULL);
+            fprintf(stdout, "rangefrom(21) => %d\n", n);
+#endif
 #ifdef TEST_DEB
         /*
             n = imap_in(imap, 16615, NULL);
