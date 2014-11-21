@@ -367,8 +367,8 @@ int dmap_find_slot(DMAP *dmap, double key)
                     else if(key <= dmap->slots[max].max) ret = max;
                     break;
                 }
-                if(key >=  dmap->slots[x].min && (key <= dmap->slots[x].max 
-                            || (x < (n - 1) && key <= dmap->slots[x+1].min)))
+                if(key >=  dmap->slots[x].min && key <= dmap->slots[x].max)
+                            //|| (x < (n - 1) && key <= dmap->slots[x+1].min)))
                 {
                     ret = x;
                     break;
@@ -408,8 +408,8 @@ int dmap_find_slot2(DMAP *dmap, double key)
                     else if(key >= dmap->slots[x].min) ret = x;
                     break;
                 }
-                if(key >=  dmap->slots[x].min && (key <= dmap->slots[x].max 
-                            || (x < (n - 1) && key <= dmap->slots[x+1].min)))
+                if(key >=  dmap->slots[x].min && key <= dmap->slots[x].max) 
+                            //|| (x < (n - 1) && key <= dmap->slots[x+1].min)))
                 {
                     ret = x;
                     break;
@@ -810,6 +810,15 @@ int main()
     {
         res = (double *)calloc(60000000, sizeof(double));
         TIMER_INIT(timer);
+#ifdef TEST_RFROM
+            dmap_set(dmap, 1, 22);
+            dmap_set(dmap, 2, 25);
+            dmap_set(dmap, 3, 20);
+            dmap_set(dmap, 4, 13);
+            dmap_set(dmap, 6, 22);
+            n = dmap_rangefrom(dmap, 21, NULL);
+            fprintf(stdout, "rangefrom(21) => %d\n", n);
+#endif
 #ifdef TEST_DEB
         /*
             n = dmap_in(dmap, 16615, NULL);

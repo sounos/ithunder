@@ -153,19 +153,19 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
                     {
                         n = imap_range(ibase->state->mfields[secid][k], ifrom, ito, NULL);
                         if(min_set_num == -1 || n < min_set_num)
-                        {min_set_fid=k;min_set_num = n;irangefrom=ifrom;irangeto=ito;query_range=0;}
+                        {min_set_fid=k;min_set_num = n;min_set_no=i;irangefrom=ifrom;irangeto=ito;query_range=0;}
                     }
                     else if((range_flag & IB_RANGE_TO))
                     {
                         n = imap_rangeto(ibase->state->mfields[secid][k],ito, NULL);
                         if(min_set_num == -1 || n < min_set_num)
-                        {min_set_fid = k;min_set_num = n;irangeto=ito;query_range=IB_RANGE_TO;}
+                        {min_set_fid = k;min_set_num = n;min_set_no=i;irangeto=ito;query_range=IB_RANGE_TO;}
                     }
                     else
                     {
                         n = imap_rangefrom(ibase->state->mfields[secid][k],ifrom, NULL);
                         if(min_set_num == -1 || n < min_set_num)
-                        {min_set_fid = k;min_set_num=n;irangefrom=ifrom;query_range=IB_RANGE_FROM;}
+                        {min_set_fid = k;min_set_num=n;min_set_no=i;irangefrom=ifrom;query_range=IB_RANGE_FROM;}
                     }
                 }
             }
@@ -186,19 +186,19 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
                     {
                         n = lmap_range(ibase->state->mfields[secid][k], lfrom, lto, NULL);
                         if(min_set_num == -1 || n < min_set_num)
-                        {min_set_fid=k;min_set_num = n;lrangefrom=lfrom;lrangeto=lto;query_range=0;}
+                        {min_set_fid=k;min_set_num = n;min_set_no=i;lrangefrom=lfrom;lrangeto=lto;query_range=0;}
                     }
                     else if((range_flag & IB_RANGE_TO))
                     {
                         n = lmap_rangeto(ibase->state->mfields[secid][k],lto, NULL);
                         if(min_set_num == -1 || n < min_set_num)
-                        {min_set_fid = k;min_set_num = n;lrangeto=lto;query_range=IB_RANGE_TO;}
+                        {min_set_fid = k;min_set_num = n;min_set_no=i;lrangeto=lto;query_range=IB_RANGE_TO;}
                     }
                     else
                     {
                         n = lmap_rangefrom(ibase->state->mfields[secid][k],lfrom, NULL);
                         if(min_set_num == -1 || n < min_set_num)
-                        {min_set_fid = k;min_set_num=n;lrangefrom=lfrom;query_range=IB_RANGE_FROM;}
+                        {min_set_fid = k;min_set_num=n;min_set_no=i;lrangefrom=lfrom;query_range=IB_RANGE_FROM;}
                     }
                 }
             }
@@ -219,24 +219,24 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
                     {
                         n = dmap_range(ibase->state->mfields[secid][k], dfrom, dto, NULL);
                         if(min_set_num == -1 || n < min_set_num)
-                        {min_set_fid=k;min_set_num = n;drangefrom=dfrom;drangeto=dto;query_range=0;}
+                        {min_set_fid=k;min_set_num = n;min_set_no=i;drangefrom=dfrom;drangeto=dto;query_range=0;}
                     }
                     else if((range_flag & IB_RANGE_TO))
                     {
                         n = dmap_rangeto(ibase->state->mfields[secid][k], dto, NULL);
                         if(min_set_num == -1 || n < min_set_num)
-                        {min_set_fid = k;min_set_num = n;drangeto = dto;query_range=IB_RANGE_TO;}
+                        {min_set_fid = k;min_set_num = n;min_set_no=i;drangeto = dto;query_range=IB_RANGE_TO;}
                     }
                     else
                     {
                         n = dmap_rangefrom(ibase->state->mfields[secid][k], dfrom, NULL);
                         if(min_set_num == -1 || n < min_set_num)
-                        {min_set_fid = k;min_set_num=n;drangefrom=dfrom;query_range=IB_RANGE_FROM;}
+                        {min_set_fid = k;min_set_num=n;min_set_no=i;drangefrom=dfrom;query_range=IB_RANGE_FROM;}
                     }
                 }
             }
         }
-        if(min_set_num > 0)
+        if(min_set_num >= 0)
         {
             docs_size = (min_set_num + 100000) * sizeof(uint32_t);
             docs = (uint32_t *)mdb_new_data(PMDB(ibase->index), docs_size);
@@ -251,6 +251,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
                     ndocs = imap_ins(ibase->state->mfields[secid][min_set_fid], query->int_in_list[min_set_no].vals, query->int_in_list[min_set_no].num, docs);
                 else
                     ndocs = imap_range(ibase->state->mfields[secid][min_set_fid], irangefrom, irangeto, docs);
+                WARN_LOGGER(ibase->logger, "irange(%d,%d) => %d", irangefrom, irangeto, ndocs); 
             }
             else if(min_set_fid >= IB_LONG_OFF && min_set_fid < IB_LONG_TO
                     && ibase->state->mfields[secid][min_set_fid])
@@ -263,6 +264,7 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
                     ndocs = lmap_ins(ibase->state->mfields[secid][min_set_fid], query->long_in_list[min_set_no].vals, query->long_in_list[min_set_no].num, docs);
                 else
                     ndocs = lmap_range(ibase->state->mfields[secid][min_set_fid], lrangefrom, lrangeto, docs);
+                WARN_LOGGER(ibase->logger, "lrange(%d,%d) => %d", lrangefrom, lrangeto, ndocs); 
             }
             else if(min_set_fid >= IB_DOUBLE_OFF && min_set_fid < IB_DOUBLE_TO
                     && ibase->state->mfields[secid][min_set_fid])
@@ -275,11 +277,12 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
                     ndocs = dmap_ins(ibase->state->mfields[secid][min_set_fid], query->double_in_list[min_set_no].vals, query->double_in_list[min_set_no].num, docs);
                 else
                     ndocs = dmap_range(ibase->state->mfields[secid][min_set_fid], drangefrom, drangeto, docs);
+                WARN_LOGGER(ibase->logger, "drange(%d,%d) => %d", drangefrom, drangeto, ndocs); 
             }
         }
         TIMER_SAMPLE(timer);
         res->io_time = (int)PT_LU_USEC(timer);
-        DEBUG_LOGGER(ibase->logger, "reading range fields[%d] data:%p ndata:%d qid:%d time used :%lld", min_set_fid, docs, ndocs, query->qid, PT_LU_USEC(timer));
+        DEBUG_LOGGER(ibase->logger, "reading range fields[%d](%d){%d} data:%p ndata:%d qid:%d time used :%lld", min_set_fid, min_set_num, min_set_fid%32, docs, ndocs, query->qid, PT_LU_USEC(timer));
         res->total = 0;
         while(docs && off < ndocs)
         {
