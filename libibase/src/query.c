@@ -251,7 +251,6 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
                     ndocs = imap_ins(ibase->state->mfields[secid][min_set_fid], query->int_in_list[min_set_no].vals, query->int_in_list[min_set_no].num, docs);
                 else
                     ndocs = imap_range(ibase->state->mfields[secid][min_set_fid], irangefrom, irangeto, docs);
-                WARN_LOGGER(ibase->logger, "irange(%d,%d) => %d", irangefrom, irangeto, ndocs); 
             }
             else if(min_set_fid >= IB_LONG_OFF && min_set_fid < IB_LONG_TO
                     && ibase->state->mfields[secid][min_set_fid])
@@ -264,7 +263,6 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
                     ndocs = lmap_ins(ibase->state->mfields[secid][min_set_fid], query->long_in_list[min_set_no].vals, query->long_in_list[min_set_no].num, docs);
                 else
                     ndocs = lmap_range(ibase->state->mfields[secid][min_set_fid], lrangefrom, lrangeto, docs);
-                WARN_LOGGER(ibase->logger, "lrange(%d,%d) => %d", lrangefrom, lrangeto, ndocs); 
             }
             else if(min_set_fid >= IB_DOUBLE_OFF && min_set_fid < IB_DOUBLE_TO
                     && ibase->state->mfields[secid][min_set_fid])
@@ -277,7 +275,6 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
                     ndocs = dmap_ins(ibase->state->mfields[secid][min_set_fid], query->double_in_list[min_set_no].vals, query->double_in_list[min_set_no].num, docs);
                 else
                     ndocs = dmap_range(ibase->state->mfields[secid][min_set_fid], drangefrom, drangeto, docs);
-                WARN_LOGGER(ibase->logger, "drange(%d,%d) => %d", drangefrom, drangeto, ndocs); 
             }
         }
         TIMER_SAMPLE(timer);
