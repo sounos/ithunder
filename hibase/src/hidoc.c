@@ -1541,6 +1541,16 @@ int hidoc_segment(HIDOC *hidoc, HINDEX *hindex, char *base, char *start, char *e
                 {
                     ps = s;
                 }
+                else
+                {
+                    if(((unsigned char )(*s)) >= 252) n = 6;
+                    else if(((unsigned char )(*s)) >= 248) n = 5;
+                    else if(((unsigned char )(*s)) >= 240) n = 4;
+                    else if(((unsigned char )(*s)) >= 224) n = 3;
+                    else if(((unsigned char )(*s)) >= 192) n = 2;
+                    else n = 1;
+                    nterm = n;
+                }
             }
             if(ps && nterm > 0 && (termid = mmtrie_xadd((MMTRIE *)(hidoc->xdict), ps, nterm)) > 0)
             {
@@ -1855,8 +1865,8 @@ int hidoc_genindex(HIDOC *hidoc, HINDEX *hindex, FHEADER *fheader, IFIELD *field
                     n = 1 << i;
 #ifdef HAVE_SCWS
                     scws_segment(hidoc, hindex, content, s, es, n);
-                    index_text_num++;
 #endif
+                    index_text_num++;
                 }
                 else if(fields[i].flag & IB_DATATYPE_INT)
                 {
@@ -1888,7 +1898,7 @@ int hidoc_genindex(HIDOC *hidoc, HINDEX *hindex, FHEADER *fheader, IFIELD *field
                 if(fields[i].flag & IB_DATATYPE_TEXT)
                 {
                     n = 1 << i;
-                    hidoc_rsegment(hidoc, hindex, content, s, es, n);
+                    hidoc_segment(hidoc, hindex, content, s, es, n);
                 }
             }
             --i;
