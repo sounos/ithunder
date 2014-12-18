@@ -793,6 +793,7 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
             for(i = 0; i < nqterms; i++){xqterms[i].id = qterms[i].id;list[i]=i;}
             s = query_str;
             es = s + strlen(query_str);
+            query->nquery += es - s;
             /* query string */
             if(es > s)
             {

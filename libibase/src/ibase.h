@@ -526,7 +526,7 @@ typedef struct _IQUERY
     short       int_in_num;
     short       long_in_num;
     short       double_in_num;
-    short       bits;
+    short       nquery;
     short       hitscale[IB_QUERY_MAX]; 
     short       slevel_filter[IB_SLEVEL_MAX]; 
     int         flag;//is_sort/is_rsort/is_phrase/is_relevance/is_clear_cache/is_query_and/is_query_forbidden
