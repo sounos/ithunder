@@ -334,7 +334,7 @@ void indexd_query_handler(void *args)
         }
         pthread_mutex_unlock(&qtask->mutex);
         xchunk = qtask->chunk;
-        if(pquery->nquerys > 0) 
+        if(pquery->nquery > 0) 
         {
             ichunk = ibase_bquery(db, pquery, secid);
         }
@@ -670,7 +670,7 @@ int indexd_data_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *ch
                             }
                             else
                             {
-                                if(pquery->nquerys > 0) 
+                                if(pquery->nquery > 0) 
                                     ichunk = ibase_bquery(db, pquery, pquery->secid);
                                 else 
                                     ichunk = ibase_query(db, pquery, pquery->secid);
@@ -1653,7 +1653,7 @@ int httpd_query_handler(CONN *conn, IQUERY *query)
             }
             else
             {
-                if(query->nquerys > 0) ichunk = ibase_bquery(db, query, query->secid);
+                if(query->nquery > 0) ichunk = ibase_bquery(db, query, query->secid);
                 else ichunk = ibase_query(db, query, query->secid);
                 if(ichunk)
                 {
