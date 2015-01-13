@@ -1,5 +1,6 @@
 #automake 
 EXTRA_DIST = base64.php ispider.spec rc.imonitord.ini rc.imonitord.html \
+imonitord.init ispider.init iextractor.init \
 rc.imonitord.init rc.ispider.ini rc.ispider.init rc.iextractor.ini rc.iextractor.init
 
 install: install-ini
