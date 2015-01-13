@@ -8,12 +8,17 @@ conftodir = "`echo $(sysconfdir)|sed -e 's|/usr/etc|/etc|'`"
 
 initdir = "$(DESTDIR)$(conftodir)/init.d"
 
+rcdir = "$(conftodir)/rc.d/init.d"
+
 sysconftodir = "$(DESTDIR)$(conftodir)"
 
-bintodir = "$(DESTDIR)/$(bindir)"
+sbintodir = $(DESTDIR)$(sbindir)
+
+bintodir = "$(DESTDIR)$(bindir)"
 
 htmldir = "`echo @prefix@"/var/html"|sed -e 's|/usr/var|/var|g'`"
 htmltodir = "$(DESTDIR)$(htmldir)"
+isubuntu = "`uname -v|grep Ubuntu`"
 
 install-ini:
 	@echo install imonitord.html to $(htmltodir)
@@ -46,23 +51,42 @@ install-ini:
 	@test -f $(sysconftodir)/iextractor.ini \
 		|| cp -p rc.iextractor.ini $(sysconftodir)/iextractor.ini
 	@echo install *.init to $(initdir)
-	@test -d $(initdir) || mkdir -p $(initdir)
-	@test -f $(initdir)/imonitord \
-		|| cp -p rc.imonitord.init $(initdir)/imonitord
-	@test -f $(initdir)/ispider \
-		|| cp -p rc.ispider.init $(initdir)/ispider
-	@test -f $(initdir)/ipager \
-		|| cp -p rc.ispider.init $(initdir)/ipager
-	@test -f $(initdir)/ilister \
-		|| cp -p rc.ispider.init $(initdir)/ilister
-	@test -f $(initdir)/ifiler \
-		|| cp -p rc.ispider.init $(initdir)/ifiler
-	@test -f $(initdir)/iupdater \
-		|| cp -p rc.ispider.init $(initdir)/iupdater
-	@test -f $(initdir)/irepeator \
-		|| cp -p rc.ispider.init $(initdir)/irepeator
-	@test -f $(initdir)/iextractor \
-		|| cp -p rc.iextractor.init $(initdir)/iextractor
+	@if [ $(isubuntu) != "" ]; \
+	then \
+		test -f $(initdir)/imonitord \
+			|| cp -p rc.imonitord.init $(initdir)/imonitord; \
+		test -f $(initdir)/ispider \
+			|| cp -p rc.ispider.init $(initdir)/ispider; \
+		test -f $(initdir)/ipager \
+			|| cp -p rc.ispider.init $(initdir)/ipager; \
+		test -f $(initdir)/ilister \
+			|| cp -p rc.ispider.init $(initdir)/ilister; \
+		test -f $(initdir)/ifiler \
+			|| cp -p rc.ispider.init $(initdir)/ifiler; \
+		test -f $(initdir)/iupdater \
+			|| cp -p rc.ispider.init $(initdir)/iupdater; \
+		test -f $(initdir)/irepeator \
+			|| cp -p rc.ispider.init $(initdir)/irepeator; \
+		test -f $(initdir)/iextractor \
+			|| cp -p rc.iextractor.init $(initdir)/iextractor; \
+	else \
+		test -f $(initdir)/imonitord \
+			|| cp -p imonitord.init $(initdir)/imonitord; \
+		test -f $(initdir)/ispider \
+			|| cp -p ispider.init $(initdir)/ispider; \
+		test -f $(initdir)/ipager \
+			|| cp -p ispider.init $(initdir)/ipager; \
+		test -f $(initdir)/ilister \
+			|| cp -p ispider.init $(initdir)/ilister; \
+		test -f $(initdir)/ifiler \
+			|| cp -p ispider.init $(initdir)/ifiler; \
+		test -f $(initdir)/iupdater \
+			|| cp -p ispider.init $(initdir)/iupdater; \
+		test -f $(initdir)/irepeator \
+			|| cp -p ispider.init $(initdir)/irepeator; \
+		test -f $(initdir)/iextractor \
+			|| cp -p iextractor.init $(initdir)/iextractor; \
+	fi
 	@perl -i -p -e "s@spider@pager@g" $(sysconftodir)/ipager.ini $(initdir)/ipager 
 	@perl -i -p -e "s@task_type = 0@task_type = 0@g" $(sysconftodir)/ipager.ini
 	@perl -i -p -e "s@spider@lister@g" $(sysconftodir)/ilister.ini $(initdir)/ilister
