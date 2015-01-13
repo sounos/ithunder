@@ -334,6 +334,7 @@ install-ini:
 	@ln -sf $(bindir)/ispider $(bintodir)/irepeator
 	@echo install *.ini to $(sysconftodir)
 	@test -d $(sysconftodir) || mkdir -p $(sysconftodir)
+	@test -d $(initdir) || mkdir -p $(initdir)
 	@test -f $(sysconftodir)/imonitord.ini \
 		|| cp -p rc.imonitord.ini $(sysconftodir)/imonitord.ini
 	@perl -i -p -e "s|\"/var/html|\"$(htmldir)|g" \
