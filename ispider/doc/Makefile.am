@@ -53,7 +53,7 @@ install-ini:
 	@test -f $(sysconftodir)/iextractor.ini \
 		|| cp -p rc.iextractor.ini $(sysconftodir)/iextractor.ini
 	@echo install *.init to $(initdir)
-	@if [ $(isubuntu) != "" ]; \
+	@if [ $(isubuntu) == "" ]; \
 	then \
 		test -f $(initdir)/imonitord \
 			|| cp -p rc.imonitord.init $(initdir)/imonitord; \
