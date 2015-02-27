@@ -2810,7 +2810,7 @@ void hidoc_update(HIDOC *hidoc, int mid, int flag)
         {
             //added to node[id]->tasks queue
             if((id = xindexs[mid].nodeid) > 0 && nodes[id].status > 0 
-                    && nodes[id].ntasks > 0 && xindexs[mid].nodeid > 0)    
+                    && nodes[id].ntasks > 0)    
             {
                 for(j = 0; j < HI_TASKS_MAX; j++)
                 {
