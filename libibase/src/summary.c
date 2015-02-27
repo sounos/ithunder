@@ -77,7 +77,7 @@ do                                                                              
         if(*s == '\r' || *s == '\n' || *s == '\0' || *s == '\t')++s;                        \
         else if(*s == '\''){out += sprintf(out, "&#39;");++s;}                              \
         else if(*s == '"'){out += sprintf(out, "&#34;");++s;}                               \
-        else if(*s == '\\'){*out++ = '\\';*out++ = '\\';*out++ = '\\';++s;}                 \
+        else if(*s == '\\'){*out++ = '\\';*out++ = '\\';++s;}                               \
         else *out++ = *s++;                                                                 \
     }                                                                                       \
 }while(0)
@@ -91,7 +91,7 @@ do                                                                              
         if(*s == '\r' || *s == '\n' || *s == '\0' || *s == '\t')++s;                        \
         else if(*s == '\''){p += sprintf(p, "&#39;");++s;}                                  \
         else if(*s == '"'){p += sprintf(p, "&#34;");++s;}                                   \
-        else if(*s == '\\'){*p++ = '\\';*p++ = '\\';*p++ = '\\';++s;}                       \
+        else if(*s == '\\'){*p++ = '\\';*p++ = '\\';++s;}                                   \
         else *p++ = *s++;                                                                   \
     }                                                                                       \
 }while(0)
