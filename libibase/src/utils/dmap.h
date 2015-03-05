@@ -66,6 +66,6 @@ int dmap_ins(DMAP *dmap, double *keys, int nkeys, u32_t *list);
 void dmap_close(DMAP *dmap);
 #define DMAP_GET(x, no) ((DMAP *)x)->vmap[no].val
 #define DMAP_SET(x, no, key) dmap_set(((DMAP *)x), no, key)
-#define DMAP_DEL(x, no, key) dmap_del(((DMAP *)x), no)
+#define DMAP_DEL(x, no) dmap_del(((DMAP *)x), no)
 #pragma pack(pop)
 #endif

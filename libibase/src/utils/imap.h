@@ -66,6 +66,6 @@ int imap_ins(IMAP *imap, int32_t *keys, int nkeys, u32_t *list);
 void imap_close(IMAP *imap);
 #define IMAP_GET(x, no) ((IMAP *)x)->vmap[no].val
 #define IMAP_SET(x, no, key) imap_set(((IMAP *)x), no, key)
-#define IMAP_DEL(x, no, key) imap_del(((IMAP *)x), no)
+#define IMAP_DEL(x, no) imap_del(((IMAP *)x), no)
 #pragma pack(pop)
 #endif

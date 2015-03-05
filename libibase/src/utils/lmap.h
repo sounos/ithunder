@@ -66,6 +66,6 @@ int lmap_ins(LMAP *lmap, int64_t *keys, int nkeys, u32_t *list);
 void lmap_close(LMAP *lmap);
 #define LMAP_GET(x, no) ((LMAP *)x)->vmap[no].val
 #define LMAP_SET(x, no, key) lmap_set(((LMAP *)x), no, key)
-#define LMAP_DEL(x, no, key) lmap_del(((LMAP *)x), no)
+#define LMAP_DEL(x, no) lmap_del(((LMAP *)x), no)
 #pragma pack(pop)
 #endif

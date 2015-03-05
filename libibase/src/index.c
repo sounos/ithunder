@@ -343,11 +343,11 @@ int ibase_update_index(IBASE *ibase, int docid, IBDATA *block)
 }
 
 /* del index */
-int ibase_del_index(IBASE *ibase, int localid)
+int ibase_del_index(IBASE *ibase, int secid, int localid)
 {
     MHEADER *mheader = NULL;
     IHEADER *iheader = NULL;
-    int ret = -1;
+    int ret = -1, i = 0, k = 0, n = 0;
 
     if((mheader = PMHEADER(ibase, localid))) 
     {
@@ -356,6 +356,42 @@ int ibase_del_index(IBASE *ibase, int localid)
         {
             ibase->state->ttotal -= iheader->terms_total;
             iheader->status = -1;
+            if(ibase->state->used_for == IB_USED_FOR_INDEXD)
+            {
+                /* del int index */
+                if((n = ibase->state->int_index_fields_num) > 0) 
+                {
+                    n += IB_INT_OFF;
+                    k = 0;
+                    for(i = IB_INT_OFF; i < n; i++)
+                    {
+                        IMAP_DEL(ibase->state->mfields[secid][i], localid);
+                        k++;
+                    }
+                }
+                /* del long index */
+                if((n = ibase->state->long_index_fields_num) > 0) 
+                {
+                    n += IB_LONG_OFF;
+                    k = 0;
+                    for(i = IB_LONG_OFF; i < n; i++)
+                    {
+                        LMAP_DEL(ibase->state->mfields[secid][i], localid);
+                        k++;
+                    }
+                }
+                /* del double index */
+                if((n = ibase->state->double_index_fields_num) > 0) 
+                {
+                    n += IB_DOUBLE_OFF;
+                    k = 0;
+                    for(i = IB_DOUBLE_OFF; i < n; i++)
+                    {
+                        DMAP_DEL(ibase->state->mfields[secid][i], localid);
+                        k++;
+                    }
+                }
+            }
         }
         if(ibase->state->used_for == IB_USED_FOR_INDEXD 
                 && ibase->state->mmsource_status != IB_MMSOURCE_NULL)
@@ -402,7 +438,7 @@ int ibase_add_document(IBASE *ibase, IBDATA *block)
                         }
                         else if(docheader->crc != mheader->crc) 
                         {
-                            ibase_del_index(ibase, localid);
+                            ibase_del_index(ibase, secid, localid);
                             newid = ++(ibase->state->ids[secid]);
                             DEBUG_LOGGER(ibase->logger, "ready_reindex[%lld/%d]{crc:%d rank:%f slevel:%d category:%lld}", IBLL(docheader->globalid), localid, docheader->crc, docheader->rank, docheader->slevel, LLI(docheader->category));
                             mheader->docid = newid;
