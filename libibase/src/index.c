@@ -131,17 +131,6 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
                 memset(ibase->state->headers[secid].map + ibase->state->headers[secid].old, 0, 
                         ibase->state->headers[secid].end -  ibase->state->headers[secid].old);
             }
-            if((iheader = PIHEADER(ibase, docheader->secid, docid)))
-            {
-                iheader->status      = docheader->status;
-                iheader->terms_total = docheader->terms_total;
-                iheader->crc         = docheader->crc;
-                iheader->category    = docheader->category;
-                iheader->slevel      = docheader->slevel;
-                iheader->rank        = docheader->rank;
-                iheader->globalid    = docheader->globalid;
-                //WARN_LOGGER(ibase->logger, "iheader->category:%p docheader->category:%p", (void *)iheader->category, (void *)docheader->category);
-            }
         }
         /* index */
         //end = block->data + block->ndata;
@@ -156,16 +145,15 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
             if(termid > 0 && termlist[i].term_len > 0 && termlist[i].prevnext_size >= 0 
                 && (ret=mmtrie_add((MMTRIE *)ibase->mmtrie,term,termlist[i].term_len,termid))>0)
             {
-                MUTEX_LOCK(ibase->mutex_termstate);
-                if(termid > ibase->state->termid){ADD_TERMSTATE(ibase, termid);}
-                ((TERMSTATE *)(ibase->termstateio.map))[termid].len = termlist[i].term_len;
-                ((TERMSTATE *)(ibase->termstateio.map))[termid].total++;
-                MUTEX_UNLOCK(ibase->mutex_termstate);
                 if(ibase->state->index_status != IB_INDEX_DISABLED)
                 {
                     last_docid = 0;
+                    ndocid = -1;
                     if(mdb_get_tag(index, termid, &last_docid) == 0)
+                    {
                         ndocid = docid - last_docid;
+                        if(ndocid <= 0) goto term_state_update;
+                    }
                     else
                     {
                         ndocid = docid;
@@ -205,6 +193,15 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
                     mdb_set_tag(index, termid, docid);
                     if(data){xmm_free(data, ndata); data = NULL;}
                 }
+term_state_update:
+                MUTEX_LOCK(ibase->mutex_termstate);
+                if(termid > ibase->state->termid){ADD_TERMSTATE(ibase, termid);}
+                if(ndocid > 0 )
+                {
+                    ((TERMSTATE *)(ibase->termstateio.map))[termid].len=termlist[i].term_len;
+                    ((TERMSTATE *)(ibase->termstateio.map))[termid].total++;
+                }
+                MUTEX_UNLOCK(ibase->mutex_termstate);
             }
             else 
             {
@@ -251,6 +248,17 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
                     DMAP_SET(ibase->state->mfields[secid][i], docid, doublelist[k]);
                     k++;
                 }
+            }
+            if((iheader = PIHEADER(ibase, docheader->secid, docid)))
+            {
+                iheader->status      = docheader->status;
+                iheader->terms_total = docheader->terms_total;
+                iheader->crc         = docheader->crc;
+                iheader->category    = docheader->category;
+                iheader->slevel      = docheader->slevel;
+                iheader->rank        = docheader->rank;
+                iheader->globalid    = docheader->globalid;
+                //WARN_LOGGER(ibase->logger, "iheader->category:%p docheader->category:%p", (void *)iheader->category, (void *)docheader->category);
             }
         }
         ret = 0;
