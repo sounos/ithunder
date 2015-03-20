@@ -1530,6 +1530,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                 last = p;
                 while(*p == 0x20 || *p == '\t' || *p == ',' || *p == ';')++p;
                 i = atoi(p);
+                if(i >= IB_IDX_MAX) break;
                 while(*p != ':' && *p != '\0') ++p;
                 if(*p != ':') break;
                 keyslist[i] = ++p;
@@ -1583,7 +1584,7 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
             fprintf(stdout, "%s::%d flag:%d nquerys:%d\n", __FILE__, __LINE__, query->flag&IB_QUERY_FIELDS, query->nquerys);
             */
         }
-        if(query_str && *query_str)
+        if(query_str && *query_str && nkeys <= 0)
         {
             ret = ibase_qparser(db, -1, query_str, not_str, query);
             //fprintf(stdout, "%s::%d nquerys:%d nqterms:%d\n", __FILE__, __LINE__, query->nquerys, query->nqterms);
