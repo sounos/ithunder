@@ -274,9 +274,15 @@ int ibase_set_basedir(IBASE *ibase, char *dir, int used_for, int mmsource_status
             for(k = 0; k < ibase->state->nsecs; k++)
             {
                 x = ibase->state->secs[k];
+                /* index */
                 sprintf(path, "%s/%s/%d", dir, IB_INDEX_DIR, x);
                 ibase->mindex[x] = mdb_init(path, 1);
                 mdb_set_block_incre_mode(ibase->mindex[x], DB_BLOCK_INCRE_DOUBLE);
+                /* posting */
+                sprintf(path, "%s/%s/%d", dir, IB_POSTING_DIR, x);
+                ibase->mposting[x] = mdb_init(path, 1);
+                mdb_set_block_incre_mode(ibase->mposting[x], DB_BLOCK_INCRE_DOUBLE);
+                /* number index */
                 sprintf(path, "%s/%s/%d/", dir, IB_IDX_DIR, x);
                 ibase_mkdir(path);
                 for(i = IB_INT_OFF; i < IB_INT_TO; i++)
@@ -352,12 +358,15 @@ void ibase_check_mindex(IBASE *ibase, int secid)
 
     if(ibase && secid >= 0 && secid < IB_SEC_MAX)
     {
-        if(!ibase->mindex[secid])
+        if(!ibase->mindex[secid] || !ibase->mposting[secid])
         {
             sprintf(path, "%s/%s/%d", ibase->basedir, IB_INDEX_DIR, secid);
             ibase->mindex[secid] = mdb_init(path, 1);
-            ibase->state->secs[ibase->state->nsecs++] = secid;
             mdb_set_block_incre_mode(ibase->mindex[secid], MDB_BLOCK_INCRE_DOUBLE);
+            sprintf(path, "%s/%s/%d", ibase->basedir, IB_POSTING_DIR, secid);
+            ibase->mposting[secid] = mdb_init(path, 1);
+            mdb_set_block_incre_mode(ibase->mposting[secid], MDB_BLOCK_INCRE_DOUBLE);
+            ibase->state->secs[ibase->state->nsecs++] = secid;
         }
         if(!ibase->state->headers[secid].map)
         {
@@ -1074,7 +1083,6 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                 query->ravgdl = (double)ibase->state->dtotal/(double)ibase->state->ttotal;
             /* relist */
             if(nqterms > IB_QUERY_MAX) nqterms = IB_QUERY_MAX;
-            //MUTEX_LOCK(ibase->mutex_termstate);
             i = 0, x = 0;
             for(i = 0; i < nqterms; ++i)
             {
@@ -1084,7 +1092,6 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                 query->qterms[i].synno = i;
                 query->qterms[i].bitnot = qterms[z].bitnot;
                 query->qterms[i].bithit = qterms[z].bithit;
-                //fprintf(stdout, "i:%d termid:%d\n", i, qterms[z].id);
                 if(termid <= ibase->state->termid && (n = (termstates[termid].total)) > 0)
                 {
                     query->qterms[i].idf = log(((double)N-(double )n+0.5f)/((double)n + 0.5f));
@@ -1103,7 +1110,6 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                             && query->qweight)
                     {
                         query->qterms[i].flag |= QTERM_BIT_DOWN;
-                        //fprintf(stdout, "%s::%d i:%d\n", __FILE__, __LINE__, i);
                     }
                     else
                     {
@@ -1119,21 +1125,16 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                         k = list[j];
                         if(qterms[z].prev & (1 << k)) 
                         {
-                            //fprintf(stdout, "prev z:%d k:%d i:%d j:%d\n", z, k, i, j);
                             query->qterms[i].prev |= 1 << j;
                         }
                         if(qterms[z].next & (1 << k)) 
                         {
-                            //fprintf(stdout, "next z:%d k:%d i:%d j:%d\n", z, k, i, j);
                             query->qterms[i].next |= 1 << j;
                         }
                     }
                 }
             }
-            //MUTEX_UNLOCK(ibase->mutex_termstate);
             query->nqterms = nqterms;
-            //if(nxqterms > query->nqterms)
-            //query->nquerys = query->nqterms;
             ACCESS_LOGGER(ibase->logger, "over state-idf(query_str:%s nsegs:%d)", query_str, ibase->nqsegmentors);
         }
         query->nquerys = query->nqterms + nxqterms;
@@ -1686,6 +1687,7 @@ void ibase_clean(IBASE *ibase)
         {
             x = ibase->state->secs[k];
             if(ibase->mindex[x]) mdb_clean(PMDB(ibase->mindex[x]));
+            if(ibase->mposting[x]) mdb_clean(PMDB(ibase->mposting[x]));
             for(i = IB_INT_OFF; i < IB_INT_TO; i++)
             {
                 if(ibase->state->mfields[x][i]) imap_close(ibase->state->mfields[x][i]);

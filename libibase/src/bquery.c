@@ -288,11 +288,14 @@ void ibase_unindex(IBASE *ibase, ITERM *itermlist, XMAP *_xmap_,
             itermlist[_x_].prevnext_size = *((int*)itermlist[_x_].p);
             itermlist[_x_].p += sizeof(int);
         }
-        if(itermlist[_x_].prevnext_size > 0)
+        if(is_query_phrase && itermlist[_x_].prevnext_size > 0
+            && (itermlist[_x_].eposting - itermlist[_x_].sposting) 
+                >= itermlist[_x_].prevnext_size)
         {
-            itermlist[_x_].sprevnext = itermlist[_x_].p;
-            itermlist[_x_].eprevnext = itermlist[_x_].p + itermlist[_x_].prevnext_size;
-            itermlist[_x_].p += itermlist[_x_].prevnext_size;
+            itermlist[_x_].sprevnext = itermlist[_x_].sposting;
+            itermlist[_x_].eprevnext = itermlist[_x_].sposting 
+                + itermlist[_x_].prevnext_size;
+            itermlist[_x_].sposting += itermlist[_x_].prevnext_size;
         }
         else
         {
@@ -349,7 +352,8 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
            tf = 1.0, Py = 0.0, Px = 0.0, dto = 0.0, xdouble = 0.0;
     int64_t bits = 0, lfrom = 0, lto = 0, base_score = 0, *vlong = NULL,
             doc_score = 0, old_score = 0, xdata = 0, xlong = 0;
-    void *timer = NULL, *topmap = NULL, *fmap = NULL, *groupby = NULL, *index = NULL;
+    void *timer = NULL, *topmap = NULL, *fmap = NULL, *groupby = NULL, 
+         *index = NULL, *posting = NULL;
     IRECORD *record = NULL, *records = NULL, xrecords[IB_NTOP_MAX];
     IHEADER *headers = NULL; ICHUNK *chunk = NULL;
     XMAP *xmap = NULL; XNODE *xnode = NULL;
@@ -453,8 +457,10 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
             {
                 itermlist[i].weight = 1;
             }
-            if((n = itermlist[i].mm.ndata = mdb_get_data(PMDB(index), itermlist[i].termid, &(itermlist[i].mm.data))) > 0)
+            if((n = itermlist[i].mm.ndata = mdb_get_data(PMDB(index), 
+                            itermlist[i].termid, &(itermlist[i].mm.data))) > 0)
             {
+                /* reading index */
                 total += n;
                 itermlist[i].p = itermlist[i].mm.data;
                 itermlist[i].end = itermlist[i].mm.data + itermlist[i].mm.ndata;
@@ -465,8 +471,21 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
                 itermlist[i].term_len = termstates[itermlist[i].termid].len;
                 MUTEX_UNLOCK(ibase->mutex_termstate);
                 x = i;
+                /* reading posting */
+                if(is_query_phrase && (itermlist[i].posting.ndata = 
+                        mdb_get_data(PMDB(posting), itermlist[i].termid, 
+                                &(itermlist[i].posting.data))) > 0)
+                {
+                    itermlist[i].sposting = itermlist[i].posting.data;
+                    itermlist[i].eposting = itermlist[i].posting.data 
+                        + itermlist[i].posting.ndata;
+                }
+                else
+                {
+                    itermlist[i].sposting = NULL;
+                    itermlist[i].eposting = NULL;
+                }
                 ibase_unindex(ibase, itermlist, xmap, is_query_phrase, query->qfhits, x);
-                //UNINDEX(ibase, is_query_phrase, itermlist, xmap, x, n, np);
             }
             /* synonym term */
             /*
@@ -977,6 +996,15 @@ end:
             for(i = 0; i < nqterms; i++)
             {
                 mdb_free_data(PMDB(index), itermlist[i].mm.data, itermlist[i].mm.ndata);
+                itermlist[i].mm.data = NULL;
+                itermlist[i].mm.ndata = 0;
+                if(itermlist[i].posting.data)
+                {
+                    mdb_free_data(PMDB(posting), itermlist[i].posting.data, 
+                            itermlist[i].posting.ndata);
+                    itermlist[i].posting.data = NULL;
+                    itermlist[i].posting.ndata = 0;
+                }
             }
             ibase_push_itermlist(ibase, itermlist);
         }

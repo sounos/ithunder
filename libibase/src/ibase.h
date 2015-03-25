@@ -96,6 +96,7 @@ extern "C" {
 #define  IB_SYNDB_DIR            "syndb"
 #define  IB_IDX_DIR              "idx"
 #define  IB_INDEX_DIR            "index"
+#define  IB_POSTING_DIR          "posting"
 #define  IB_SOURCE_DIR           "source"
 #define  IB_LOGGER_NAME          "ibase.log"
 #define  IB_HEADERS_BASE         1000000
@@ -177,8 +178,11 @@ typedef struct _ITERM
     char *end;
     char *sprevnext;
     char *eprevnext;
+    char *sposting;
+    char *eposting;
     XNODE xnode;
     IBDATA mm;
+    IBDATA posting;
     double idf;
 }ITERM;
 /* term for store */
@@ -757,6 +761,7 @@ typedef struct _IBASE
     void *qmmxs[IB_MMX_MAX];
     ICHUNK  *qchunks[IB_CHUNKS_MAX];
     void *mindex[IB_SEC_MAX];
+    void *mposting[IB_SEC_MAX];
     void *index; /* index db */
     void *syndb; /* synonym db */
     void *itree; /* int tree */

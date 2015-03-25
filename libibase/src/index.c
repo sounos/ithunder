@@ -106,13 +106,14 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
     double *doublelist = NULL;
     IHEADER *iheader = NULL;
     STERM *termlist = NULL;
-    MDB *index = NULL;
+    MDB *index = NULL, *posting = NULL;
     off_t size = 0;
 
     if((docheader = (DOCHEADER *)block->data) 
             && (secid = docheader->secid) >= 0 && docheader->secid < IB_SEC_MAX)
     {
         index = (MDB *)(ibase->mindex[docheader->secid]);
+        posting = (MDB *)(ibase->mposting[docheader->secid]);
         if(docheader->dbid != -1)
         {
             ibase->state->dtotal++;
@@ -159,7 +160,7 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
                         ndocid = docid;
                     }
                     p = pp = buf;
-                    if((ndata = ((sizeof(int) * 5 + termlist[i].prevnext_size))) > IB_BUF_SIZE)
+                    if((ndata = ((sizeof(int) * 5))) > IB_BUF_SIZE)
                         p = pp = data = (char *)xmm_new(ndata);
                     /* compress index */
                     if(ibase->state->compression_status != IB_COMPRESSION_DISABLED)
@@ -178,10 +179,12 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
                         memcpy(p, &(termlist[i].bit_fields), sizeof(int));p += sizeof(int);
                         memcpy(p, &(termlist[i].prevnext_size), sizeof(int));p += sizeof(int);
                     }
-                    if(termlist[i].prevnext_size > 0) 
+                    if(termlist[i].prevnext_size > 0 && mdb_add_data(posting, 
+                                termid, prevnext, termlist[i].prevnext_size) <= 0) 
                     {
-                        memcpy(p, prevnext, termlist[i].prevnext_size);
-                        p += termlist[i].prevnext_size;
+                        FATAL_LOGGER(ibase->logger, "index posting term[%d] failed, %s", 
+                                termid, strerror(errno));
+                        _exit(-1);
                     }
                     if(mdb_add_data(index, termid, pp, (p - pp)) <= 0)
                     {
