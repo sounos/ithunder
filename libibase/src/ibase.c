@@ -358,7 +358,7 @@ void ibase_check_mindex(IBASE *ibase, int secid)
 
     if(ibase && secid >= 0 && secid < IB_SEC_MAX)
     {
-        if(!ibase->mindex[secid] || !ibase->mposting[secid])
+        if(!ibase->mindex[secid])
         {
             sprintf(path, "%s/%s/%d", ibase->basedir, IB_INDEX_DIR, secid);
             ibase->mindex[secid] = mdb_init(path, 1);

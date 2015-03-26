@@ -179,12 +179,15 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
                         memcpy(p, &(termlist[i].bit_fields), sizeof(int));p += sizeof(int);
                         memcpy(p, &(termlist[i].prevnext_size), sizeof(int));p += sizeof(int);
                     }
-                    if(termlist[i].prevnext_size > 0 && mdb_add_data(posting, 
-                                termid, prevnext, termlist[i].prevnext_size) <= 0) 
+                    if(termlist[i].prevnext_size > 0)
                     {
-                        FATAL_LOGGER(ibase->logger, "index posting term[%d] failed, %s", 
-                                termid, strerror(errno));
-                        _exit(-1);
+                        if(mdb_add_data(posting, termid, prevnext, termlist[i].prevnext_size) <= 0) 
+                        {
+                            FATAL_LOGGER(ibase->logger, "index posting term[%d] failed, %s", 
+                                    termid, strerror(errno));
+                            _exit(-1);
+                        }
+                        WARN_LOGGER(ibase->logger, "docid:%lld termid:%d prevnext_size:%d", IBLL(docheader->globalid), termid, termlist[i].prevnext_size);
                     }
                     if(mdb_add_data(index, termid, pp, (p - pp)) <= 0)
                     {

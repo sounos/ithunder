@@ -362,7 +362,8 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
     IRES *res = NULL;
 
     if(ibase && query && secid >= 0 && secid < IB_SEC_MAX 
-            && (index = ibase->mindex[secid]))
+            && (index = ibase->mindex[secid]) 
+            && (posting = ibase->mposting[secid]))
     {
         if((chunk = ibase_pop_chunk(ibase)))
         {
@@ -373,7 +374,6 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
         }
         else
         {
-            //ACCESS_LOGGER(ibase->logger, "pop chunk failed, %s", strerror(errno));
             goto end;
         }
         xmap = ibase_pop_xmap(ibase);
@@ -482,6 +482,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
                 }
                 else
                 {
+                   // WARN_LOGGER(ibase->logger, "is_query_phrase:%d posting:%p termid:%d sposting:%s eposting:%p", is_query_phrase, posting, itermlist[i].termid, itermlist[i].sposting, itermlist[i].eposting);
                     itermlist[i].sposting = NULL;
                     itermlist[i].eposting = NULL;
                 }
@@ -773,7 +774,6 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
                         no = nx >> 1;
                         if(nx & 0x01) next = no;
                         else prev = no;
-                        //ACCESS_LOGGER(ibase->logger, "i:%d/%d docid:%d/%lld self:%d prev:%d next:%d no:%d nx:%d xmin:%d xmax:%d nn:%d mm:%d", i, mm, docid, IBLL(headers[docid].globalid), itermlist[x].no, prev, next, no, nx, xnode->xmin, xnode->xmax, nn, mm);
                         if(no < xnode->xmin)continue;
                         if(no > xnode->xmax)break;
                         if(no != xno)
@@ -791,19 +791,19 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
                                 else max = z;
                             }while(max > min);
                         }
-                        //ACCESS_LOGGER(ibase->logger, "docid:%d/%lld next:%d next:%d no:%d x:%d kk:%d", docid, IBLL(headers[docid].globalid), prev, next, no, x, kk);
-                        if(k >= 0 && no == xnode->bitphrase[k] && !(query->qterms[x].flag & QTERM_BIT_DOWN)) 
+                        if(k >= 0 && no == xnode->bitphrase[k] 
+                                && !(query->qterms[x].flag & QTERM_BIT_DOWN)) 
                         {
                             kk = xnode->bitquery[k];
                             prevnext = 0;
                             if(prev >= 0 && (query->qterms[x].prev & (1 << kk)))
                             {
-                                //ACCESS_LOGGER(ibase->logger, "docid:%d/%lld phrase_prev:%d x:%d kk:%d", docid, IBLL(headers[docid].globalid), prev, x, kk);
+                                //WARN_LOGGER(ibase->logger, "docid:%d/%lld phrase_prev:%d x:%d kk:%d", docid, IBLL(headers[docid].globalid), prev, x, kk);
                                 prevnext += 2;
                             }
                             else if(next >= 0 && (query->qterms[x].next & (1 << kk)))
                             {
-                                //ACCESS_LOGGER(ibase->logger, "docid:%d/%lld phrase_next:%d x:%d kk:%d", docid, IBLL(headers[docid].globalid), next, x, kk);
+                                //WARN_LOGGER(ibase->logger, "docid:%d/%lld phrase_next:%d x:%d kk:%d", docid, IBLL(headers[docid].globalid), next, x, kk);
                                 prevnext += 2;
                             }
                             if(prevnext)
@@ -984,7 +984,7 @@ next:
             res->flag |= is_groupby;
             if(res->ngroups > IB_GROUP_MAX) 
             {
-                WARN_LOGGER(ibase->logger, "large groups[%d] qid:%d", res->groups, query->qid);
+                WARN_LOGGER(ibase->logger, "invalid number %d/%d for groups[%d] qid:%d", res->ngroups, IB_GROUP_MAX, res->groups, query->qid);
                 res->ngroups = IB_GROUP_MAX;
             }
         }
