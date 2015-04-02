@@ -98,7 +98,7 @@ int ibase_check_index_state(IBASE *ibase, DOCHEADER *docheader)
 int ibase_index(IBASE *ibase, int docid, IBDATA *block)
 {
     char *term = NULL, buf[IB_BUF_SIZE], *data = NULL, *p = NULL, 
-         *pp = NULL, *prevnext = NULL;
+         *pp = NULL, *nexts = NULL;
     int i = 0, termid = 0, n = 0, k = 0, ndocid = 0, ret = -1, ndata = 0, secid = 0, 
         *intlist = NULL, *np = NULL, last_docid = 0;
     DOCHEADER *docheader = NULL;
@@ -138,12 +138,12 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
         termlist = (STERM *)(block->data + sizeof(DOCHEADER) 
                 + docheader->nfields * sizeof(XFIELD));
         term = block->data + docheader->textblock_off;
-        prevnext = block->data + docheader->prevnext_off;
+        nexts = block->data + docheader->nexts_off;
         for(i = 0; i < docheader->nterms; i++)
         {
             termid = termlist[i].termid;
             //find/add termid
-            if(termid > 0 && termlist[i].term_len > 0 && termlist[i].prevnext_size >= 0 
+            if(termid > 0 && termlist[i].term_len > 0 && termlist[i].nexts_size >= 0 
                 && (ret=mmtrie_add((MMTRIE *)ibase->mmtrie,term,termlist[i].term_len,termid))>0)
             {
                 if(ibase->state->index_status != IB_INDEX_DISABLED)
@@ -169,7 +169,7 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
                         n = termlist[i].term_count; np = &n;  ZVBCODE(np, p);
                         n = i; np = &n; ZVBCODE(np, p);
                         n = termlist[i].bit_fields; np = &n; ZVBCODE(np, p);
-                        n = termlist[i].prevnext_size; np = &n; ZVBCODE(np, p);
+                        n = termlist[i].nexts_size; np = &n; ZVBCODE(np, p);
                     }
                     else
                     {
@@ -177,17 +177,17 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
                         memcpy(p, &(termlist[i].term_count), sizeof(int));p += sizeof(int);
                         memcpy(p, &i, sizeof(int));p += sizeof(int);
                         memcpy(p, &(termlist[i].bit_fields), sizeof(int));p += sizeof(int);
-                        memcpy(p, &(termlist[i].prevnext_size), sizeof(int));p += sizeof(int);
+                        memcpy(p, &(termlist[i].nexts_size), sizeof(int));p += sizeof(int);
                     }
-                    if(termlist[i].prevnext_size > 0)
+                    if(termlist[i].nexts_size > 0)
                     {
-                        if(mdb_add_data(posting, termid, prevnext, termlist[i].prevnext_size) <= 0) 
+                        if(mdb_add_data(posting, termid, nexts, termlist[i].nexts_size) <= 0) 
                         {
                             FATAL_LOGGER(ibase->logger, "index posting term[%d] failed, %s", 
                                     termid, strerror(errno));
                             _exit(-1);
                         }
-                        WARN_LOGGER(ibase->logger, "docid:%lld termid:%d prevnext_size:%d", IBLL(docheader->globalid), termid, termlist[i].prevnext_size);
+                        //WARN_LOGGER(ibase->logger, "docid:%lld termid:%d nexts_size:%d", IBLL(docheader->globalid), termid, termlist[i].nexts_size);
                     }
                     if(mdb_add_data(index, termid, pp, (p - pp)) <= 0)
                     {
@@ -215,7 +215,7 @@ term_state_update:
                 _exit(-1);
             }
             term += termlist[i].term_len;
-            prevnext += termlist[i].prevnext_size;
+            nexts += termlist[i].nexts_size;
         }
         if(ibase->state->used_for == IB_USED_FOR_INDEXD)
         {
@@ -508,8 +508,8 @@ int ibase_add_document(IBASE *ibase, IBDATA *block)
             if(ibase->state->used_for != IB_USED_FOR_QPARSERD 
                     && ibase->state->mmsource_status != IB_MMSOURCE_NULL && localid > 0)
             {
-                ACCESS_LOGGER(ibase->logger, "docid:%lld/%d c_size:%d c_zsize:%d size:%d", docheader->globalid, localid, docheader->content_size, docheader->content_zsize, docheader->prevnext_off);
-                docheader->size = docheader->prevnext_off;
+                ACCESS_LOGGER(ibase->logger, "docid:%lld/%d c_size:%d c_zsize:%d size:%d", docheader->globalid, localid, docheader->content_size, docheader->content_zsize, docheader->nexts_off);
+                docheader->size = docheader->nexts_off;
                 ret = db_set_data(PDB(ibase->source), localid, block->data, docheader->size);
             }
             ret = 0;

@@ -138,12 +138,12 @@ typedef struct _TERMNODE
 {
     int   termid;
     int   term_offset;
-    int   nprevnexts;
+    int   nnexts;
     short noffsets;
     short nroffsets;
     int   offsets[HI_OFFSET_MAX];
     int   roffsets[HI_OFFSET_MAX];
-    char  prevs[HI_TERMS_MAX];
+    //char  prevs[HI_TERMS_MAX];
     char  nexts[HI_TERMS_MAX];
 }TERMNODE;
 /* index */
