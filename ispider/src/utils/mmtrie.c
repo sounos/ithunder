@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include "mmtrie.h"
 #include "mutex.h"
+#define MLL64(xxxx) ((long long int)(xxxx))
 #ifdef MAP_LOCKED
 #define MMAP_SHARED MAP_SHARED|MAP_LOCKED
 #else
@@ -56,7 +57,12 @@ do                                                                              
         {                                                                                   \
             x->file_size = (off_t)sizeof(MMTRSTATE)                                         \
             + (off_t)MMTRIE_BASE_NUM * (off_t)sizeof(MMTRNODE);                             \
-            if(ftruncate(x->fd, x->file_size) != 0)break;                                   \
+            if(ftruncate(x->fd, x->file_size) != 0)                                         \
+            {                                                                               \
+                fprintf(stderr, "init trie file_size:%lld failed, %s\n",                    \
+                    MLL64(x->file_size), strerror(errno));                                  \
+                _exit(-1);                                                                  \
+            }                                                                               \
             if(x->map)memset(x->map, 0, x->file_size);                                      \
             x->state->total = MMTRIE_BASE_NUM;                                              \
             x->state->left = MMTRIE_BASE_NUM - MMTRIE_LINE_MAX;                             \
@@ -81,7 +87,9 @@ do                                                                              
         }                                                                                   \
         else                                                                                \
         {                                                                                   \
-            break;                                                                          \
+            fprintf(stderr, "truncate trie file_size:%lld failed, %s\n",                    \
+                    MLL64(x->file_size), strerror(errno));                                  \
+            _exit(-1);                                                                      \
         }                                                                                   \
     }                                                                                       \
 }while(0)
@@ -425,7 +433,7 @@ int  mmtrie_get(MMTRIE *mmtrie, char *key, int nkey)
                         && (nodes[i].nchilds == 0 || (p+1) == ep))
                 {
                     if(nodes[i].key != *p) goto end;
-                    if(p+1 == ep) ret = nodes[i].data;
+                    if((p+1) == ep) ret = nodes[i].data;
                     break;
                 }
                 ++p;
@@ -452,12 +460,12 @@ int  mmtrie_del(MMTRIE *mmtrie, char *key, int nkey)
             p = (unsigned char *)key;
             ep = (unsigned char *)(key + nkey);
             i = *p++;
-            if(nkey == 1 && i >= 0 && i < mmtrie->state->total && nodes[i].data != 0){ret = nodes[i].data; nodes[i].data = 0; goto end;}
+            if(nkey == 1 && i >= 0 && i < mmtrie->state->total){ret = nodes[i].data; nodes[i].data = 0; goto end;}
             while(p < ep)
             {
                 x = 0;
                 //check 
-                if(nodes[i].nchilds  > 0 && nodes[i].childs >= MMTRIE_LINE_MAX) 
+                if(nodes[i].nchilds > 0 && nodes[i].childs >= MMTRIE_LINE_MAX)
                 {
                     min = nodes[i].childs;
                     max = min + nodes[i].nchilds - 1;
@@ -496,9 +504,9 @@ int  mmtrie_del(MMTRIE *mmtrie, char *key, int nkey)
 end:
         MUTEX_UNLOCK(mmtrie->mutex);        
     }
-    
     return ret;
 }
+
 
 /* find/min */
 int  mmtrie_find(MMTRIE *mmtrie, char *key, int nkey, int *to)
@@ -517,7 +525,11 @@ int  mmtrie_find(MMTRIE *mmtrie, char *key, int nkey, int *to)
             ep = (unsigned char *)(key + nkey);
             i = *p++;
             if((ret = nodes[i].data) != 0){*to = 1;goto end;}
-            if(nkey == 1 && i >= 0 && i < mmtrie->state->total && nodes[i].data != 0){ret = nodes[i].data; *to = 1; goto end;}
+            if(nkey == 1 && i >= 0 && i < mmtrie->state->total)
+            {
+                if(nodes[i].data != 0){ret = nodes[i].data; *to = 1;}
+                goto end;
+            }
             while(p < ep)
             {
                 x = 0;
@@ -573,7 +585,11 @@ int   mmtrie_maxfind(MMTRIE *mmtrie, char *key, int nkey, int *to)
             ep = (unsigned char *)(key + nkey);
             i = *p++;
             if(nodes[i].data != 0){*to = 1;ret = nodes[i].data;}
-            if(nkey == 1 && i >= 0 && i < mmtrie->state->total && nodes[i].data != 0){ret = nodes[i].data; *to = 1; goto end;}
+            if(nkey == 1 && i >= 0 && i < mmtrie->state->total)
+            {
+                if(nodes[i].data != 0){ret = nodes[i].data; *to = 1;}
+                goto end;
+            }
             while(p < ep)
             {
                 x = 0;
@@ -917,7 +933,11 @@ int   mmtrie_rdel(MMTRIE *mmtrie, char *key, int nkey)
             p = (unsigned char *)(key + nkey - 1);
             ep = (unsigned char *)key;
             i = *p--;
-            if(nkey == 1 && i >= 0 && i < mmtrie->state->total &&  nodes[i].data != 0){ret = nodes[i].data; nodes[i].data = 0;goto end;}
+            if(nkey == 1 && i >= 0 && i < mmtrie->state->total)
+            {
+                if(nodes[i].data != 0){ret = nodes[i].data;nodes[i].data=0;}
+                goto end;
+            }
             while(p >= ep)
             {
                 x = 0;
@@ -1044,7 +1064,11 @@ int   mmtrie_rmaxfind(MMTRIE *mmtrie, char *key, int nkey, int *to)
             ep = (unsigned char *)key;
             i = *p--;
             if(nodes[i].data != 0){*to = 1;ret = nodes[i].data;}
-            if(nkey == 1 && i >= 0 && i < mmtrie->state->total){ret = nodes[i].data;*to = 1;goto end;}
+            if(nkey == 1 && i >= 0 && i < mmtrie->state->total)
+            {
+                if(nodes[i].data != 0){ret = nodes[i].data; *to = 1;}
+                goto end;
+            }
             while(p >= ep)
             {
                 x = 0;

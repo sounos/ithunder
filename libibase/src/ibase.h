@@ -311,6 +311,15 @@ typedef struct _VDOUBLE
 #define IB_DUMP_SET     0x80
 #define IB_IGNORE_STAT  0x800
 /* document header */
+typedef struct _ISCHEMA
+{
+    short   intindex_from;
+    short   longindex_from;
+    short   doubleindex_from;
+    short   intblock_size;
+    short   longblock_size;
+    short   doubleblock_size;
+}ISCHEMA;
 typedef struct _DOCHEADER
 {
     short   status;
