@@ -179,7 +179,9 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
                         memcpy(p, &(termlist[i].bit_fields), sizeof(int));p += sizeof(int);
                         memcpy(p, &(termlist[i].nexts_size), sizeof(int));p += sizeof(int);
                     }
-                    if(termlist[i].nexts_size > 0)
+                    last_docid = docid;
+                    mdb_get_tag(posting, termid, &last_docid);
+                    if(termlist[i].nexts_size > 0 && last_docid < docid)
                     {
                         if(mdb_add_data(posting, termid, nexts, termlist[i].nexts_size) <= 0) 
                         {
@@ -187,6 +189,7 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
                                     termid, strerror(errno));
                             _exit(-1);
                         }
+                        mdb_set_tag(posting, termid, docid);
                         //WARN_LOGGER(ibase->logger, "docid:%lld termid:%d nexts_size:%d", IBLL(docheader->globalid), termid, termlist[i].nexts_size);
                     }
                     if(mdb_add_data(index, termid, pp, (p - pp)) <= 0)
