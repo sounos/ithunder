@@ -433,8 +433,9 @@ int db_push_block(DB *db, int index, int blockid, int block_size)
     XLNK *links = NULL, *link = NULL, lnk = {0};
     int x = 0, ret = -1;
 
-    if(db && blockid >= 0 && (x = DB_BLOCKS_COUNT(block_size)) > 0 && db->status == 0
-            && x < DB_LNK_MAX && index >= 0 && index < DB_MFILE_MAX)
+    if(db && blockid >= 0 && (x = (DB_BLOCKS_COUNT(block_size) - 1)) >= 0 
+            && db->status == 0 && x < DB_LNK_MAX 
+            && index >= 0 && index < DB_MFILE_MAX)
     {
         RWLOCK_WRLOCK(db->mutex_lnk);
         if((links = (XLNK *)(db->lnkio.map)))
@@ -478,7 +479,7 @@ int db_pop_block(DB *db, int blocks_count, XLNK *lnk)
     XLNK *links = NULL, *plink = NULL, link = {0};
     char path[DB_PATH_MAX];
 
-    if(db && (x = blocks_count) > 0 && x < DB_LNK_MAX && lnk)
+    if(db && (x = (blocks_count - 1)) >= 0 && x < DB_LNK_MAX && lnk)
     {
         RWLOCK_WRLOCK(db->mutex_lnk);
         if((links = (XLNK *)(db->lnkio.map)) && links[x].count > 0 
