@@ -34,15 +34,6 @@
 #define MDB_MFILE_MAX        8192
 #define MDB_BLOCK_INCRE_LEN      0x0
 #define MDB_BLOCK_INCRE_DOUBLE   0x1
-typedef struct _MDBX
-{
-    int block_size;
-    int blockid;
-    int ndata;
-    int index;
-    int tag;
-    int mod_time;
-}MDBX;
 typedef struct _XMIO
 {
     int     fd;
@@ -53,17 +44,6 @@ typedef struct _XMIO
     off_t   size;
     pthread_rwlock_t mutex;
 }XMIO;
-typedef struct _XMLNK
-{
-    int index;
-    int blockid;
-    int count;
-}XMLNK;
-typedef struct _MXXMM
-{
-    int block_size;
-    int blocks_max;
-}MXXMM;
 typedef struct _XMBLOCK
 {
     char *mblocks[MDB_MBLOCKS_MAX];

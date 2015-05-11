@@ -34,14 +34,6 @@
 #define DB_MFILE_MAX        8192
 #define DB_BLOCK_INCRE_LEN      0x0
 #define DB_BLOCK_INCRE_DOUBLE   0x1
-typedef struct _DBX
-{
-    int block_size;
-    int blockid;
-    int ndata;
-    int index;
-    int mod_time;
-}DBX;
 typedef struct _XIO
 {
     int     fd;
@@ -52,17 +44,6 @@ typedef struct _XIO
     off_t   size;
     pthread_rwlock_t mutex;
 }XIO;
-typedef struct _XLNK
-{
-    int index;
-    int blockid;
-    int count;
-}XLNK;
-typedef struct _XXMM
-{
-    int block_size;
-    int blocks_max;
-}XXMM;
 typedef struct _XBLOCK
 {
     char *mblocks[DB_MBLOCKS_MAX];
@@ -104,6 +85,10 @@ typedef struct _DB
 DB* db_init(char *dir, int is_mmap);
 /* set block incre mode */
 int db_set_block_incre_mode(DB *db, int mode);
+/* set tag */
+int db_set_tag(DB *db, int id, int tag);
+/* get tag */
+int db_get_tag(DB *db, int id, int *tag);
 /* get data id */
 int db_data_id(DB *db, char *key, int nkey);
 /* chunk data */

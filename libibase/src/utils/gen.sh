@@ -15,3 +15,24 @@ perl -i -p -e "s/IMM/DMM/g" dmap.h dmap.c
 perl -i -p -e "s/IMAP/DMAP/g" dmap.h dmap.c
 perl -i -p -e "s/imap/dmap/g" dmap.h dmap.c
 perl -i -p -e "s/typedef udouble u32_t/typedef uint32_t u32_t/g" dmap.h dmap.c
+#cdb.c
+cp -f db.h cdb.h
+cp -f db.c cdb.c
+perl -i -p -e "s/DB/CDB/g" cdb.h cdb.c
+perl -i -p -e "s/db_/cdb_/g" cdb.h cdb.c
+perl -i -p -e "s/XIO/XCIO/g" cdb.h cdb.c
+perl -i -p -e "s/XBLOCK/XCBLOCK/g" cdb.h cdb.c 
+perl -i -p -e "s/XSTATE/XCSTATE/g" cdb.h cdb.c 
+perl -i -p -e 's|"db.h"|"cdb.h"|g' mdb.c 
+perl -i -p -e "s/CDB_BASE_SIZE        64/CDB_BASE_SIZE        4096/g" cdb.h 
+#mdb.c
+cp -f db.h mdb.h
+cp -f db.c mdb.c
+perl -i -p -e "s/DB/MDB/g" mdb.h mdb.c
+perl -i -p -e "s/db_/mdb_/g" mdb.h mdb.c
+perl -i -p -e "s/XIO/XMIO/g" mdb.h mdb.c
+perl -i -p -e "s/XBLOCK/XMBLOCK/g" mdb.h mdb.c 
+perl -i -p -e "s/XSTATE/XMSTATE/g" mdb.h mdb.c 
+perl -i -p -e 's|"db.h"|"mdb.h"|g' mdb.c 
+perl -i -p -e "s|//#define __USE_X_TAG__|#define __USE_X_TAG__|g" mdb.c 
+
