@@ -16,6 +16,7 @@
 #define MDB_MBLOCK_MAX       67108864
 #define MDB_MUTEX_MAX        65536
 #define MDB_USE_MMAP         0x01
+#define MDB_BIGFILE_SIZE     2147483648
 //#define  MDB_MBLOCK_MAX      1048576
 //#define  MDB_MBLOCK_MAX      2097152
 //#define  MDB_MBLOCK_MAX        4194304
@@ -55,7 +56,7 @@ typedef struct _XMSTATE
     int status;
     int mode;
     int last_id;
-    int last_off;
+    size_t last_off;
     int mdb_id_max;
     int data_len_max;
     int block_incre_mode;

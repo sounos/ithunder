@@ -16,6 +16,7 @@
 #define CDB_MBLOCK_MAX       67108864
 #define CDB_MUTEX_MAX        65536
 #define CDB_USE_MMAP         0x01
+#define CDB_BIGFILE_SIZE     2147483648
 //#define  CDB_MBLOCK_MAX      1048576
 //#define  CDB_MBLOCK_MAX      2097152
 //#define  CDB_MBLOCK_MAX        4194304
@@ -55,7 +56,7 @@ typedef struct _XCSTATE
     int status;
     int mode;
     int last_id;
-    int last_off;
+    size_t last_off;
     int cdb_id_max;
     int data_len_max;
     int block_incre_mode;

@@ -20,7 +20,7 @@
 //#define __USE_X_TAG__  1 
 typedef struct _DBX
 {
-    int block_size;
+    size_t block_size;
     int blockid;
     int ndata;
     int index;
@@ -31,7 +31,7 @@ typedef struct _DBX
 }DBX;
 typedef struct _MAPTAB
 {
-    int block_size;
+    size_t block_size;
     int blocks_max;
 }MAPTAB;
 typedef struct _XLNK
@@ -225,11 +225,13 @@ DB *db_init(char *dbdir, int mode)
                 }
                 DB_CHECK_MMAP(db, i);
                 //WARN_LOGGER(db->logger, "dbs[%d] path:%s fd:%d map:%p last:%d", i, path, db->dbsio[i].fd, db->dbsio[i].map, db->state->last_id);
+                /*
                 if(db->dbsio[i].map && db->state->last_id == 0 && db->state->last_off == 0)
                 {
                     memset(db->dbsio[i].map, 0, db->dbsio[i].size);
                     //WARN_LOGGER(db->logger, "dbs[%d] path:%s fd:%d map:%p last:%d", i, path, db->dbsio[i].fd, db->dbsio[i].map, db->state->last_id);
                 }
+                */
             }
             else
             {
@@ -334,7 +336,6 @@ void db_push_mblock(DB *db, char *mblock, int block_index)
         }
         else
         {
-            //WARN_LOGGER(db->logger, "free-xblock[%d]{%d}->total:%d", block_index, db_xblock_list[block_index].block_size, db->xblocks[block_index].total);
             db->xx_total += (off_t)db_xblock_list[block_index].block_size;
             xmm_free(mblock, db_xblock_list[block_index].block_size);
             --(db->xblocks[block_index].total);
@@ -355,7 +356,6 @@ char *db_pop_mblock(DB *db, int block_index)
         if(db->xblocks[block_index].nmblocks > 0)
         {
             x = --(db->xblocks[block_index].nmblocks);
-            //WARN_LOGGER(db->logger, "pop_qmblock() block_index:%d nmblocks:%d", block_index, x);
             mblock = db->xblocks[block_index].mblocks[x];
             db->xblocks[block_index].mblocks[x] = NULL;
         }
@@ -383,7 +383,6 @@ char *db_new_data(DB *db, size_t size)
         if(size > DB_MBLOCK_MAX)
         {
             data = (char *)xmm_new(size);
-            //WARN_LOGGER(db->logger, "xmm_new(%lu)", size);
         }
         else 
         {
@@ -414,7 +413,6 @@ void db_free_data(DB *db, char *data, size_t size)
     {
         if(size > DB_MBLOCK_MAX) 
         {
-            //WARN_LOGGER(db->logger, "xmm_free(%p,%lu)", data, size);
             xmm_free(data, size);
         }
         else 
@@ -436,7 +434,7 @@ void db_free_data(DB *db, char *data, size_t size)
 int db_push_block(DB *db, int index, int blockid, int block_size)
 {
     XLNK *links = NULL, *link = NULL, lnk = {0};
-    int x = 0, ret = -1, i = 0;
+    int x = 0, ret = -1, i = 0, drop_bigfile = 0;
 
     if(db && blockid >= 0 && (x = (DB_BLOCKS_COUNT(block_size) - 1)) >= 0 
             && db->status == 0 && index >= 0 && index < DB_MFILE_MAX)
@@ -451,10 +449,11 @@ int db_push_block(DB *db, int index, int blockid, int block_size)
                 db->dbsio[i].map = NULL;
                 db->dbsio[i].end = 0;
             }
+            drop_bigfile = 1;
+            x = DB_LNK_MAX - 1;
             db->dbsio[i].end = db->dbsio[i].size = DB_MFILE_SIZE;
             ret = ftruncate(db->dbsio[i].fd, db->dbsio[i].size);
             DB_CHECK_MMAP(db, i);
-            if(db->dbsio[i].map) memset(db->dbsio[i].map, 0, db->dbsio[i].size);
         }
         if(x < DB_LNK_MAX && (links = (XLNK *)(db->lnkio.map)))
         {
@@ -471,7 +470,6 @@ int db_push_block(DB *db, int index, int blockid, int block_size)
                 {
                     lnk.index = links[x].index;
                     lnk.blockid = links[x].blockid;
-                    //if(pwrite(db->dbsio[index].fd, &lnk, sizeof(XLNK), (off_t)blockid*(off_t)DB_BASE_SIZE) < 0)
                     if(db_pwrite(db, index, &lnk, sizeof(XLNK), (off_t)blockid*(off_t)DB_BASE_SIZE) < 0)
                     {
                         FATAL_LOGGER(db->logger, "added link blockid:%d to index[%d] failed, %s",
@@ -483,6 +481,10 @@ int db_push_block(DB *db, int index, int blockid, int block_size)
             links[x].index = index;
             links[x].blockid = blockid;
             ++(links[x].count);
+            if(drop_bigfile)
+            {
+                WARN_LOGGER(db->logger, "reset dbs[%d] size:%d left-count:%d", index, block_size, links[x].count);
+            }
             ret = 0;
         }
         RWLOCK_UNLOCK(db->mutex_lnk);
@@ -493,8 +495,8 @@ int db_push_block(DB *db, int index, int blockid, int block_size)
 /* pop block */
 int db_pop_block(DB *db, int blocks_count, XLNK *lnk)
 {
-    int x = 0, index = -1, left = 0, ret = -1, db_id = -1, block_id = -1, 
-        block_size = 0, mfile_size = 0;
+    int x = 0, index = -1, ret = -1, db_id = -1, block_id = -1;
+    size_t block_size = 0, left = 0, mfile_size = 0, need = 0;
     XLNK *links = NULL, *plink = NULL, link = {0};
     char path[DB_PATH_MAX];
 
@@ -538,19 +540,20 @@ int db_pop_block(DB *db, int blocks_count, XLNK *lnk)
         {
             x = db->state->last_id;
             left = db->dbsio[x].size - db->state->last_off;
-            if(left < (DB_BASE_SIZE * blocks_count))
+            need = ((size_t)DB_BASE_SIZE * (size_t)blocks_count);
+            if(left < need)
             {
                 db_id = x;
                 block_id = db->state->last_off/DB_BASE_SIZE;
                 block_size = left;
                 mfile_size = DB_MFILE_SIZE;
-                if(blocks_count > DB_LNK_MAX) mfile_size = DB_BASE_SIZE * blocks_count;
-                db->state->last_off = DB_BASE_SIZE * blocks_count;
+                if(blocks_count > DB_LNK_MAX) mfile_size = need;
+                db->state->last_off = need;
                 if((x = ++(db->state->last_id)) < DB_MFILE_MAX 
                         && sprintf(path, "%s/base/%d/%d.db", db->basedir, x/DB_DIR_FILES, x)
                         && db_mkdir(path) == 0
                         && (db->dbsio[x].fd = open(path, O_CREAT|O_RDWR, 0644)) > 0
-                        && ftruncate(db->dbsio[x].fd, mfile_size) == 0)
+                        && ftruncate(db->dbsio[x].fd, (off_t)mfile_size) == 0)
                 {
                     RWLOCK_INIT(db->dbsio[x].mutex);
                     db->dbsio[x].end = db->dbsio[x].size = mfile_size;
@@ -562,8 +565,8 @@ int db_pop_block(DB *db, int blocks_count, XLNK *lnk)
                 }
                 else
                 {
-                    FATAL_LOGGER(db->logger, "truncate new file[%s] failed, %s",
-                            path, strerror(errno));
+                    FATAL_LOGGER(db->logger, "truncate new file[%s] size[%u]  failed, %s",
+                            path, mfile_size, strerror(errno));
                     _exit(-1);
                 }
             }
@@ -572,7 +575,7 @@ int db_pop_block(DB *db, int blocks_count, XLNK *lnk)
                 lnk->count = blocks_count;
                 lnk->index = x;
                 lnk->blockid = (db->state->last_off/DB_BASE_SIZE);
-                db->state->last_off += DB_BASE_SIZE * blocks_count;
+                db->state->last_off += need;
                 ret = 0;
             }
         }
@@ -804,7 +807,6 @@ int db_set_data(DB *db, int id, char *data, int ndata)
     if(db && id >= 0 && data && ndata > 0)
     {
         ret = db__set__data(db, id, data, ndata);
-        //WARN_LOGGER(db->logger, "id:%d ndata:%d ret:%d", id, ndata, ret);
     }
     return ret;
 }
@@ -844,8 +846,8 @@ time_t db_get_modtime(DB *db, int id)
 /* add data */
 int db__add__data(DB *db, int id, char *data, int ndata)
 {
-    int ret = -1, size = 0,  new_size = 0, blocks_count = 0, 
-        oindex = 0, index = 0, nold = 0;
+    int ret = -1, blocks_count = 0, oindex = 0, index = 0, nold = 0;
+    size_t size = 0,  new_size = 0;
     char *block = NULL, *old = NULL, *mold = NULL;
     XLNK lnk = {0}, old_lnk = {0};
     DBX *dbx = NULL;
@@ -867,8 +869,13 @@ int db__add__data(DB *db, int id, char *data, int ndata)
             if((new_size = dbx[id].block_size) > 0 
                     && db->state->block_incre_mode == DB_BLOCK_INCRE_DOUBLE)
             {
-                while(size > new_size) new_size *= 2;
+                while(size > new_size && new_size < DB_BIGFILE_SIZE) new_size *= 2;
                 size = new_size;
+                if(size > DB_BIGFILE_SIZE)
+                {
+                    FATAL_LOGGER(db->logger, "too large file size:%lu", size);
+                    _exit(-1);
+                }
             }
             blocks_count = DB_BLOCKS_COUNT(size);
             if(db_pop_block(db, blocks_count, &lnk) != 0)
@@ -1620,7 +1627,7 @@ void db_destroy(DB *db)
                 _exit(-1);
             }
             DB_CHECK_MMAP(db, 0);
-            if(db->dbsio[0].map) memset(db->dbsio[0].map, 0, db->dbsio[0].size);
+            /*if(db->dbsio[0].map) memset(db->dbsio[0].map, 0, db->dbsio[0].size);*/
         }
         else
         {
@@ -1685,15 +1692,26 @@ void db_clean(DB *db)
 #ifdef _DEBUG_DB
 int main(int argc, char **argv)
 {
-    char *dbdir = "/tmp/db";
-    char *key = NULL, *data = NULL;
-    int id = 0, n = 0;
+    char *dbdir = "/data/db", *key = NULL, *data = NULL;
+    int id = 0, i = 0, n = 0;
     DB *db = NULL;
 
-    if((db = db_init(dbdir, 0)))
+    if((db = db_init(dbdir, 1)))
     {
         //fprintf(stdout, "db_xblock_index(4095):%d, db_xblock_index(4096):%d, db_xblock_index(10080):%d, db_xblock_index(10000000):%d \n", db_xblock_index(4095), db_xblock_index(4096), db_xblock_index(10080), db_xblock_index(10000000));
         //return -1;
+#ifdef  TEST_BIGFILE
+        db_set_block_incre_mode(db, DB_BLOCK_INCRE_DOUBLE);
+        n = 1024 * 1024 * 256;
+        data = (char *)malloc(n);
+        while(++i < 20)
+        {
+            fprintf(stdout, "i:%d\n", i);
+            db_add_data(db, 1, data, n);
+            fprintf(stdout, "over i:%d\n", i);
+        }
+        free(data);
+#else
         db_destroy(db);
         key = "xxxxx";
         data = "askfjsdlkfjsdlkfasdf";
@@ -1798,6 +1816,7 @@ int main(int argc, char **argv)
                 //db_free_data(db, data);
             }
         }
+#endif
         db_clean(db);
     }
     return 0;
