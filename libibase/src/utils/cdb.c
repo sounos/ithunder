@@ -7,7 +7,7 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
-#include "db.h"
+#include "cdb.h"
 #include "rwlock.h"
 #include "mmtrie.h"
 #include "logger.h"

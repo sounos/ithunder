@@ -23,7 +23,7 @@ perl -i -p -e "s/db_/cdb_/g" cdb.h cdb.c
 perl -i -p -e "s/XIO/XCIO/g" cdb.h cdb.c
 perl -i -p -e "s/XBLOCK/XCBLOCK/g" cdb.h cdb.c 
 perl -i -p -e "s/XSTATE/XCSTATE/g" cdb.h cdb.c 
-perl -i -p -e 's|"db.h"|"cdb.h"|g' mdb.c 
+perl -i -p -e 's|"db.h"|"cdb.h"|g' cdb.c 
 perl -i -p -e "s/CDB_BASE_SIZE        64/CDB_BASE_SIZE        4096/g" cdb.h 
 #mdb.c
 cp -f db.h mdb.h
