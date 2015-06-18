@@ -3,15 +3,14 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include "xmm.h"
 typedef struct _KVNODE
 {
     unsigned int  key;
+    int rbe_color;         
     void *dptr;
     struct _KVNODE *rbe_left;     
     struct _KVNODE *rbe_right;    
     struct _KVNODE *rbe_parent;   
-    int rbe_color;         
 }KVNODE;
 #define KV_LINE_MAX     1024
 #define KV_LINE_NUM     1024
@@ -148,7 +147,7 @@ KVNODE *kv_minmax(KVMAP *map, int val);
 #define KV_MAX(map)	kv_minmax(map, KV_INF)
 #define KVMAP_MAX(ptr) PKV(ptr)->max
 #define KVMAP_MIN(ptr) PKV(ptr)->min
-#define KVMAP_INIT() xmm_mnew(sizeof(KVMAP))
+#define KVMAP_INIT() calloc(1, sizeof(KVMAP))
 
 /* add to min/max */
 #define KVMAP_MINMAX_ADD(ptr, node)                                                         \
@@ -159,7 +158,9 @@ do                                                                              
         PKV(ptr)->max = node;                                                               \
     }                                                                                       \
     if(PKV(ptr)->min == NULL || node->key < PKV(ptr)->min->key)                             \
+    {                                                                                       \
         PKV(ptr)->min = node;                                                               \
+    }                                                                                       \
 }while(0)
 
 /* rebuild min/max */
@@ -168,11 +169,11 @@ do                                                                              
 {                                                                                           \
     if(node == PKV(ptr)->max)                                                               \
     {                                                                                       \
-        PKV(ptr)->max = KV_MAX(PKV(ptr));                                                   \
+        PKV(ptr)->max = kv_prev(node);                                                      \
     }                                                                                       \
     if(node == PKV(ptr)->min)                                                               \
     {                                                                                       \
-        PKV(ptr)->min = KV_MIN(PKV(ptr));                                                   \
+        PKV(ptr)->min = kv_next(node);                                                      \
     }                                                                                       \
 }while(0)
 
@@ -285,7 +286,6 @@ do                                                                              
         if(PKV(ptr)->old)                                                                   \
         {                                                                                   \
             KVMAP_PUSH_NODE(ptr, PKV(ptr)->old);                                            \
-            KVMAP_MINMAX_REBUILD(ptr, PKV(ptr)->old);                                       \
             PKV(ptr)->count--;                                                              \
             dp = PKV(ptr)->old->dptr;                                                       \
         }                                                                                   \
@@ -306,7 +306,6 @@ do                                                                              
             PKV(ptr)->p = PKV(ptr)->min;                                                    \
             PKV(ptr)->old = kv_remove(PKV(ptr), PKV(ptr)->p);                               \
             KVMAP_PUSH_NODE(ptr, PKV(ptr)->old);                                            \
-            KVMAP_MINMAX_REBUILD(ptr, PKV(ptr)->old);                                       \
             PKV(ptr)->count--;                                                              \
         }                                                                                   \
     }                                                                                       \
@@ -326,7 +325,6 @@ do                                                                              
             PKV(ptr)->p = PKV(ptr)->max;                                                    \
             PKV(ptr)->old = kv_remove(PKV(ptr), PKV(ptr)->p);                               \
             KVMAP_PUSH_NODE(ptr, PKV(ptr)->old);                                            \
-            KVMAP_MINMAX_REBUILD(ptr, PKV(ptr)->old);                                       \
             PKV(ptr)->count--;                                                              \
         }                                                                                   \
     }                                                                                       \
@@ -391,6 +389,7 @@ do                                                                              
             KVMAP_PUSH_NODE(ptr, PKV(ptr)->old);                                            \
             PKV(ptr)->count--;                                                              \
         }                                                                                   \
+        PKV(ptr)->min = PKV(ptr)->max = NULL;                                               \
     }                                                                                       \
 }while(0)
 

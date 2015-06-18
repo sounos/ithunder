@@ -145,15 +145,17 @@ void kv_remove_color(KVMAP *map, KVNODE *parent, KVNODE *elm)
 
 KVNODE *kv_remove(KVMAP *map, KVNODE *elm)
 {
-    KVNODE *child, *parent, *old = elm;
+    KVNODE *child = NULL, *parent = NULL, *left = NULL, *old = elm;
     int color;
+
+    KVMAP_MINMAX_REBUILD(map, elm);
+
     if (KV_LEFT(elm) == NULL)
         child = KV_RIGHT(elm);
     else if (KV_RIGHT(elm) == NULL)
         child = KV_LEFT(elm);
     else
     {
-        KVNODE *left;
         elm = KV_RIGHT(elm);
         while ((left = KV_LEFT(elm)))
             elm = left;
@@ -223,12 +225,12 @@ KVNODE *kv_insert(KVMAP *map, KVNODE *elm)
 {
     KVNODE *tmp;
     KVNODE *parent = NULL;
-    int  comp = 0;
+    int64_t  comp = 0;
     tmp = KV_ROOT(map);
     while (tmp)
     {
         parent = tmp;
-        comp = (elm->key - parent->key);
+        comp = (int64_t)elm->key - (int64_t)parent->key;
         if (comp < 0)
             tmp = KV_LEFT(tmp);
         else if (comp > 0)
@@ -254,10 +256,10 @@ KVNODE *kv_insert(KVMAP *map, KVNODE *elm)
 KVNODE *kv_find(KVMAP *map, KVNODE *elm)
 {
     KVNODE *tmp = KV_ROOT(map);
-    int  comp = 0;
+    int64_t  comp = 0;
     while (tmp)
     {
-        comp = (elm->key - tmp->key);
+        comp = (int64_t)elm->key - (int64_t)tmp->key;
         if (comp < 0)
             tmp = KV_LEFT(tmp);
         else if (comp > 0)
@@ -270,22 +272,26 @@ KVNODE *kv_find(KVMAP *map, KVNODE *elm)
 
 KVNODE *kv_next(KVNODE *elm)
 {
+    KVNODE *pt = NULL, *ppt = NULL;
     if (KV_RIGHT(elm))
     {
         elm = KV_RIGHT(elm);
         while (KV_LEFT(elm))
             elm = KV_LEFT(elm);
-    } else
+    } 
+    else
     {
         if (KV_PARENT(elm) &&
                 (elm == KV_LEFT(KV_PARENT(elm))))
             elm = KV_PARENT(elm);
         else
         {
-            while (KV_PARENT(elm) &&
-                    (elm == KV_RIGHT(KV_PARENT(elm))))
-                elm = KV_PARENT(elm);
-            elm = KV_PARENT(elm);
+            if((pt = KV_PARENT(elm)) && (elm == KV_RIGHT(pt)) 
+                    && (ppt = KV_PARENT(pt)) && pt == KV_LEFT(ppt)) 
+            {
+                elm = ppt;
+            }
+            //else root node
         }
     }
     return (elm);
@@ -293,6 +299,7 @@ KVNODE *kv_next(KVNODE *elm)
 
 KVNODE *kv_prev(KVNODE *elm)
 {
+    KVNODE *pt = NULL, *ppt = NULL;
     if (KV_LEFT(elm))
     {
         elm = KV_LEFT(elm);
@@ -303,13 +310,18 @@ KVNODE *kv_prev(KVNODE *elm)
     {
         if (KV_PARENT(elm) &&
                 (elm == KV_RIGHT(KV_PARENT(elm))))
+        {
             elm = KV_PARENT(elm);
+
+        }
         else
         {
-            while (KV_PARENT(elm) &&
-                    (elm == KV_LEFT(KV_PARENT(elm))))
-                elm = KV_PARENT(elm);
-            elm = KV_PARENT(elm);
+            if((pt = KV_PARENT(elm)) && (elm == KV_LEFT(pt)) 
+                    && (ppt = KV_PARENT(pt)) && pt == KV_RIGHT(ppt)) 
+            {
+                elm = ppt;
+            }
+            //else root node
         }
     }
     return (elm);
@@ -317,15 +329,14 @@ KVNODE *kv_prev(KVNODE *elm)
 
 KVNODE *kv_minmax(KVMAP *map, int val)
 {
-    KVNODE *tmp = KV_ROOT(map);
-    KVNODE *parent = NULL;
+    KVNODE *tmp = KV_ROOT(map), *parent = NULL;
     while (tmp)
     {
         parent = tmp;
         if (val < 0)
-            tmp = KV_LEFT(tmp);
+            tmp = KV_LEFT(parent);
         else
-            tmp = KV_RIGHT(tmp);
+            tmp = KV_RIGHT(parent);
     }
     return (parent);
 }
@@ -334,65 +345,63 @@ KVNODE *kv_minmax(KVMAP *map, int val)
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "rbmap.h"
+#include "kvmap.h"
 #include "timer.h"
 
 int main()
 {
     void *map = NULL, *timer = NULL, *dp = NULL, *olddp = NULL;
-    long i = 0, key = 0, count = 10000;
+    unsigned int i = 0, key = 0, count = 1000000;
 
     if((map = KVMAP_INIT()))
     {
         TIMER_INIT(timer);
-        while(i < count)
-        {
-            key = random()%count;
-            dp = (void *)++i;
-            KVMAP_ADD(map, key, dp, olddp);
-            //if(olddp)fprintf(stdout, "old[%d:%08x]\n", key, olddp);
-        }
-        TIMER_SAMPLE(timer);
-        fprintf(stdout, "insert %d nodes count:%d free:%d total:%d time used:%lld\n", count,  PKV(map)->count, PKV(map)->free_count, PKV(map)->total, PT_LU_USEC(timer));
+        //test min
         i = 0;
-        while(i < count)
+        while(i++ < count)
         {
-            key = i++;
-            dp = NULL;
-            KVMAP_GET(map, key, dp);
-            //if(dp)fprintf(stdout, "%ld:[%ld]\n", key, (long)dp);
+            key = (unsigned int)(random() & 0xffffffff);
+            dp = (void *)((long)i);
+            KVMAP_ADD(map, key, dp, olddp);
+            if(olddp)fprintf(stdout, "old[%u:%ld]\n", key, (long)olddp);
         }
         TIMER_SAMPLE(timer);
-        fprintf(stdout, "get %d nodes count:%d free:%d total:%d time used:%lld\n", count,  PKV(map)->count, PKV(map)->free_count, PKV(map)->total, PT_LU_USEC(timer));
+        fprintf(stdout, "insert nodes(%d) count:%d/%d free:%d total:%d time used:%lld min:%u max:%u\n", count,  PKV(map)->count, i, PKV(map)->free_count, PKV(map)->total, PT_LU_USEC(timer), PKV_MINK(map), PKV_MAXK(map));
+        i = 0;
         do
         {
             KVMAP_POP_MIN(map, key, dp);
-            //if(dp) fprintf(stdout, "%ld:[%ld]\n", key, (long)dp); 
-        }while(KV_ROOT(map));
+            fprintf(stdout, "pop[%u:%ld]\n", key, (long)dp); 
+            i++;
+        }while(PKV(map)->count > 0);
         TIMER_SAMPLE(timer);
-        fprintf(stdout, "pop min(%d) node count:%d free:%d total:%d time used:%lld\n", count,  PKV(map)->count, PKV(map)->free_count, PKV(map)->total, PT_LU_USEC(timer));
+        fprintf(stdout, "pop min(%d) node count:%d free:%d total:%d time used:%lld\n", i,  PKV(map)->count, PKV(map)->free_count, PKV(map)->total, PT_LU_USEC(timer));
+        /*
+        //test max
         i = 0;
         while(i < count)
         {
-            key = random()%count;
-            dp = (void *)i;
+            key = (unsigned int)random();
+            dp = (void *)((long)++i);
             KVMAP_ADD(map, key, dp, olddp);
-            ++i;
+            if(olddp)fprintf(stdout, "old[%u:%08x]\n", key, olddp);
         }
         TIMER_SAMPLE(timer);
-        fprintf(stdout, "insert %d nodes count:%d free:%d total:%d time used:%lld\n", count,  PKV(map)->count, PKV(map)->free_count, PKV(map)->total, PT_LU_USEC(timer));
+        fprintf(stdout, "insert nodes(%d) count:%d/%d free:%d total:%d time used:%lld\n", count,  PKV(map)->count, i, PKV(map)->free_count, PKV(map)->total, PT_LU_USEC(timer));
+        i = 0;
         do
         {
             KVMAP_POP_MAX(map, key, dp);
-            //if(dp) fprintf(stdout, "%ld:[%ld]\n", key, (long)dp); 
-        }while(KV_ROOT(map));
+            fprintf(stdout, "%u:[%08x]\n", key, (long)dp); 
+            i++;
+        }while(PKV(map)->count > 0);
         TIMER_SAMPLE(timer);
-        fprintf(stdout, "pop max(%d) nodes count:%d free:%d total:%d time used:%lld\n", count,  PKV(map)->count, PKV(map)->free_count, PKV(map)->total, PT_LU_USEC(timer));
-        TIMER_SAMPLE(timer);
-        TIMER_CLEAN(timer);
-        /*
+        fprintf(stdout, "pop max(%d) node count:%d free:%d total:%d time used:%lld\n", i,  PKV(map)->count, PKV(map)->free_count, PKV(map)->total, PT_LU_USEC(timer));
+
         */
+        TIMER_CLEAN(timer);
         KVMAP_CLEAN(map);
     }
 }
+//gcc -o kmap kvmap.c -D_DEBUG_KVMAP && ./kmap
 #endif

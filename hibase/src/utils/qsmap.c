@@ -266,6 +266,7 @@ QSNODE *qs_find(QSMAP *map, QSNODE *elm)
 
 QSNODE *qs_next(QSNODE *elm)
 {
+    QSNODE *pt = NULL, *ppt = NULL;
     if (QS_RIGHT(elm))
     {
         elm = QS_RIGHT(elm);
@@ -278,10 +279,11 @@ QSNODE *qs_next(QSNODE *elm)
             elm = QS_PARENT(elm);
         else
         {
-            while (QS_PARENT(elm) &&
-                    (elm == QS_RIGHT(QS_PARENT(elm))))
-                elm = QS_PARENT(elm);
-            elm = QS_PARENT(elm);
+            if((pt = QS_PARENT(elm)) && (elm == QS_RIGHT(pt))
+                    && (ppt = QS_PARENT(pt)) && pt == QS_LEFT(ppt))
+            {
+                elm = ppt;
+            }
         }
     }
     return (elm);
@@ -289,6 +291,7 @@ QSNODE *qs_next(QSNODE *elm)
 
 QSNODE *qs_prev(QSNODE *elm)
 {
+    QSNODE *pt = NULL, *ppt = NULL;
     if (QS_LEFT(elm))
     {
         elm = QS_LEFT(elm);
@@ -302,10 +305,11 @@ QSNODE *qs_prev(QSNODE *elm)
             elm = QS_PARENT(elm);
         else
         {
-            while (QS_PARENT(elm) &&
-                    (elm == QS_LEFT(QS_PARENT(elm))))
-                elm = QS_PARENT(elm);
-            elm = QS_PARENT(elm);
+            if((pt = QS_PARENT(elm)) && (elm == QS_LEFT(pt))
+                    && (ppt = QS_PARENT(pt)) && pt == QS_RIGHT(ppt))
+            {
+                elm = ppt;
+            }
         }
     }
     return (elm);

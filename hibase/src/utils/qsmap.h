@@ -1,13 +1,15 @@
 #ifndef	_QSMAP_H
 #define	_QSMAP_H
+#include "xmm.h"
 typedef struct _QSNODE
 {
+    int rbe_color;         
+    int bits;
     int64_t  key;
     void *dptr;
     struct _QSNODE *rbe_left;     
     struct _QSNODE *rbe_right;    
     struct _QSNODE *rbe_parent;   
-    int rbe_color;         
 }QSNODE;
 typedef struct _QSMAP
 {
@@ -45,7 +47,6 @@ typedef struct _QSMAP
 #define PQS_TMP(head)       (PQS(head)->tmp)
 #define PQS_MAX(head)       (PQS(head)->max)
 #define PQS_MIN(head)       (PQS(head)->min)
-#define PQS_COUNT(head)     (PQS(head)->count)
 #define PQS_MAXK(head)      (PQS(head)->max->key)
 #define PQS_MINK(head)      (PQS(head)->min->key)
 #define QS_EMPTY(head)      (QS_ROOT(head) == NULL)
@@ -220,33 +221,10 @@ do                                                                              
 }while(0)
 
 /* add key/val(dp) olddp is return if key exists */
-#define QSMAP_PUSH(ptr, nkey, xdata)                                                        \
-do                                                                                          \
-{                                                                                           \
-    if(ptr)                                                                                 \
-    {                                                                                       \
-        QSMAP_POP_NODE(ptr, PQS(ptr)->p);                                                   \
-        if((PQS(ptr)->pp = PQS(ptr)->p))                                                    \
-        {                                                                                   \
-            PQS(ptr)->p->key = (int64_t)nkey;                                               \
-            PQS(ptr)->p->dptr = (void *)((long)xdata);                                      \
-            PQS(ptr)->old = qs_insert(PQS(ptr), PQS(ptr)->p);                               \
-            if(PQS(ptr)->old)                                                               \
-            {                                                                               \
-                QSMAP_PUSH_NODE(ptr, PQS(ptr)->pp);                                         \
-            }                                                                               \
-            else                                                                            \
-            {                                                                               \
-                QSMAP_MINMAX_ADD(ptr, PQS(ptr)->pp);                                        \
-                PQS(ptr)->count++;                                                          \
-            }                                                                               \
-        }                                                                                   \
-    }                                                                                       \
-}while(0)
 #define QSMAP_ADD(ptr, nkey, dp, olddp)                                                     \
 do                                                                                          \
 {                                                                                           \
-    if(olddp)olddp = NULL;                                                                  \
+    olddp = NULL;                                                                           \
     if(ptr)                                                                                 \
     {                                                                                       \
         QSMAP_POP_NODE(ptr, PQS(ptr)->p);                                                   \
@@ -257,7 +235,7 @@ do                                                                              
             PQS(ptr)->old = qs_insert(PQS(ptr), PQS(ptr)->p);                               \
             if(PQS(ptr)->old)                                                               \
             {                                                                               \
-                if(olddp)olddp  = PQS(ptr)->old->dptr;                                      \
+                olddp  = PQS(ptr)->old->dptr;                                               \
                 QSMAP_PUSH_NODE(ptr, PQS(ptr)->pp);                                         \
             }                                                                               \
             else                                                                            \
