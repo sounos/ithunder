@@ -270,22 +270,26 @@ RBNODE *rb_find(RBMAP *map, RBNODE *elm)
 
 RBNODE *rb_next(RBNODE *elm)
 {
+    RBNODE *pt = NULL, *ppt = NULL;
+
     if (RB_RIGHT(elm))
     {
         elm = RB_RIGHT(elm);
         while (RB_LEFT(elm))
             elm = RB_LEFT(elm);
-    } else
+    } 
+    else
     {
         if (RB_PARENT(elm) &&
                 (elm == RB_LEFT(RB_PARENT(elm))))
             elm = RB_PARENT(elm);
         else
         {
-            while (RB_PARENT(elm) &&
-                    (elm == RB_RIGHT(RB_PARENT(elm))))
-                elm = RB_PARENT(elm);
-            elm = RB_PARENT(elm);
+            if((pt = RB_PARENT(elm)) && (elm == RB_RIGHT(pt)) 
+                    && (ppt = RB_PARENT(pt)) && pt == RB_LEFT(ppt)) 
+            {
+                elm = ppt;
+            }
         }
     }
     return (elm);
@@ -293,6 +297,7 @@ RBNODE *rb_next(RBNODE *elm)
 
 RBNODE *rb_prev(RBNODE *elm)
 {
+    RBNODE *pt = NULL, *ppt = NULL;
     if (RB_LEFT(elm))
     {
         elm = RB_LEFT(elm);
@@ -306,10 +311,11 @@ RBNODE *rb_prev(RBNODE *elm)
             elm = RB_PARENT(elm);
         else
         {
-            while (RB_PARENT(elm) &&
-                    (elm == RB_LEFT(RB_PARENT(elm))))
-                elm = RB_PARENT(elm);
-            elm = RB_PARENT(elm);
+            if((pt = RB_PARENT(elm)) && (elm == RB_LEFT(pt)) 
+                    && (ppt = RB_PARENT(pt)) && pt == RB_RIGHT(ppt)) 
+            {
+                elm = ppt;
+            }
         }
     }
     return (elm);

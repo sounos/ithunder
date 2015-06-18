@@ -226,12 +226,12 @@ IMXNODE *imx_insert(IMMX *map, IMXNODE *elm)
 {
     IMXNODE *tmp;
     IMXNODE *parent = NULL;
-    int  comp = 0;
+    int64_t  comp = 0;
     tmp = IMX_ROOT(map);
     while (tmp)
     {
         parent = tmp;
-        comp = (elm->key - parent->key);
+        comp = ((int64_t)elm->key - (int64_t)parent->key);
         if (comp < 0)
             tmp = IMX_LEFT(tmp);
         else if (comp > 0)
@@ -257,10 +257,10 @@ IMXNODE *imx_insert(IMMX *map, IMXNODE *elm)
 IMXNODE *imx_find(IMMX *map, IMXNODE *elm)
 {
     IMXNODE *tmp = IMX_ROOT(map);
-    int  comp = 0;
+    int64_t  comp = 0;
     while (tmp)
     {
-        comp = (elm->key - tmp->key);
+        comp = ((int64_t)elm->key - (int64_t)tmp->key);
         if (comp < 0)
             tmp = IMX_LEFT(tmp);
         else if (comp > 0)
@@ -273,22 +273,26 @@ IMXNODE *imx_find(IMMX *map, IMXNODE *elm)
 
 IMXNODE *imx_next(IMXNODE *elm)
 {
+    IMXNODE *pt = NULL, *ppt = NULL;
     if (IMX_RIGHT(elm))
     {
         elm = IMX_RIGHT(elm);
         while (IMX_LEFT(elm))
             elm = IMX_LEFT(elm);
-    } else
+    } 
+    else
     {
         if (IMX_PARENT(elm) &&
                 (elm == IMX_LEFT(IMX_PARENT(elm))))
             elm = IMX_PARENT(elm);
         else
         {
-            while (IMX_PARENT(elm) &&
-                    (elm == IMX_RIGHT(IMX_PARENT(elm))))
-                elm = IMX_PARENT(elm);
-            elm = IMX_PARENT(elm);
+            if((pt = IMX_PARENT(elm)) && (elm == IMX_RIGHT(pt)) 
+                    && (ppt = IMX_PARENT(pt)) && pt == IMX_LEFT(ppt)) 
+            {
+                elm = ppt;
+            }
+            //else root node
         }
     }
     return (elm);
@@ -296,6 +300,7 @@ IMXNODE *imx_next(IMXNODE *elm)
 
 IMXNODE *imx_prev(IMXNODE *elm)
 {
+    IMXNODE *pt = NULL, *ppt = NULL;
     if (IMX_LEFT(elm))
     {
         elm = IMX_LEFT(elm);
@@ -309,10 +314,12 @@ IMXNODE *imx_prev(IMXNODE *elm)
             elm = IMX_PARENT(elm);
         else
         {
-            while (IMX_PARENT(elm) &&
-                    (elm == IMX_LEFT(IMX_PARENT(elm))))
-                elm = IMX_PARENT(elm);
-            elm = IMX_PARENT(elm);
+            if((pt = IMX_PARENT(elm)) && (elm == IMX_LEFT(pt)) 
+                    && (ppt = IMX_PARENT(pt)) && pt == IMX_RIGHT(ppt)) 
+            {
+                elm = ppt;
+            }
+            //else root node
         }
     }
     return (elm);
@@ -320,15 +327,14 @@ IMXNODE *imx_prev(IMXNODE *elm)
 
 IMXNODE *imx_minmax(IMMX *map, int val)
 {
-    IMXNODE *tmp = IMX_ROOT(map);
-    IMXNODE *parent = NULL;
+    IMXNODE *tmp = IMX_ROOT(map), *parent = NULL;
     while (tmp)
     {
         parent = tmp;
         if (val < 0)
-            tmp = IMX_LEFT(tmp);
+            tmp = IMX_LEFT(parent);
         else
-            tmp = IMX_RIGHT(tmp);
+            tmp = IMX_RIGHT(parent);
     }
     return (parent);
 }

@@ -1,13 +1,15 @@
 #ifndef	_QSMAP_H
 #define	_QSMAP_H
+#include "xmm.h"
 typedef struct _QSNODE
 {
+    int rbe_color;         
+    int bits;
     int64_t  key;
     void *dptr;
     struct _QSNODE *rbe_left;     
     struct _QSNODE *rbe_right;    
     struct _QSNODE *rbe_parent;   
-    int rbe_color;         
 }QSNODE;
 typedef struct _QSMAP
 {

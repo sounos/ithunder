@@ -3,12 +3,13 @@
 #define	_RBMAP_H
 typedef struct _RBNODE
 {
+    int rbe_color;         
+    int bits;
     double  key;
     void *dptr;
     struct _RBNODE *rbe_left;     
     struct _RBNODE *rbe_right;    
     struct _RBNODE *rbe_parent;   
-    int rbe_color;         
 }RBNODE;
 typedef struct _RBMAP
 {
