@@ -388,7 +388,6 @@ typedef struct _IHEADER
     short     status;
     short     slevel;
     int     terms_total;
-    int     crc;
     int64_t globalid;
     int64_t category;
     double  rank;

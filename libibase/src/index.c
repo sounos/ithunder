@@ -262,7 +262,7 @@ term_state_update:
             {
                 iheader->status      = docheader->status;
                 iheader->terms_total = docheader->terms_total;
-                iheader->crc         = docheader->crc;
+                //iheader->crc         = docheader->crc;
                 iheader->category    = docheader->category;
                 iheader->slevel      = docheader->slevel;
                 iheader->rank        = docheader->rank;
@@ -311,7 +311,7 @@ int ibase_update_index(IBASE *ibase, int docid, IBDATA *block)
                 iheader->slevel      = docheader->slevel;
                 iheader->rank        = docheader->rank;
                 iheader->globalid    = docheader->globalid;
-                iheader->crc         = docheader->crc;
+                //iheader->crc         = docheader->crc;
                 if(ibase->state->used_for == IB_USED_FOR_INDEXD)
                 {
                     secid = docheader->secid;
