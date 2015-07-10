@@ -1689,6 +1689,7 @@ int hidoc_rsegment(HIDOC *hidoc, HINDEX *hindex, char *base, char *start, char *
                     if(i >= 0 && i < HI_TERMS_MAX && ep && last >= 0 && last <= HI_TERMS_MAX && ep == s)
                     {
                         hindex->nodes[i].nexts[last] = 1; 
+                        hindex->nodes[last].prevs[i] = 1; 
                     }
                     ep = es + nterm;
                     last = i;
@@ -1793,6 +1794,7 @@ int scws_segment(HIDOC *hidoc, HINDEX *hindex, char *base, char *start, char *en
                     {
                         if(i >= 0 && i < HI_TERMS_MAX && ep && last >= 0 && last <= HI_TERMS_MAX && ep == s)
                         {
+                            hindex->nodes[i].prevs[last] = 1; 
                             hindex->nodes[last].nexts[i] = 1; 
                         }
                         ep = s + nterm;
@@ -1824,7 +1826,7 @@ do                                                              \
 int hidoc_genindex(HIDOC *hidoc, HINDEX *hindex, FHEADER *fheader, IFIELD *fields, int nfields, 
         char *content, int ncontent, IBDATA *block)
 {
-    int ret = -1,  i = 0, j = 0, x = 0, last = 0, to = 0, n = 0, *np = NULL, 
+    int ret = -1,  i = 0, j = 0, x = 0, last = 0, to = 0, mm = 0, n = 0, *np = NULL, 
         index_int_from = -1, index_long_from = -1, index_double_from = -1, 
         index_int_num = 0, index_long_num = 0, index_double_num = 0, index_text_num = 0;
     char *s = NULL, *es = NULL, *p = NULL, *pp = NULL, *ps = NULL;
@@ -2096,9 +2098,9 @@ int hidoc_genindex(HIDOC *hidoc, HINDEX *hindex, FHEADER *fheader, IFIELD *field
             docheader->content_size = ncontent;
             p += ncontent;
         }
-        //copy nexts block
-        docheader->nexts_off = p - (char *)block->data; 
-        //fprintf(stdout, "%s::%d off:%d p:%p ncontent:%d x:%d\n", __FILE__, __LINE__, docheader->content_off, p, ncontent, docheader->nexts_off - docheader->content_off);
+        //copy prevnext block
+        docheader->prevnext_off = p - (char *)block->data; 
+        //fprintf(stdout, "%s::%d off:%d p:%p ncontent:%d x:%d\n", __FILE__, __LINE__, docheader->content_off, p, ncontent, docheader->prevnext_off - docheader->content_off);
         if(hidoc->state->phrase_status != HI_PHRASE_DISABLED)
         {
             termlist = (STERM *)((char *)block->data + sizeof(DOCHEADER) + sizeof(XFIELD) * nfields);
@@ -2110,16 +2112,26 @@ int hidoc_genindex(HIDOC *hidoc, HINDEX *hindex, FHEADER *fheader, IFIELD *field
                 ps = p;
                 for(j = 0; j < hindex->nterms; j++)
                 {
+                     if(hindex->nodes[i].prevs[j])
+                    {
+                        mm = j << 1;
+                        n = mm - last;
+                        last = mm;
+                        //if(docheader->globalid == 1306048490225284ll){WARN_LOGGER(hidoc->logger, "i:%d j:%d last:%d mm:%d n:%d term:%.*s", i, j, last, mm, n, hindex->terms[i].term_len, content + hindex->nodes[i].term_offset);}
+                        np = &n;
+                        ZVBCODE(np, p);
+                    }
                     if(hindex->nodes[i].nexts[j])
                     {
-                        n = j - last;
-                        last = j;
+                         mm = ((j << 1) | 1);
+                         n = mm - last;
+                         last = mm;
                         //if(docheader->globalid == 1306048490225284ll){WARN_LOGGER(hidoc->logger, "i:%d j:%d last:%d mm:%d n:%d term:%.*s", i, j, last, mm, n, hindex->terms[i].term_len, content + hindex->nodes[i].term_offset);}
                         np = &n;
                         ZVBCODE(np, p);
                     }
                 }
-                termlist[i].nexts_size = p - ps;
+                termlist[i].prevnext_size = p - ps;
             }
 #else
             int k = 0;
@@ -2130,16 +2142,25 @@ int hidoc_genindex(HIDOC *hidoc, HINDEX *hindex, FHEADER *fheader, IFIELD *field
                 ps = p;
                 for(j = (hindex->nterms - 1); j >= 0; j--)
                 {
+                    if(hindex->nodes[i].prevs[j])
+                    {
+                        mm = j << 1;
+                        n = mm - last;
+                        last = mm;
+                        np = &n;
+                        ZVBCODE(np, p);
+                    }
                     if(hindex->nodes[i].nexts[j])
                     {
-                        n = j - last;
-                        last = j;
+                        mm = ((j << 1) | 1);
+                        n = mm - last;
+                        last = mm;
                         np = &n;
                         ZVBCODE(np, p);
                     }
                     ++x;
                 }
-                termlist[k].nexts_size = p - ps;
+                termlist[k].prevnext_size = p - ps;
                 ++k;
             }
 #endif
@@ -2149,7 +2170,7 @@ int hidoc_genindex(HIDOC *hidoc, HINDEX *hindex, FHEADER *fheader, IFIELD *field
             for(i = 0; i < hindex->nterms; i++)
             {
                 last = 0;
-                es = s + termlist[i].nexts_size;
+                es = s + termlist[i].prevnext_size;
                 while(s < es)
                 {
                     x = 0;
@@ -2164,7 +2185,7 @@ int hidoc_genindex(HIDOC *hidoc, HINDEX *hindex, FHEADER *fheader, IFIELD *field
                 }
             }
             */
-            docheader->nexts_size = p - pp;
+            docheader->prevnext_size = p - pp;
         }
         /*
         char *content = block->data + docheader->content_off;

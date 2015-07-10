@@ -73,9 +73,9 @@ void ibase_unxindex(IBASE *ibase, ITERM *itermlist, void *_stree_,
             itermlist[_x_].term_count = 0;
             itermlist[_x_].no = 0;
             itermlist[_x_].fields = 0;
-            itermlist[_x_].snexts = NULL;
-            itermlist[_x_].enexts = NULL;
-            itermlist[_x_].nexts_size = 0;
+            itermlist[_x_].sprevnext = NULL;
+            itermlist[_x_].eprevnext = NULL;
+            itermlist[_x_].prevnext_size = 0;
             _np_ = &(itermlist[_x_].ndocid);
             UZVBCODE(itermlist[_x_].p, _n_, _np_);
             itermlist[_x_].docid +=  itermlist[_x_].ndocid;
@@ -85,7 +85,7 @@ void ibase_unxindex(IBASE *ibase, ITERM *itermlist, void *_stree_,
             UZVBCODE(itermlist[_x_].p, _n_, _np_);
             _np_ = &(itermlist[_x_].fields);
             UZVBCODE(itermlist[_x_].p, _n_, _np_);
-            _np_ = &(itermlist[_x_].nexts_size);
+            _np_ = &(itermlist[_x_].prevnext_size);
             UZVBCODE(itermlist[_x_].p, _n_, _np_);
         }
         else
@@ -98,19 +98,19 @@ void ibase_unxindex(IBASE *ibase, ITERM *itermlist, void *_stree_,
             itermlist[_x_].p += sizeof(int);
             itermlist[_x_].fields = *((int*)itermlist[_x_].p);
             itermlist[_x_].p += sizeof(int);
-            itermlist[_x_].nexts_size = *((int*)itermlist[_x_].p);
+            itermlist[_x_].prevnext_size = *((int*)itermlist[_x_].p);
             itermlist[_x_].p += sizeof(int);
         }
-        if(itermlist[_x_].nexts_size > 0)
+        if(itermlist[_x_].prevnext_size > 0)
         {
-            itermlist[_x_].snexts = itermlist[_x_].p;
-            itermlist[_x_].enexts = itermlist[_x_].p + itermlist[_x_].nexts_size;
-            itermlist[_x_].p += itermlist[_x_].nexts_size;
+            itermlist[_x_].sprevnext = itermlist[_x_].p;
+            itermlist[_x_].eprevnext = itermlist[_x_].p + itermlist[_x_].prevnext_size;
+            itermlist[_x_].p += itermlist[_x_].prevnext_size;
         }
         else
         {
-            itermlist[_x_].snexts = NULL;
-            itermlist[_x_].enexts = NULL;
+            itermlist[_x_].sprevnext = NULL;
+            itermlist[_x_].eprevnext = NULL;
         }
         itermlist[_x_].xnode.which = _x_;
         itermlist[_x_].xnode.docid = itermlist[_x_].docid;
@@ -146,7 +146,7 @@ ICHUNK *ibase_xquery(IBASE *ibase, IQUERY *query, int secid)
         double_index_from = 0, nres = 0, min = 0, double_index_to = 0, ito = 0,
         ignore_score = 0, last = 0, no = 0, fid = 0, range_flag = 0, xno = 0,
         is_field_sort = 0, scale = 0, total = 0, ignore_rank = 0, nxrecords = 0,
-        long_index_from = 0, long_index_to = 0, nx = 0, kk = 0, nexts = 0;
+        long_index_from = 0, long_index_to = 0, nx = 0, kk = 0, prevnext = 0;
     double *doubleidx = NULL, score = 0.0, p1 = 0.0, p2 = 0.0, ffrom = 0.0,
            tf = 1.0, Py = 0.0, Px = 0.0, fto = 0.0;
     void *timer = NULL, *topmap = NULL, *fmap = NULL;//, *dp = NULL, *olddp = NULL;
@@ -405,7 +405,7 @@ ICHUNK *ibase_xquery(IBASE *ibase, IQUERY *query, int secid)
                 x = xnode->hits[i];
                 /* phrase  */
                 if(ibase->state->phrase_status != IB_PHRASE_DISABLED
-                        && is_query_phrase && itermlist[x].snexts)
+                        && is_query_phrase && itermlist[x].sprevnext)
                 {
                     no = 0;
                     nx = 0;
@@ -416,7 +416,7 @@ ICHUNK *ibase_xquery(IBASE *ibase, IQUERY *query, int secid)
                         next = -1;
                         z = 0;
                         np = &z;
-                        UZVBCODE(itermlist[x].snexts, n, np);
+                        UZVBCODE(itermlist[x].sprevnext, n, np);
                         nx += z;
                         no = nx >> 1;
                         if(nx & 0x01) next = no;
@@ -441,29 +441,29 @@ ICHUNK *ibase_xquery(IBASE *ibase, IQUERY *query, int secid)
                         if(k >= 0 && no == xnode->bitphrase[k]) 
                         {
                             kk = xnode->bitquery[k];
-                            nexts = 0;
+                            prevnext = 0;
                             if(prev >= 0 && (query->qterms[x].prev & (1 << kk)))
                             {
                                 ACCESS_LOGGER(ibase->logger, "docid:%d phrase_prev:%d x:%d kk:%d", docid, prev, x, kk);
-                                nexts = 2;
+                                prevnext = 2;
                             }
                             else if(next >= 0 && (query->qterms[x].next & (1 << kk)))
                             {
                                 ACCESS_LOGGER(ibase->logger, "docid:%d phrase_next:%d x:%d kk:%d", docid, next, x, kk);
-                                nexts = 2;
+                                prevnext = 2;
                             }
-                            if(nexts)
+                            if(prevnext)
                             {
                                 if((itermlist[x].fields & query->qfhits) 
                                         && (itermlist[kk].fields & query->qfhits))
                                 {
-                                    nexts += 4;
+                                    prevnext += 4;
                                 }
-                                base_score += IBLONG(query->base_phrase * nexts);
+                                base_score += IBLONG(query->base_phrase * prevnext);
                             }
                         }
                         xno = no;
-                    }while(itermlist[x].snexts < itermlist[x].enexts);
+                    }while(itermlist[x].sprevnext < itermlist[x].eprevnext);
                 }
                 if((query->flag & IB_QUERY_RELEVANCE) && is_field_sort == 0)
                 {

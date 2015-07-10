@@ -151,7 +151,7 @@ typedef struct _IWHO
     short count;
     int fields;
     int bithits;
-    int nexts_count;
+    int prevnext_count;
     short whoes[IB_QUERY_MAX];
     short hits[IB_QUERY_MAX];
     short bitphrase[IB_BITSPHRASE_MAX];
@@ -165,7 +165,7 @@ typedef struct _ITERM
     int ndocid;
     int fields;
     int term_count;
-    int nexts_size;
+    int prevnext_size;
     int last;
     int weight;
     int bithit;
@@ -176,8 +176,8 @@ typedef struct _ITERM
     int16_t term_len;
     char *p;
     char *end;
-    char *snexts;
-    char *enexts;
+    char *sprevnext;
+    char *eprevnext;
     char *sposting;
     char *eposting;
     XNODE xnode;
@@ -194,8 +194,8 @@ typedef struct _STERM
     int term_count;
     int posting_offset;
     int posting_size;
-    int nexts_count;
-    int nexts_size;
+    int prevnext_count;
+    int prevnext_size;
 }STERM;
 typedef struct _SYNTERM
 {
@@ -340,8 +340,8 @@ typedef struct _DOCHEADER
     int     content_off;
     int     content_size;
     int     content_zsize;
-    int     nexts_off;
-    int     nexts_size;
+    int     prevnext_off;
+    int     prevnext_size;
     int     textblock_off;
     int     textblock_size;
     int     intblock_off;
@@ -496,7 +496,7 @@ typedef struct _QTERM
     int   id;
     int   synid;
     int   synno;
-    int   bits;
+    int   prev;
     int   next;
     int   bithit;
     int   bitnot;

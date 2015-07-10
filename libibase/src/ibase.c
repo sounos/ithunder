@@ -779,7 +779,7 @@ void *ibase_pop_segmentor(IBASE *ibase)
 int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY *query)
 {
     int termid = 0, nterm = 0, i = 0, x = 0, found = 0, last = -1, last_no = -1, size = 0,
-        n = 0, k = 0, N = 0, z = 0, from = 0, to = 0, min = 0, nexts = 0, j = 0, 
+        n = 0, k = 0, N = 0, z = 0, from = 0, to = 0, min = 0, prevnext = 0, j = 0, 
         max = 0, nqterms = 0, nxqterms = 0, list[IB_QUERY_MAX];
     char line[IB_LINE_MAX], *p = NULL, *pp = NULL, 
          *epp = NULL, *s = NULL, *es = NULL;
@@ -819,8 +819,8 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                             continue;
                         }
                         nterm = cur->len;
-                        if(last == cur->off) nexts = 1;
-                        else nexts = 0;
+                        if(last == cur->off) prevnext = 1;
+                        else prevnext = 0;
                         last = cur->off + cur->len;
                         epp = s + nterm;
                         p = line;
@@ -920,9 +920,9 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                                             qterms[x].bithit |= 1 << fid;
                                         }
                                         qterms[x].flag |= QTERM_BIT_AND;
-                                        if(nexts && last_no >= 0)
+                                        if(prevnext && last_no >= 0)
                                         {
-                                            //qterms[x].prev |= 1 << last_no;
+                                            qterms[x].prev |= 1 << last_no;
                                             qterms[last_no].next |= 1 << x;
                                         }
                                         last_no = x;
@@ -1118,17 +1118,15 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                 }
                 if(qterms[z].flag & QTERM_BIT_AND) query->operators.bitsand |= 1 << i;
                 if(qterms[z].flag & QTERM_BIT_NOT) query->operators.bitsnot |= 1 << i;
-                if(qterms[z].next) 
+                if(qterms[z].prev || qterms[z].next) 
                 {
                     for(j = 0; j < nqterms; j++)
                     {
                         k = list[j];
-                        /*
                         if(qterms[z].prev & (1 << k)) 
                         {
                             query->qterms[i].prev |= 1 << j;
                         }
-                        */
                         if(qterms[z].next & (1 << k)) 
                         {
                             query->qterms[i].next |= 1 << j;

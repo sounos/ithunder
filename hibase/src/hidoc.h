@@ -138,12 +138,12 @@ typedef struct _TERMNODE
 {
     int   termid;
     int   term_offset;
-    int   nnexts;
+    int   nprevnexts;
     short noffsets;
     short nroffsets;
     int   offsets[HI_OFFSET_MAX];
     int   roffsets[HI_OFFSET_MAX];
-    //char  prevs[HI_TERMS_MAX];
+    char  prevs[HI_TERMS_MAX];
     char  nexts[HI_TERMS_MAX];
 }TERMNODE;
 /* index */
@@ -152,16 +152,16 @@ typedef struct _HINDEX
     HTML *html;
     void *map;
     int nterms;
+    int ndata;
+    int nout;
+    int nblock;
     int term_text_total;
     int term_offsets_total;
     STERM terms[HI_TERMS_MAX];
     TERMNODE nodes[HI_TERMS_MAX];
     char *block;
-    int nblock;
     char *data;
-    int ndata;
     char *out;
-    int nout;
 }HINDEX;
 typedef struct _IPACKET
 {

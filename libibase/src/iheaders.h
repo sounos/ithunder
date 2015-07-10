@@ -11,8 +11,8 @@ typedef struct _DOCHEADER
     int     content_off;
     int     content_size;
     int     content_zsize;
-    int     nexts_off;
-    int     nexts_size;
+    int     prevnext_off;
+    int     prevnext_size;
     int     textblock_off;
     int     textblock_size;
     int     intindex_from;
@@ -85,8 +85,8 @@ typedef struct _DOCHEADER
     int     content_off;
     int     content_size;
     int     content_zsize;
-    int     nexts_off;
-    int     nexts_size;
+    int     prevnext_off;
+    int     prevnext_size;
     int     textblock_off;
     int     textblock_size;
     int     intblock_off;
