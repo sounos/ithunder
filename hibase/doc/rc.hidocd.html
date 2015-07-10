@@ -411,7 +411,7 @@
                 {
                     var argv = "op=4";
                     //alert(argv);
-                    xmlHttp.open('POST', '/', true);
+                    xmlHttp.open('POST', window.location.pathname, true);
                     xmlHttp.setRequestHeader("Content-Length", argv.length);
                     xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
                     xmlHttp.onreadystatechange=function()
@@ -459,7 +459,7 @@
                 if(argv && (xmlHttp = CreateXMLHTTP()) != null)
                 {
                     //alert(argv);
-                    xmlHttp.open('POST', '/', true);
+                    xmlHttp.open('POST', window.location.pathname, true);
                     xmlHttp.setRequestHeader("Content-Length", argv.length);
                     xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
                     xmlHttp.onreadystatechange=function()
@@ -484,7 +484,7 @@
                 if(argv && confirm("确认删除该节点?") && (xmlHttp = CreateXMLHTTP()) != null)
                 {
                     //alert(argv);
-                    xmlHttp.open('POST', '/', true);
+                    xmlHttp.open('POST', window.location.pathname, true);
                     xmlHttp.setRequestHeader("Content-Length", argv.length);
                     xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
                     xmlHttp.onreadystatechange=function()
@@ -508,7 +508,7 @@
                 {
                     var argv = "op=7&nodeid="+nodeid;
                     //alert(argv);
-                    xmlHttp.open('POST', '/', true);
+                    xmlHttp.open('POST', window.location.pathname, true);
                     xmlHttp.setRequestHeader("Content-Length", argv.length);
                     xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
                     xmlHttp.onreadystatechange=function()
@@ -536,7 +536,7 @@
                 {
                     var argv = "op=5&ip="+ip+"&port="+port+"&nodeid="+nodeid;
                     //alert(argv);
-                    xmlHttp.open('POST', '/', true);
+                    xmlHttp.open('POST', window.location.pathname, true);
                     xmlHttp.setRequestHeader("Content-Length", argv.length);
                     xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
                     xmlHttp.onreadystatechange=function()
@@ -563,7 +563,7 @@
                 if(argv && confirm("确认删除该任务?") && (xmlHttp = CreateXMLHTTP()) != null)
                 {
                     //alert(argv);
-                    xmlHttp.open('POST', '/', true);
+                    xmlHttp.open('POST', window.location.pathname, true);
                     xmlHttp.setRequestHeader("Content-Length", argv.length);
                     xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
                     xmlHttp.onreadystatechange=function()
@@ -624,7 +624,7 @@
                 {
                     var argv = "op=18";
                     //alert(argv);
-                    xmlHttp.open('POST', '/', true);
+                    xmlHttp.open('POST', window.location.pathname, true);
                     xmlHttp.setRequestHeader("Content-Length", argv.length);
                     xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
                     xmlHttp.onreadystatechange=function()
@@ -653,7 +653,7 @@
                     argv = "op=16&termid="+termid+"&status="+status;
                     if(argv && (xmlHttp = CreateXMLHTTP()) != null)
                     {
-                        xmlHttp.open('POST', '/', true);
+                        xmlHttp.open('POST', window.location.pathname, true);
                         xmlHttp.setRequestHeader("Content-Length", argv.length);
                         xmlHttp.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
                         xmlHttp.onreadystatechange=function()
@@ -680,7 +680,7 @@
                     argv = "op=19&termid="+termid;
                     if(argv && (xmlHttp = CreateXMLHTTP()) != null)
                     {
-                        xmlHttp.open('POST', '/', true);
+                        xmlHttp.open('POST', window.location.pathname, true);
                         xmlHttp.setRequestHeader("Content-Length", argv.length);
                         xmlHttp.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
                         xmlHttp.onreadystatechange=function()
@@ -721,7 +721,7 @@
                     }
                     if(argv && (xmlHttp = CreateXMLHTTP()) != null)
                     {
-                        xmlHttp.open('POST', '/', true);
+                        xmlHttp.open('POST', window.location.pathname, true);
                         xmlHttp.setRequestHeader("Content-Length", argv.length);
                         xmlHttp.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
                         xmlHttp.onreadystatechange=function()
@@ -762,7 +762,7 @@
                     }
                     if(argv && (xmlHttp = CreateXMLHTTP()) != null)
                     {
-                        xmlHttp.open('POST', '/', true);
+                        xmlHttp.open('POST', window.location.pathname, true);
                         xmlHttp.setRequestHeader("Content-Length", argv.length);
                         xmlHttp.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
                         xmlHttp.onreadystatechange=function()
@@ -800,7 +800,7 @@
                     }
                     if(argv && (xmlHttp = CreateXMLHTTP()) != null)
                     {
-                        xmlHttp.open('POST', '/', true);
+                        xmlHttp.open('POST', window.location.pathname, true);
                         xmlHttp.setRequestHeader("Content-Length", argv.length);
                         xmlHttp.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
                         xmlHttp.onreadystatechange=function()
@@ -838,7 +838,7 @@
                     o.innerHTML = "";
                     form['dumpfile'].value = "";
                     argv = "op=17&no="+no+"&dumpfile="+dumpfile;
-                    xmlHttp.open('POST', '/', true);
+                    xmlHttp.open('POST', window.location.pathname, true);
                     xmlHttp.setRequestHeader("Content-Length", argv.length);
                     xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
                     xmlHttp.onreadystatechange=function()
@@ -861,7 +861,7 @@
                 if((xmlHttp = CreateXMLHTTP()) != null)
                 {
                     var argv = "op=20";
-                    xmlHttp.open('POST', '/', true);
+                    xmlHttp.open('POST', window.location.pathname, true);
                     xmlHttp.setRequestHeader("Content-Length", argv.length);
                     xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
                     xmlHttp.onreadystatechange=function()

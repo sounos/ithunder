@@ -400,7 +400,7 @@
                 var isdebug = 0;
                 if(argv != "" && (xmlHttp = CreateXMLHTTP()) != null)
                 {
-                    xmlHttp.open('GET', "/s?"+argv, true);
+                    xmlHttp.open('GET', window.location.pathname+"/s?"+argv, true);
                     //xmlHttp.setRequestHeader("Content-Length", argv.length);
                     //xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
                     xmlHttp.onreadystatechange=function()
@@ -693,7 +693,7 @@
                 var xmlHttp = null;
                 if((xmlHttp = CreateXMLHTTP()) != null)
                 {
-                    var uri = "/qstate?rand="+Math.random();
+                    var uri = window.location.pathname+"/qstate?rand="+Math.random();
                     xmlHttp.open('GET', uri, true);
                     xmlHttp.onreadystatechange=function()
                     {
@@ -716,7 +716,7 @@
                 {
                     HideNodeform();
                     var argv = "op=8&rand="+Math.random();
-                    xmlHttp.open('POST', '/', true);
+                    xmlHttp.open('POST', window.location.pathname, true);
                     xmlHttp.setRequestHeader("Content-Length", argv.length);
                     xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
                     xmlHttp.onreadystatechange=function()
@@ -773,7 +773,7 @@
                 {
                     HideNodeform();
                     //alert(argv);
-                    xmlHttp.open('POST', '/', true);
+                    xmlHttp.open('POST', window.location.pathname, true);
                     xmlHttp.setRequestHeader("Content-Length", argv.length);
                     xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
                     xmlHttp.onreadystatechange=function()
@@ -797,7 +797,7 @@
                 {
                     HideNodeform();
                     //alert(argv);
-                    xmlHttp.open('POST', '/', true);
+                    xmlHttp.open('POST', window.location.pathname, true);
                     xmlHttp.setRequestHeader("Content-Length", argv.length);
                     xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
                     xmlHttp.onreadystatechange=function()
@@ -906,7 +906,7 @@
                 var xmlHttp = null;
                 if((xmlHttp = CreateXMLHTTP()) != null)
                 {
-                    var uri = "/tstate?rand="+Math.random();
+                    var uri = window.location.pathname+"/tstate?rand="+Math.random();
                     xmlHttp.open('GET', uri, true);
                     xmlHttp.onreadystatechange=function()
                     {

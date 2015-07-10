@@ -385,7 +385,7 @@
                     if(page <= 0) page_num = 1;
                     from = (page_num - 1) * 15;
                     hideresult();
-                    var uri = "/s?";
+                    var uri = window.location.pathname+"/s?";
                     var not_str = "";
                     uri += idisplay;
                     uri += "&hitscale=";
@@ -533,7 +533,7 @@
                 if((xmlHttp = CreateXMLHTTP()) != null)
                 {
                     obj.disabled = true;
-                    xmlHttp.open('POST', "/", true);
+                    xmlHttp.open('POST', window.location.pathname, true);
                     xmlHttp.setRequestHeader("Content-Length", uri.length);
                     xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
                     xmlHttp.onreadystatechange=function()

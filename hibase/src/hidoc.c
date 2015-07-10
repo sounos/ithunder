@@ -2112,7 +2112,7 @@ int hidoc_genindex(HIDOC *hidoc, HINDEX *hindex, FHEADER *fheader, IFIELD *field
                 ps = p;
                 for(j = 0; j < hindex->nterms; j++)
                 {
-                     if(hindex->nodes[i].prevs[j])
+                    if(hindex->nodes[i].prevs[j])
                     {
                         mm = j << 1;
                         n = mm - last;
