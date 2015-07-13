@@ -19,8 +19,8 @@ void *bmap_init(char *file)
         if((bmap->fd = open(file, O_CREAT|O_RDWR, 0644)) > 0
                 && fstat(bmap->fd, &st) == 0)
         {
-            bmap->size = st.st_size;
-            bmap->id_max = bmap->size / 8;
+            bmap->bytes = st.st_size;
+            bmap->id_max = bmap->bytes * 8;
             if((bmap->mbits = (char *)mmap(NULL, BMAP_ID_MAX/8, PROT_READ|PROT_WRITE, 
                     MAP_SHARED, bmap->fd, 0)) == NULL || bmap->mbits == (void *)MAP_FAILED)
             {
@@ -34,9 +34,9 @@ void *bmap_init(char *file)
                 fprintf(stderr, "new mmap failed, %s", strerror(errno));
                 _exit(-1);
             }
-            if(bmap->size > 0)
+            if(bmap->bytes > 0)
             {
-                memcpy(bmap->bits, bmap->mbits, bmap->size);
+                memcpy(bmap->bits, bmap->mbits, bmap->bytes);
             }
             RWLOCK_INIT(bmap->mutex);
         }
@@ -51,18 +51,18 @@ void *bmap_init(char *file)
 
 int bmap_resize(BMAP *bmap, int id)
 {
-    int ret = -1, size = 0;
+    int ret = -1, bytes = 0;
 
     if(bmap && id >= 0 && id < BMAP_ID_MAX)
     {
-       size = id / (8 *  BMAP_BASE_NUM);
-       if(id%(8*BMAP_BASE_NUM) == 0) ++size;
-       size *= BMAP_BASE_NUM; 
-       ret =  ftruncate(bmap->fd, size);
-       memset(bmap->mbits+bmap->size, 0, size - bmap->size);
-       memset(bmap->bits+bmap->size, 0, size - bmap->size);
-       bmap->size = size;
-       bmap->id_max = bmap->size * 8;
+       bytes = id / (8 *  BMAP_BASE_NUM);
+       if((id % (8*BMAP_BASE_NUM)) == 0) ++bytes;
+       bytes *= BMAP_BASE_NUM; 
+       ret =  ftruncate(bmap->fd, bytes);
+       memset(bmap->mbits+bmap->bytes, 0, bytes - bmap->bytes);
+       memset(bmap->bits+bmap->bytes, 0, bytes - bmap->bytes);
+       bmap->bytes = bytes;
+       bmap->id_max = bmap->bytes * 8;
     }
     return ret;
 }
@@ -145,24 +145,25 @@ void bmap_clean(void *p)
 }
 
 #ifdef TEST_BMAP
-#define TEST_MAX    2000000
+#define TEST_MAX   	2000000
+#define TEST_ID_MAX   	200000000
 #include "timer.h"
 int main()
 {
     int i = 0, no = 0, *list = NULL;
-    char *file = "/tmp/xxx.bmap";
+    char *file = "/data/online/test/xxx.bmap";
     void *bmap = NULL, *timer = NULL;
 
     if((bmap = bmap_init(file)))
     {
-        for(i = 0; i < BMAP_ID_MAX; i++)
+        for(i = 0; i < TEST_ID_MAX; i++)
         {
             bmap_set(bmap, i);
         }
         list = (int *)calloc(1, sizeof(int) * TEST_MAX);
         for(i = 0; i < TEST_MAX; i++)
         {
-            list[i] = random()%BMAP_ID_MAX;
+            list[i] = random()%TEST_ID_MAX;
         }
         TIMER_INIT(timer);
         for(i = 0; i < TEST_MAX; i++)

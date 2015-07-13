@@ -4,13 +4,14 @@
 extern "C" {
 #endif
 #include <pthread.h>
-#define BMAP_ID_MAX     2000000000
+#define BMAP_ID_MAX     200000000
 #define BMAP_BASE_NUM   2000000 
 typedef struct _BMAP
 {
     int fd;
     int id_max;
-    off_t size;
+    int bytes;
+    int bit32;
     char *mbits;
     char *bits;
     pthread_rwlock_t mutex; 
