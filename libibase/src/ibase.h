@@ -730,10 +730,6 @@ typedef struct _IBASE
     IBIO stateio;
     IBIO termstateio;
     IBIO mheadersio;
-    IBIO intidxio;
-    IBIO longidxio;
-    IBIO doubleidxio;
-    IBIO sourceio;
     char basedir[IB_PATH_MAX];
     char dict_rules[IB_PATH_MAX];
     char dict_file[IB_PATH_MAX];
@@ -772,15 +768,13 @@ typedef struct _IBASE
     void *mposting[IB_SEC_MAX];
     void *index; /* index db */
     void *syndb; /* synonym db */
-    void *itree; /* int tree */
-    void *ltree;/* long tree */
-    void *dtree;/* double tree */
     void *mmtrie; /* dict */
     void *xmmtrie; /* dict */
     void *docmap; /* globalid to docid map*/
     void *source; /* document source DB */
     void *segmentor;
     void *logger;
+    void *delmap;
     
     int     (*set_basedir)(struct _IBASE *ibase, char *basedir, int use_for, int mmsource_status);
     int     (*set_int_index)(struct _IBASE *ibase, int secid, int int_index_from, int int_fields_num);
