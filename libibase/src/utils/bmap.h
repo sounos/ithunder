@@ -4,8 +4,8 @@
 extern "C" {
 #endif
 #include <pthread.h>
-#define BMAP_ID_MAX     200000000
-#define BMAP_BASE_NUM   2000000 
+#define BMAP_ID_MAX     2000000000
+#define BMAP_BASE_NUM   1000000 
 typedef struct _BMAP
 {
     int fd;

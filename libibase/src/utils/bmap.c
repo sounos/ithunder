@@ -55,9 +55,7 @@ int bmap_resize(BMAP *bmap, int id)
 
     if(bmap && id >= 0 && id < BMAP_ID_MAX)
     {
-       bytes = id / (8 *  BMAP_BASE_NUM);
-       if((id % (8*BMAP_BASE_NUM)) == 0) ++bytes;
-       bytes *= BMAP_BASE_NUM; 
+       bytes = ((id / (8 *  BMAP_BASE_NUM)) + 1) * BMAP_BASE_NUM;
        ret =  ftruncate(bmap->fd, bytes);
        memset(bmap->mbits+bmap->bytes, 0, bytes - bmap->bytes);
        memset(bmap->bits+bmap->bytes, 0, bytes - bmap->bytes);
@@ -187,8 +185,26 @@ int main()
         }
         TIMER_SAMPLE(timer);
         fprintf(stdout, "bmap_mcheck[%d] time used:%lld\n", TEST_MAX, PT_LU_USEC(timer));
+#ifdef TEST_BMAP_UNSET
+	for(i = 0; i < TEST_ID_MAX; i++)
+        {
+	    if((i % 33) == 0) bmap_unset(bmap, i);
+        }
+        TIMER_RESET(timer);
+        for(i = 0; i < TEST_MAX; i++)
+        {
+            no = list[i];
+            if(bmap_check(bmap, no) == 0)
+            {
+                fprintf(stderr, "bits[%d] unseted\n", no);
+            }
+        }
+        TIMER_SAMPLE(timer);
+        fprintf(stdout, "bmap_unset_check[%d] time used:%lld\n", TEST_MAX, PT_LU_USEC(timer));
+#endif
         TIMER_CLEAN(timer);
         bmap_clean(bmap);
+	free(list);
     }
     return 0; 
 }
