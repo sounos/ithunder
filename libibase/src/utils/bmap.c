@@ -55,8 +55,8 @@ int bmap_resize(BMAP *bmap, int id)
 
     if(bmap && id >= 0 && id < BMAP_ID_MAX)
     {
-       size = (id / 8) / BMAP_BASE_NUM;
-       if(size%BMAP_BASE_NUM) ++size;
+       size = id / (8 *  BMAP_BASE_NUM);
+       if(id%(8*BMAP_BASE_NUM)) ++size;
        size *= BMAP_BASE_NUM; 
        ret =  ftruncate(bmap->fd, size);
        memset(bmap->mbits+bmap->size, 0, size - bmap->size);
@@ -75,7 +75,7 @@ int bmap_set(void *p, int id)
     if((bmap = (BMAP *)p))
     {
         RWLOCK_WRLOCK(bmap->mutex);
-        if(id >= bmap->id_max && (ret = bmap_resize(bmap, id))) return ret;
+        if(id >= bmap->id_max && (ret = bmap_resize(bmap, id)) != 0) return ret;
         bmap->mbits[(id/8)] |= 1 << id % 8;
         bmap->bits[(id/8)] |= 1 << id % 8;
         RWLOCK_UNLOCK(bmap->mutex);
@@ -92,7 +92,7 @@ int bmap_unset(void *p, int id)
     if((bmap = (BMAP *)p))
     {
         RWLOCK_WRLOCK(bmap->mutex);
-        if(id >= bmap->id_max && (ret = bmap_resize(bmap, id))) return ret;
+        if(id >= bmap->id_max && (ret = bmap_resize(bmap, id)) != 0) return ret;
         bmap->mbits[(id/8)] &= ~(1 << id % 8);
         bmap->bits[(id/8)] &= ~(1 << id % 8);
         RWLOCK_UNLOCK(bmap->mutex);
