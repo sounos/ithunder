@@ -149,7 +149,7 @@ void bmap_clean(void *p)
 int main()
 {
     int i = 0, no = 0, *list = NULL;
-    char *file = "/data/online/test/xxx.bmap";
+    char *file = "/tmp/xxx.bmap";
     void *bmap = NULL, *timer = NULL;
 
     if((bmap = bmap_init(file)))
@@ -209,3 +209,5 @@ int main()
     return 0; 
 }
 #endif
+//rm -f /tmp/xxx.bmap ;gcc -o scheck bmap.c -O2 -DTEST_BMAP && ./scheck
+//rm -f /tmp/xxx.bmap ;gcc -o scheck bmap.c -O2 -DTEST_BMAP -DTEST_BMAP_UNSET && ./scheck
