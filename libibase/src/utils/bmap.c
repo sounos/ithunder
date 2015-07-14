@@ -106,25 +106,23 @@ int bmap_unset(void *p, int id)
 int bmap_check(void *p, int id)
 {
     BMAP *bmap = NULL;
-    int ret = 0;
 
     if((bmap = (BMAP *)p) && id < bmap->id_max)
     {
-        ret = (bmap->bits[(id/8)] & (1 << id % 8));
+        return (bmap->bits[(id/8)] & (1 << id % 8));
     }
-    return ret;
+    return 0;
 }
 
 int bmap_mcheck(void *p, int id)
 {
     BMAP *bmap = NULL;
-    int ret = 0;
 
     if((bmap = (BMAP *)p) && id < bmap->id_max)
     {
-        ret = (bmap->mbits[(id/8)] & (1 << id % 8));
+        return (bmap->mbits[(id/8)] & (1 << id % 8));
     }
-    return ret;
+    return 0;
 }
 
 void bmap_clean(void *p)
