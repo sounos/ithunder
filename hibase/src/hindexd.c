@@ -174,9 +174,13 @@ static char *e_argvs[] =
 #define E_ARGV_SECID        40
     "nosecs",
 #define E_ARGV_NOSECS       41
+    "bmap",
+#define E_ARGV_BMAP         42
+    "ignstatus",
+#define E_ARGV_IGNSTATUS     43
     ""
 };
-#define  E_ARGV_NUM         42
+#define  E_ARGV_NUM         44
 IBASE *ibase_init_db(int dbid);
 void indexd_query_handler(void *args);
 int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query);
@@ -995,6 +999,12 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                             break;
                         case E_ARGV_REL:
                             if(atoi(p)) query->flag |= IB_QUERY_RELEVANCE;
+                            break;
+                        case E_ARGV_BMAP:
+                            if(atoi(p)) query->flag |= IB_QUERY_BMAP;
+                            break;
+                        case E_ARGV_IGNSTATUS:
+                            if(atoi(p)) query->flag |= IB_QUERY_IGNSTATUS;
                             break;
                         case E_ARGV_HITSCALE:
                             hitscale = p;

@@ -41,6 +41,8 @@ extern "C" {
 #define  IB_QUERY_BOOLAND       0x80
 #define  IB_QUERY_FORBIDDEN     0x100
 #define  IB_QUERY_FIELDS        0x200
+#define  IB_QUERY_BMAP          0x400
+#define  IB_QUERY_IGNSTATUS     0x800
 #define  IB_IS_DISPLAY          0x01
 #define  IB_IS_HIGHLIGHT        0x02
 #define  IB_SUMMARY_MAX         8192
@@ -542,7 +544,7 @@ typedef struct _IQUERY
     short       nquery;
     short       hitscale[IB_QUERY_MAX]; 
     short       slevel_filter[IB_SLEVEL_MAX]; 
-    int         flag;//is_sort/is_rsort/is_phrase/is_relevance/is_clear_cache/is_query_and/is_query_forbidden
+    int         flag;//is_sort/is_rsort/is_phrase/is_relevance/is_clear_cache/is_query_and/is_query_forbidden/is_bmap_check
     int         qweight;
     int         qfhits;
     int         qid;
@@ -767,7 +769,7 @@ typedef struct _IBASE
     ICHUNK  *qchunks[IB_CHUNKS_MAX];
     void *mindex[IB_SEC_MAX];
     void *mposting[IB_SEC_MAX];
-    void *bmaps[IB_SEC_MAX];
+    //void *bmaps[IB_SEC_MAX];
     void *index; /* index db */
     void *syndb; /* synonym db */
     void *mmtrie; /* dict */

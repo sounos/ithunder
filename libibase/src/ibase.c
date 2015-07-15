@@ -271,15 +271,19 @@ int ibase_set_basedir(IBASE *ibase, char *dir, int used_for, int mmsource_status
         /* index */
         if(used_for == IB_USED_FOR_INDEXD)
         {
+#ifdef IB_USE_BMAP
             sprintf(path, "%s/%s/xxx", dir, IB_BMAP_DIR);
             ibase_mkdir(path);
+#endif
             /* index db */
             for(k = 0; k < ibase->state->nsecs; k++)
             {
                 x = ibase->state->secs[k];
-                /* bmap */
+                /* bmap */ 
+#ifdef IB_USE_BMAP
                 sprintf(path, "%s/%s/%d.bmap", dir, IB_BMAP_DIR, x);
                 ibase->bmaps[x] = bmap_init(path);
+#endif
                 /* index */
                 sprintf(path, "%s/%s/%d", dir, IB_INDEX_DIR, x);
                 ibase->mindex[x] = mdb_init(path, 1);
@@ -366,9 +370,11 @@ void ibase_check_mindex(IBASE *ibase, int secid)
     {
         if(!ibase->mindex[secid])
         {
-            /* bmap */
+#ifdef IB_USE_BMAP
+            /* bmap */ 
             sprintf(path, "%s/%s/%d.bmap", ibase->basedir, IB_BMAP_DIR, secid);
             ibase->bmaps[secid] = bmap_init(path);
+#endif
             /* index */
             sprintf(path, "%s/%s/%d", ibase->basedir, IB_INDEX_DIR, secid);
             ibase->mindex[secid] = mdb_init(path, 1);
@@ -1552,7 +1558,9 @@ void ibase_clean(IBASE *ibase)
         for(k = 0; k < ibase->state->nsecs; k++)
         {
             x = ibase->state->secs[k];
-            if(ibase->bmaps[x]) bmap_clean(ibase->bmaps[x]);
+#ifdef IB_USE_BMAP
+            if(ibase->bmaps[x]) bmap_clean(ibase->bmaps[x]); 
+#endif
             if(ibase->mindex[x]) mdb_clean(PMDB(ibase->mindex[x]));
             if(ibase->mposting[x]) mdb_clean(PMDB(ibase->mposting[x]));
             for(i = IB_INT_OFF; i < IB_INT_TO; i++)

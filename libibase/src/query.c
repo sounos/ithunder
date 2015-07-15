@@ -287,9 +287,21 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
             docid = docs[off];
             doc_score = 0.0;
             base_score = 0.0;
-            //if(headers[docid].status < 0 || headers[docid].globalid == 0) goto next;
-            if(bmap_check(ibase->bmaps[secid], docid) == 0) goto next;
-            /* check fobidden terms in query string */
+#ifdef IB_USE_BMAP
+            if(!(query->flag & IB_QUERY_IGNSTATUS))
+            {
+                if(query->flag & IB_QUERY_BMAP)
+                {
+                    if(bmap_check(ibase->bmaps[secid], docid) == 0) goto next;
+                }
+                else
+                {
+                    if(headers[docid].status < 0 || headers[docid].globalid == 0) goto next;
+                }
+            }
+#else
+            if(headers[docid].status < 0 || headers[docid].globalid == 0) goto next;
+#endif
             /* secure level */
             if((k = headers[docid].slevel) < 0 || headers[docid].slevel > IB_SLEVEL_MAX || query->slevel_filter[k]  == 1) goto next;
             /* catetory block filter */

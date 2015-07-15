@@ -223,9 +223,11 @@ term_state_update:
         }
         if(ibase->state->used_for == IB_USED_FOR_INDEXD)
         {
-            /* bmap */
+#ifdef IB_USE_BMAP
+            /* bmap */ 
             if(docheader->status < 0) bmap_unset(ibase->bmaps[secid], docid);
             else bmap_set(ibase->bmaps[secid], docid);
+#endif
             /* index int */
             if((n = ibase->state->int_index_fields_num) > 0 
                     && (intlist = (int *)(block->data + docheader->intblock_off)))
@@ -319,9 +321,11 @@ int ibase_update_index(IBASE *ibase, int docid, IBDATA *block)
                 if(ibase->state->used_for == IB_USED_FOR_INDEXD)
                 {
                     secid = docheader->secid;
-                    /* bmap */
+#ifdef IB_USE_BMAP
+                    /* bmap */ 
                     if(iheader->status < 0) bmap_unset(ibase->bmaps[secid], docid);
                     else bmap_set(ibase->bmaps[secid], docid);
+#endif
                     /* index int */
                     if((n = ibase->state->int_index_fields_num) > 0 
                             && (intlist = (int *)(block->data + docheader->intblock_off)))
@@ -382,8 +386,10 @@ int ibase_del_index(IBASE *ibase, int secid, int localid)
             iheader->status = -1;
             if(ibase->state->used_for == IB_USED_FOR_INDEXD)
             {
+#ifdef IB_USE_BMAP
                 /* unset bmap */
                 bmap_unset(ibase->bmaps[secid], docid);
+#endif
                 /* del int index */
                 if((n = ibase->state->int_index_fields_num) > 0) 
                 {
@@ -459,7 +465,9 @@ int ibase_add_document(IBASE *ibase, IBDATA *block)
                         {
                             mheader->status = -1;
                             iheader->status = -1;
-                            bmap_unset(ibase->bmaps[secid], mheader->docid);
+#ifdef IB_USE_BMAP
+                            bmap_unset(ibase->bmaps[secid], mheader->docid); 
+#endif
                             DEBUG_LOGGER(ibase->logger, "Update docid:%d globalid:%lld status:%d", localid, IBLL(docheader->globalid), docheader->status);
                             ret = 0;
                         }

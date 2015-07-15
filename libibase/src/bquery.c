@@ -535,8 +535,21 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
             doc_score = 0.0;
             base_score = 0.0;
             score = 0.0;
-            //if(headers[docid].status < 0 || headers[docid].globalid == 0) goto next;
-            if(bmap_check(ibase->bmaps[secid], docid) == 0) goto next;
+#ifdef IB_USE_BMAP
+            if(!(query->flag & IB_QUERY_IGNSTATUS))
+            {
+                if(query->flag & IB_QUERY_BMAP)
+                {
+                    if(bmap_check(ibase->bmaps[secid], docid) == 0) goto next;
+                }
+                else
+                {
+                    if(headers[docid].status < 0 || headers[docid].globalid == 0) goto next;
+                }
+            }
+#else
+            if(headers[docid].status < 0 || headers[docid].globalid == 0) goto next;
+#endif
             /* check fobidden terms in query string */
             if((query->flag & IB_QUERY_FORBIDDEN) && headers[docid].status<IB_SECURITY_OK)goto next;
             /* secure level */

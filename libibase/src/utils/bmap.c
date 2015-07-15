@@ -8,7 +8,7 @@
 #include <errno.h>
 #include "rwlock.h"
 #include "bmap.h"
-
+#define USE_BMAP_BITS 1
 void *bmap_init(char *file)
 {
     BMAP *bmap = NULL;
@@ -27,13 +27,11 @@ void *bmap_init(char *file)
                 fprintf(stderr, "mmap file(%s) failed, %s", file, strerror(errno));
                 _exit(-1);
             }
-#ifdef USE_BITS
-            /*
+#ifdef USE_BMAP_BITS
             if((bmap->bits = (char *)mmap(NULL, BMAP_ID_MAX/8, PROT_READ|PROT_WRITE, 
                     MAP_ANON|MAP_PRIVATE, -1, 0)) == NULL 
                     || bmap->bits == (void *)MAP_FAILED)
-            */
-            if((bmap->bits = (char *)malloc(BMAP_ID_MAX/8)) == NULL)
+            //if((bmap->bits = (char *)malloc(BMAP_ID_MAX/8)) == NULL)
             {
                 fprintf(stderr, "new mmap failed, %s", strerror(errno));
                 _exit(-1);
@@ -63,7 +61,7 @@ int bmap_resize(BMAP *bmap, int id)
        bytes = ((id / (8 *  BMAP_BASE_NUM)) + 1) * BMAP_BASE_NUM;
        ret =  ftruncate(bmap->fd, bytes);
        memset(bmap->mbits+bmap->bytes, 0, bytes - bmap->bytes);
-#ifdef USE_BITS
+#ifdef USE_BMAP_BITS
        memset(bmap->bits+bmap->bytes, 0, bytes - bmap->bytes);
 #endif
        bmap->bytes = bytes;
@@ -84,7 +82,7 @@ int bmap_set(void *p, int id)
         no = id / 8;
         off = id % 8;
         bmap->mbits[no] |= 1 << off;
-#ifdef USE_BITS
+#ifdef USE_BMAP_BITS
         bmap->bits[no] |= 1 << off;
 #endif
         RWLOCK_UNLOCK(bmap->mutex);
@@ -105,7 +103,7 @@ int bmap_unset(void *p, int id)
         no = id / 8;
         off = id % 8;
         bmap->mbits[no] &= ~(1 << off);
-#ifdef USE_BITS
+#ifdef USE_BMAP_BITS
         bmap->bits[no] &= ~(1 << off);
 #endif
         RWLOCK_UNLOCK(bmap->mutex);
@@ -120,7 +118,7 @@ int bmap_check(void *p, int id)
 
     if((bmap = (BMAP *)p) && id < bmap->id_max && bmap->bits)
     {
-#ifdef USE_BITS
+#ifdef USE_BMAP_BITS
         return (bmap->bits[(id/8)] & (1 << id % 8));
 #endif
     }
@@ -145,7 +143,7 @@ void bmap_clean(void *p)
     if((bmap = (BMAP *)p))
     {
 
-#ifdef USE_BITS
+#ifdef USE_BMAP_BITS
         munmap(bmap->bits, BMAP_ID_MAX/8);
 #endif
         munmap(bmap->mbits, BMAP_ID_MAX/8);
@@ -178,7 +176,7 @@ int main()
             list[i] = random()%TEST_ID_MAX;
         }
         TIMER_INIT(timer);
-#ifdef USE_BITS
+#ifdef USE_BMAP_BITS
         for(i = 0; i < TEST_MAX; i++)
         {
             no = list[i];
