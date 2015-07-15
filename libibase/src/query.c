@@ -14,6 +14,7 @@
 #include "lmap.h"
 #include "dmap.h"
 #include "immx.h"
+#include "bmap.h"
  
 /* binary list merging */
 ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
@@ -286,7 +287,8 @@ ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid)
             docid = docs[off];
             doc_score = 0.0;
             base_score = 0.0;
-            if(headers[docid].status < 0 || headers[docid].globalid == 0) goto next;
+            //if(headers[docid].status < 0 || headers[docid].globalid == 0) goto next;
+            if(bmap_check(ibase->bmaps[secid], docid) == 0) goto next;
             /* check fobidden terms in query string */
             /* secure level */
             if((k = headers[docid].slevel) < 0 || headers[docid].slevel > IB_SLEVEL_MAX || query->slevel_filter[k]  == 1) goto next;

@@ -19,6 +19,7 @@
 #include "imap.h"
 #include "lmap.h"
 #include "dmap.h"
+#include "bmap.h"
 #define PIHEADER(ibase, secid, docid) &(((IHEADER *)(ibase->state->headers[secid].map))[docid])
 #define PMHEADER(ibase, docid) &(((MHEADER *)(ibase->mheadersio.map))[docid])
 #ifndef LLI
@@ -222,6 +223,9 @@ term_state_update:
         }
         if(ibase->state->used_for == IB_USED_FOR_INDEXD)
         {
+            /* bmap */
+            if(docheader->status < 0) bmap_unset(ibase->bmaps[secid], docid);
+            else bmap_set(ibase->bmaps[secid], docid);
             /* index int */
             if((n = ibase->state->int_index_fields_num) > 0 
                     && (intlist = (int *)(block->data + docheader->intblock_off)))
@@ -315,6 +319,9 @@ int ibase_update_index(IBASE *ibase, int docid, IBDATA *block)
                 if(ibase->state->used_for == IB_USED_FOR_INDEXD)
                 {
                     secid = docheader->secid;
+                    /* bmap */
+                    if(iheader->status < 0) bmap_unset(ibase->bmaps[secid], docid);
+                    else bmap_set(ibase->bmaps[secid], docid);
                     /* index int */
                     if((n = ibase->state->int_index_fields_num) > 0 
                             && (intlist = (int *)(block->data + docheader->intblock_off)))
@@ -362,11 +369,11 @@ int ibase_update_index(IBASE *ibase, int docid, IBDATA *block)
 /* del index */
 int ibase_del_index(IBASE *ibase, int secid, int localid)
 {
+    int ret = -1, i = 0, k = 0, n = 0, docid = 0;
     MHEADER *mheader = NULL;
     IHEADER *iheader = NULL;
-    int ret = -1, i = 0, k = 0, n = 0;
 
-    if((mheader = PMHEADER(ibase, localid))) 
+    if((mheader = PMHEADER(ibase, localid)) && (docid = mheader->docid) >= 0) 
     {
         ibase->state->dtotal--;
         if(mheader->docid > 0 && (iheader = PIHEADER(ibase, mheader->secid, mheader->docid)))
@@ -375,6 +382,8 @@ int ibase_del_index(IBASE *ibase, int secid, int localid)
             iheader->status = -1;
             if(ibase->state->used_for == IB_USED_FOR_INDEXD)
             {
+                /* unset bmap */
+                bmap_unset(ibase->bmaps[secid], docid);
                 /* del int index */
                 if((n = ibase->state->int_index_fields_num) > 0) 
                 {
@@ -382,7 +391,7 @@ int ibase_del_index(IBASE *ibase, int secid, int localid)
                     k = 0;
                     for(i = IB_INT_OFF; i < n; i++)
                     {
-                        IMAP_DEL(ibase->state->mfields[secid][i], localid);
+                        IMAP_DEL(ibase->state->mfields[secid][i], docid);
                         k++;
                     }
                 }
@@ -393,7 +402,7 @@ int ibase_del_index(IBASE *ibase, int secid, int localid)
                     k = 0;
                     for(i = IB_LONG_OFF; i < n; i++)
                     {
-                        LMAP_DEL(ibase->state->mfields[secid][i], localid);
+                        LMAP_DEL(ibase->state->mfields[secid][i], docid);
                         k++;
                     }
                 }
@@ -404,7 +413,7 @@ int ibase_del_index(IBASE *ibase, int secid, int localid)
                     k = 0;
                     for(i = IB_DOUBLE_OFF; i < n; i++)
                     {
-                        DMAP_DEL(ibase->state->mfields[secid][i], localid);
+                        DMAP_DEL(ibase->state->mfields[secid][i], docid);
                         k++;
                     }
                 }
@@ -413,7 +422,7 @@ int ibase_del_index(IBASE *ibase, int secid, int localid)
         if(ibase->state->used_for == IB_USED_FOR_INDEXD 
                 && ibase->state->mmsource_status != IB_MMSOURCE_NULL)
         {
-            ret = db_del_data(PDB(ibase->source), localid);
+            ret = db_del_data(PDB(ibase->source), docid);
         }
         ret = 0;        
     }
@@ -443,13 +452,14 @@ int ibase_add_document(IBASE *ibase, IBDATA *block)
                 if(ibase->state->used_for == IB_USED_FOR_INDEXD)
                 {
                     if((mheader = PMHEADER(ibase, localid))
-                        && (iheader = PIHEADER(ibase, mheader->secid, mheader->docid)))
+                        && (iheader = PIHEADER(ibase, secid, mheader->docid)))
                     {
                         /* disabled */
                         if(docheader->status < 0)
                         {
                             mheader->status = -1;
                             iheader->status = -1;
+                            bmap_unset(ibase->bmaps[secid], mheader->docid);
                             DEBUG_LOGGER(ibase->logger, "Update docid:%d globalid:%lld status:%d", localid, IBLL(docheader->globalid), docheader->status);
                             ret = 0;
                         }

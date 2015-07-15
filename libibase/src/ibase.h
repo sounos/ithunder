@@ -93,6 +93,7 @@ extern "C" {
 #define  IB_DOCMAP_NAME          "ibase.docmap"
 #define  IB_MHEADER_NAME         "ibase.mheader"
 #define  IB_ITREE_NAME           "ibase.itree"
+#define  IB_BMAP_DIR             "bmap"
 #define  IB_SYNDB_DIR            "syndb"
 #define  IB_IDX_DIR              "idx"
 #define  IB_INDEX_DIR            "index"
@@ -766,6 +767,7 @@ typedef struct _IBASE
     ICHUNK  *qchunks[IB_CHUNKS_MAX];
     void *mindex[IB_SEC_MAX];
     void *mposting[IB_SEC_MAX];
+    void *bmaps[IB_SEC_MAX];
     void *index; /* index db */
     void *syndb; /* synonym db */
     void *mmtrie; /* dict */

@@ -27,9 +27,13 @@ void *bmap_init(char *file)
                 fprintf(stderr, "mmap file(%s) failed, %s", file, strerror(errno));
                 _exit(-1);
             }
+#ifdef USE_BITS
+            /*
             if((bmap->bits = (char *)mmap(NULL, BMAP_ID_MAX/8, PROT_READ|PROT_WRITE, 
                     MAP_ANON|MAP_PRIVATE, -1, 0)) == NULL 
                     || bmap->bits == (void *)MAP_FAILED)
+            */
+            if((bmap->bits = (char *)malloc(BMAP_ID_MAX/8)) == NULL)
             {
                 fprintf(stderr, "new mmap failed, %s", strerror(errno));
                 _exit(-1);
@@ -38,6 +42,7 @@ void *bmap_init(char *file)
             {
                 memcpy(bmap->bits, bmap->mbits, bmap->bytes);
             }
+#endif
             RWLOCK_INIT(bmap->mutex);
         }
         else
@@ -58,7 +63,9 @@ int bmap_resize(BMAP *bmap, int id)
        bytes = ((id / (8 *  BMAP_BASE_NUM)) + 1) * BMAP_BASE_NUM;
        ret =  ftruncate(bmap->fd, bytes);
        memset(bmap->mbits+bmap->bytes, 0, bytes - bmap->bytes);
+#ifdef USE_BITS
        memset(bmap->bits+bmap->bytes, 0, bytes - bmap->bytes);
+#endif
        bmap->bytes = bytes;
        bmap->id_max = bmap->bytes * 8;
     }
@@ -77,7 +84,9 @@ int bmap_set(void *p, int id)
         no = id / 8;
         off = id % 8;
         bmap->mbits[no] |= 1 << off;
+#ifdef USE_BITS
         bmap->bits[no] |= 1 << off;
+#endif
         RWLOCK_UNLOCK(bmap->mutex);
         ret = 0;
     }
@@ -96,7 +105,9 @@ int bmap_unset(void *p, int id)
         no = id / 8;
         off = id % 8;
         bmap->mbits[no] &= ~(1 << off);
+#ifdef USE_BITS
         bmap->bits[no] &= ~(1 << off);
+#endif
         RWLOCK_UNLOCK(bmap->mutex);
         ret = 0;
     }
@@ -107,9 +118,11 @@ int bmap_check(void *p, int id)
 {
     BMAP *bmap = NULL;
 
-    if((bmap = (BMAP *)p) && id < bmap->id_max)
+    if((bmap = (BMAP *)p) && id < bmap->id_max && bmap->bits)
     {
+#ifdef USE_BITS
         return (bmap->bits[(id/8)] & (1 << id % 8));
+#endif
     }
     return 0;
 }
@@ -118,7 +131,7 @@ int bmap_mcheck(void *p, int id)
 {
     BMAP *bmap = NULL;
 
-    if((bmap = (BMAP *)p) && id < bmap->id_max)
+    if((bmap = (BMAP *)p) && id < bmap->id_max && bmap->mbits)
     {
         return (bmap->mbits[(id/8)] & (1 << id % 8));
     }
@@ -131,7 +144,10 @@ void bmap_clean(void *p)
 
     if((bmap = (BMAP *)p))
     {
+
+#ifdef USE_BITS
         munmap(bmap->bits, BMAP_ID_MAX/8);
+#endif
         munmap(bmap->mbits, BMAP_ID_MAX/8);
         close(bmap->fd);
         RWLOCK_DESTROY(bmap->mutex);
@@ -162,6 +178,7 @@ int main()
             list[i] = random()%TEST_ID_MAX;
         }
         TIMER_INIT(timer);
+#ifdef USE_BITS
         for(i = 0; i < TEST_MAX; i++)
         {
             no = list[i];
@@ -172,6 +189,7 @@ int main()
         }
         TIMER_SAMPLE(timer);
         fprintf(stdout, "bmap_check[%d] time used:%lld\n", TEST_MAX, PT_LU_USEC(timer));
+#endif
         TIMER_RESET(timer);
         for(i = 0; i < TEST_MAX; i++)
         {
@@ -184,9 +202,9 @@ int main()
         TIMER_SAMPLE(timer);
         fprintf(stdout, "bmap_mcheck[%d] time used:%lld\n", TEST_MAX, PT_LU_USEC(timer));
 #ifdef TEST_BMAP_UNSET
-	for(i = 0; i < TEST_ID_MAX; i++)
+        for(i = 0; i < TEST_ID_MAX; i++)
         {
-	    if((i % 33) == 0) bmap_unset(bmap, i);
+            if((i % 33) == 0) bmap_unset(bmap, i);
         }
         TIMER_RESET(timer);
         for(i = 0; i < TEST_MAX; i++)
@@ -202,7 +220,8 @@ int main()
 #endif
         TIMER_CLEAN(timer);
         bmap_clean(bmap);
-	free(list);
+        free(list);
+        sleep(10);
     }
     return 0; 
 }

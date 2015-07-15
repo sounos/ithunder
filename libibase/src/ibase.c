@@ -24,6 +24,7 @@
 #include "imap.h"
 #include "lmap.h"
 #include "dmap.h"
+#include "bmap.h"
 #define UCHR(p) ((unsigned char *)p)
 #define ISSIGN(p) (*p == '@' || *p == '.' || *p == '-' || *p == '_')
 #define ISNUM(p) ((*p >= '0' && *p <= '9'))
@@ -270,10 +271,15 @@ int ibase_set_basedir(IBASE *ibase, char *dir, int used_for, int mmsource_status
         /* index */
         if(used_for == IB_USED_FOR_INDEXD)
         {
+            sprintf(path, "%s/%s/xxx", dir, IB_BMAP_DIR);
+            ibase_mkdir(path);
             /* index db */
             for(k = 0; k < ibase->state->nsecs; k++)
             {
                 x = ibase->state->secs[k];
+                /* bmap */
+                sprintf(path, "%s/%s/%d.bmap", dir, IB_BMAP_DIR, x);
+                ibase->bmaps[x] = bmap_init(path);
                 /* index */
                 sprintf(path, "%s/%s/%d", dir, IB_INDEX_DIR, x);
                 ibase->mindex[x] = mdb_init(path, 1);
@@ -360,9 +366,14 @@ void ibase_check_mindex(IBASE *ibase, int secid)
     {
         if(!ibase->mindex[secid])
         {
+            /* bmap */
+            sprintf(path, "%s/%s/%d.bmap", ibase->basedir, IB_BMAP_DIR, secid);
+            ibase->bmaps[secid] = bmap_init(path);
+            /* index */
             sprintf(path, "%s/%s/%d", ibase->basedir, IB_INDEX_DIR, secid);
             ibase->mindex[secid] = mdb_init(path, 1);
             mdb_set_block_incre_mode(ibase->mindex[secid], MDB_BLOCK_INCRE_DOUBLE);
+            /*posting*/
             sprintf(path, "%s/%s/%d", ibase->basedir, IB_POSTING_DIR, secid);
             ibase->mposting[secid] = mdb_init(path, 1);
             mdb_set_block_incre_mode(ibase->mposting[secid], MDB_BLOCK_INCRE_DOUBLE);
@@ -1541,6 +1552,7 @@ void ibase_clean(IBASE *ibase)
         for(k = 0; k < ibase->state->nsecs; k++)
         {
             x = ibase->state->secs[k];
+            if(ibase->bmaps[x]) bmap_clean(ibase->bmaps[x]);
             if(ibase->mindex[x]) mdb_clean(PMDB(ibase->mindex[x]));
             if(ibase->mposting[x]) mdb_clean(PMDB(ibase->mposting[x]));
             for(i = IB_INT_OFF; i < IB_INT_TO; i++)
@@ -1648,15 +1660,9 @@ IBASE *ibase_init()
         ibase->enable_term              = ibase_enable_term;
         ibase->disable_term             = ibase_disable_term;
         ibase->set_xheader              = ibase_set_xheader;
-        ibase->set_int_fields           = ibase_set_int_fields;
-        ibase->set_long_fields          = ibase_set_long_fields;
-        ibase->set_double_fields        = ibase_set_double_fields;
         ibase->set_rank                 = ibase_set_rank;
         ibase->set_category             = ibase_set_category;
         ibase->set_slevel               = ibase_set_slevel;
-        ibase->set_int_field            = ibase_set_int_field;
-        ibase->set_long_field           = ibase_set_long_field;
-        ibase->set_double_field         = ibase_set_double_field;
         ibase->qparser                  = ibase_qparser;
         ibase->synparser                = ibase_synparser;
         ibase->set_index_status         = ibase_set_index_status;

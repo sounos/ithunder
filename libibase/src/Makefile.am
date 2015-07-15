@@ -27,6 +27,8 @@ utils/immx.h \
 utils/immx.c \
 utils/xmm.h \
 utils/xmm.c \
+utils/bmap.h \
+utils/bmap.c \
 utils/mtree64.h \
 utils/mtree64.c \
 utils/zvbcode.c \
