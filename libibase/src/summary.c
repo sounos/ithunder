@@ -426,7 +426,7 @@ int ibase_read_summary(IBASE *ibase, IQSET *qset, IRECORD *records, char *summar
             for(i = 0; i < qset->count; i++)
             {
                 TIMER_SAMPLE(timer);
-                if((docid = ibase_docid(ibase, (int64_t)records[i].globalid)) > 0 
+                if((docid = ibase_localid(ibase, (int64_t)records[i].globalid)) > 0 
                         && docid <= ibase->state->docid && (source = zblock))
 
                 {
@@ -549,7 +549,7 @@ int ibase_read_items(IBASE *ibase, int64_t *list, int count, char *out)
             p += sprintf(p, "({");
             for(i = 0; i < count; i++)
             {
-                if((docid = ibase_docid(ibase, list[i])) > 0
+                if((docid = ibase_localid(ibase, list[i])) > 0
                         && docid <= ibase->state->docid && (source = zblock))
                 {
                     if(db_read_data(PDB(ibase->source), docid, zblock) <= 0) 

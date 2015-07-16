@@ -1225,7 +1225,7 @@ int ibase_set_phrase_status(IBASE *ibase, int status)
 }
 
 /* get docid with globalid */
-int ibase_docid(IBASE *ibase, int64_t globalid)
+int ibase_localid(IBASE *ibase, int64_t globalid)
 {
     char line[IB_LINE_MAX];
     int docid = 0, n = 0;
@@ -1283,7 +1283,7 @@ int ibase_set_xheader(IBASE *ibase, XHEADER *xheader)
     {
         MUTEX_LOCK(ibase->mutex);
         if((mheaders = (MHEADER *)(ibase->mheadersio.map)) 
-                && (localid = ibase_docid(ibase, globalid)) > 0 
+                && (localid = ibase_localid(ibase, globalid)) > 0 
                 && localid <= ibase->state->docid)
         {
             if((iheader = PIHEADER(ibase, mheaders[localid].secid, mheaders[localid].docid))) 
@@ -1310,7 +1310,7 @@ int ibase_set_rank(IBASE *ibase, int64_t globalid, double rank)
     {
         MUTEX_LOCK(ibase->mutex);
         if((mheaders = (MHEADER *)(ibase->mheadersio.map)) 
-                && (localid = ibase_docid(ibase, globalid)) > 0 
+                && (localid = ibase_localid(ibase, globalid)) > 0 
                 && localid <= ibase->state->docid)
         {
             if((iheader = PIHEADER(ibase, mheaders[localid].secid, mheaders[localid].docid))) 
@@ -1336,7 +1336,7 @@ int ibase_set_category(IBASE *ibase, int64_t globalid, int64_t category)
     {
         MUTEX_LOCK(ibase->mutex);
         if((mheaders = (MHEADER *)(ibase->mheadersio.map)) 
-                && (localid = ibase_docid(ibase, globalid)) > 0 
+                && (localid = ibase_localid(ibase, globalid)) > 0 
                 && localid <= ibase->state->docid)
         {
             if((iheader = PIHEADER(ibase, mheaders[localid].secid, mheaders[localid].docid))) 
@@ -1362,7 +1362,7 @@ int ibase_set_slevel(IBASE *ibase, int64_t globalid, int slevel)
     {
         MUTEX_LOCK(ibase->mutex);
         if((mheaders = (MHEADER *)(ibase->mheadersio.map)) 
-                && (localid = ibase_docid(ibase, globalid)) > 0 
+                && (localid = ibase_localid(ibase, globalid)) > 0 
                 && localid <= ibase->state->docid)
         {
             if((iheader = PIHEADER(ibase, mheaders[localid].secid, mheaders[localid].docid))) 
@@ -1409,7 +1409,7 @@ int ibase_enable_document(IBASE *ibase, int64_t globalid)
     if(ibase && ibase->state->used_for == IB_USED_FOR_INDEXD && globalid)
     {
         MUTEX_LOCK(ibase->mutex);
-        if((docid = ibase_docid(ibase, globalid))>= 0 && docid <= ibase->state->docid 
+        if((docid = ibase_localid(ibase, globalid))>= 0 && docid <= ibase->state->docid 
                 && (mheaders = (MHEADER *)ibase->mheadersio.map))
         {
             mheaders[docid].status = 0;
@@ -1428,7 +1428,7 @@ int ibase_disable_document(IBASE *ibase, int64_t globalid)
     if(ibase && ibase->state->used_for == IB_USED_FOR_INDEXD && globalid)
     {
         MUTEX_LOCK(ibase->mutex);
-        if((docid = ibase_docid(ibase, globalid)) >= 0 && docid <= ibase->state->docid 
+        if((docid = ibase_localid(ibase, globalid)) >= 0 && docid <= ibase->state->docid 
                 && (mheaders = (MHEADER *)ibase->mheadersio.map))
         {
             mheaders[docid].status = -1;

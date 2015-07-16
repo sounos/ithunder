@@ -111,6 +111,7 @@ extern "C" {
 #define  IB_PATH_MAX             1024
 #define  IB_CHARSET_MAX          256
 #endif
+#define  IB_USE_BMAP             1
 #pragma pack(push, 4)
 /* block data */
 typedef struct _IBDATA
@@ -769,7 +770,9 @@ typedef struct _IBASE
     ICHUNK  *qchunks[IB_CHUNKS_MAX];
     void *mindex[IB_SEC_MAX];
     void *mposting[IB_SEC_MAX];
-    //void *bmaps[IB_SEC_MAX];
+#ifdef IB_USE_BMAP
+    void *bmaps[IB_SEC_MAX];
+#endif
     void *index; /* index db */
     void *syndb; /* synonym db */
     void *mmtrie; /* dict */
@@ -863,7 +866,7 @@ int ibase_set_compression_status(IBASE *ibase, int status);
 /* set source file mmap status */
 int ibase_set_mmsource_status(IBASE *ibase, int status);
 /* get docid with globalid */
-int ibase_docid(IBASE *ibase, int64_t globalid);
+int ibase_localid(IBASE *ibase, int64_t globalid);
 /* set xheader */
 int ibase_set_xheader(IBASE *ibase, XHEADER *xheader);
 /* set xint_fields */
