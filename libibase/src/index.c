@@ -428,6 +428,7 @@ int ibase_del_index(IBASE *ibase, int secid, int localid)
         if(ibase->state->used_for == IB_USED_FOR_INDEXD 
                 && ibase->state->mmsource_status != IB_MMSOURCE_NULL)
         {
+            WARN_LOGGER(ibase->logger, "delete source[%d] %d bytes", localid, db_get_data_len(PDB(ibase->source), localid));
             ret = db_del_data(PDB(ibase->source), localid);
         }
         ret = 0;        

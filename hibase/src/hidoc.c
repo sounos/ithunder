@@ -1917,7 +1917,7 @@ int hidoc_genindex(HIDOC *hidoc, HINDEX *hindex, FHEADER *fheader, IFIELD *field
             fprintf(stdout, "segment content{%s} len:%d result:0 terms\n", content, ncontent);
             _exit(-1);
             */
-            FATAL_LOGGER(hidoc->logger, "NO terms globalid:%lld index_text_num:%d content:%s", LL64(fheader->globalid), index_text_num, content);
+            FATAL_LOGGER(hidoc->logger, "NO terms globalid:%lld index_text_num:%d", LL64(fheader->globalid), index_text_num);
             goto end;
         }
         block->ndata = sizeof(DOCHEADER) 

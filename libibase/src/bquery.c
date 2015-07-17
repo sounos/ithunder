@@ -249,7 +249,7 @@ XNODE *xmap_pop(IBASE *ibase, XMAP *xmap)
 }
 
 void ibase_unindex(IBASE *ibase, ITERM *itermlist, XMAP *_xmap_, 
-        int is_query_phrase, int qfhits, int _x_)
+        int is_query_phrase, int qfhits, int _x_, int *merge_total)
 {
     int _n_ = 0 , *_np_ = NULL;
 
@@ -333,6 +333,7 @@ void ibase_unindex(IBASE *ibase, ITERM *itermlist, XMAP *_xmap_,
         itermlist[_x_].xnode.no = _n_;
         itermlist[_x_].xnode.xmin = _n_;
         itermlist[_x_].xnode.xmax = _n_;
+        if(merge_total) (*merge_total)++;
         return xmap_push(ibase, is_query_phrase, qfhits, _xmap_, &(itermlist[_x_].xnode));
     }
     return ;
@@ -347,7 +348,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
         double_index_to = 0, range_flag = 0, prev = 0, last = -1, no = 0, next = 0, fid = 0, 
         nxrecords = 0, is_field_sort = 0, scale = 0, is_groupby = 0, total = 0, ignore_rank = 0, 
         long_index_from = 0, long_index_to = 0, kk = 0, nx = 0, prevnext = 0, ii = 0, jj = 0, 
-        imax = 0, imin = 0, xint = 0, bithit = 0, j = 0, *vint = NULL;
+        imax = 0, imin = 0, xint = 0, bithit = 0, j = 0, *vint = NULL, merge_total = 0;
         //syns[IB_SYNTERM_MAX], 
     double score = 0.0, p1 = 0.0, p2 = 0.0, dfrom = 0.0, *vdouble = NULL,
            tf = 1.0, Py = 0.0, Px = 0.0, dto = 0.0, xdouble = 0.0;
@@ -487,7 +488,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
                     itermlist[i].sposting = NULL;
                     itermlist[i].eposting = NULL;
                 }
-                ibase_unindex(ibase, itermlist, xmap, is_query_phrase, query->qfhits, x);
+                ibase_unindex(ibase, itermlist, xmap, is_query_phrase, query->qfhits, x, &merge_total);
             }
             /* synonym term */
             /*
@@ -851,7 +852,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
                 }
                 //xnode->bitphrase[i] = 0;
                 //xnode->bitquery[i] = 0;
-                ibase_unindex(ibase, itermlist, xmap, is_query_phrase, query->qfhits, x);
+                ibase_unindex(ibase, itermlist, xmap, is_query_phrase, query->qfhits, x, &merge_total);
                 //UNINDEX(ibase, is_query_phrase, itermlist, xmap, x, n, np);
             }while(--i >= 0);
             DEBUG_LOGGER(ibase->logger, "docid:%d/%lld base_score:%lld score:%f doc_score:%lld", docid, IBLL(headers[docid].globalid), IBLL(base_score), score, IBLL(doc_score));
@@ -958,7 +959,7 @@ next:
                 x = xnode->hits[i];
                 xnode->bitphrase[i] = 0;
                 xnode->bitquery[i] = 0;
-                ibase_unindex(ibase, itermlist, xmap, is_query_phrase, query->qfhits, x);
+                ibase_unindex(ibase, itermlist, xmap, is_query_phrase, query->qfhits, x, &merge_total);
             }while(--i >= 0);
         }
         TIMER_SAMPLE(timer);
@@ -1003,7 +1004,7 @@ next:
                 res->ngroups = IB_GROUP_MAX;
             }
         }
-        ACCESS_LOGGER(ibase->logger, "bsort(%d) %d documents res:%d time used:%lld ioTime:%lld sortTime:%lld ncatgroups:%d ngroups:%d", query->qid, res->total, res->count, PT_USEC_U(timer), IBLL(res->io_time), IBLL(res->sort_time),res->ncatgroups, res->ngroups);
+        REALLOG(ibase->logger, "bquery(%d) merge(%d) res(%d) documents topK(%d) time used:%lld ioTime:%lld sortTime:%lld ncatgroups:%d ngroups:%d", query->qid, merge_total, res->total, res->count, PT_USEC_U(timer), IBLL(res->io_time), IBLL(res->sort_time),res->ncatgroups, res->ngroups);
 end:
         //free db blocks
         if(itermlist)

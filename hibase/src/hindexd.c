@@ -469,8 +469,8 @@ void indexd_query_handler(void *args)
                 if((pquery->from + pquery->count) > res->count)
                     qset.count = res->count - pquery->from;
                 x = pquery->from;
-                if(qset.count > 0 && (n = (IB_SUMMARY_MAX * qset.count)) > 0 
-                        && (conn = httpd->findconn(httpd, qtask->index))
+                if((conn = httpd->findconn(httpd, qtask->index))
+                    && qset.count > 0 && (n = (IB_SUMMARY_MAX * qset.count)) > 0 
                         &&  conn == qtask->conn
                         && (block = conn->newchunk(conn, n)))
                 {
@@ -500,6 +500,10 @@ void indexd_query_handler(void *args)
                     {
                         conn->push_chunk(conn, HTTP_BAD_REQUEST, strlen(HTTP_BAD_REQUEST));
                     }
+                }
+                else
+                {
+                        if(conn) conn->push_chunk(conn, HTTP_NO_CONTENT, strlen(HTTP_NO_CONTENT));
                 }
             }
             else
@@ -1699,6 +1703,10 @@ int httpd_query_handler(CONN *conn, IQUERY *query)
                             conn->freechunk(conn,block);
                             ret = -1;
                         }
+                    }
+                    else
+                    {
+                        conn->push_chunk(conn, HTTP_NO_CONTENT, strlen(HTTP_NO_CONTENT));
                     }
                     ibase_push_chunk(db, ichunk);
                     if(ret == -1) goto err_end;
