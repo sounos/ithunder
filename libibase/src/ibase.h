@@ -74,7 +74,9 @@ extern "C" {
 #define  IB_BITMAP_COUNT        48
 #define  IB_BITMAPS_MAX         2048
 #define  IB_XNODE_MAX           10000
+#define  IB_XNODE_BASE          1000000
 #define  IB_XMAPS_MAX           2048
+#define  IB_HMAPS_MAX           256
 #define  IB_STREES_MAX          2048
 #define  IB_MMX_MAX             2048
 #define  IB_USED_FOR_INDEXD     0x00
@@ -111,7 +113,7 @@ extern "C" {
 #define  IB_PATH_MAX             1024
 #define  IB_CHARSET_MAX          256
 #endif
-#define  IB_USE_BMAP             1
+/* #define  IB_USE_BMAP             1 */
 #pragma pack(push, 4)
 /* block data */
 typedef struct _IBDATA
@@ -148,6 +150,14 @@ typedef struct _XMAP
     int bits;
     XNODE *xnodes[IB_XNODE_MAX];
 }XMAP;
+typedef struct _HMAP
+{
+    int base;
+    int min;
+    int max;
+    int bits;
+    XNODE *xnodes[IB_XNODE_BASE];
+}HMAP;
 /*
 typedef struct _IWHO
 {
@@ -743,6 +753,7 @@ typedef struct _IBASE
     int nqiblocks; 
     int nqiterms;
     int nqxmaps; 
+    int nqhmaps; 
     int nqstrees;
     int nqmmxs;
     int nqchunks;
@@ -755,6 +766,7 @@ typedef struct _IBASE
     void *mutex_stree;
     void *mutex_mmx;
     void *mutex_xmap;
+    void *mutex_hmap;
     void *mutex_record;
     void *mutex_segmentor;
     void *mutex_termstate;
@@ -765,6 +777,7 @@ typedef struct _IBASE
     IBLOCK *qiblocks[IB_IBLOCKS_MAX];
     ITERM *qiterms[IB_QITERMS_MAX];
     XMAP *qxmaps[IB_XMAPS_MAX];
+    HMAP *qhmaps[IB_HMAPS_MAX];
     void *qstrees[IB_STREES_MAX];
     void *qmmxs[IB_MMX_MAX];
     ICHUNK  *qchunks[IB_CHUNKS_MAX];
@@ -895,6 +908,8 @@ int ibase_set_log_level(IBASE *ibase, int level);
 //ICHUNK *ibase_mquery(IBASE *ibase, IQUERY *query);
 /* get secs */
 int ibase_get_secs(IBASE *ibase, int16_t *nosecs, int *secs);
+/* hash query */
+ICHUNK *ibase_hquery(IBASE *ibase, IQUERY *query, int secid);
 /* query with binary list merging */
 ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid);
 ICHUNK *ibase_query(IBASE *ibase, IQUERY *query, int secid);
