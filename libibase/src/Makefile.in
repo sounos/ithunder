@@ -122,12 +122,13 @@ am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includedir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
 libibase_la_LIBADD =
 am_libibase_la_OBJECTS = libibase_la-ibase.lo libibase_la-index.lo \
-	libibase_la-bquery.lo libibase_la-query.lo \
-	libibase_la-summary.lo libibase_la-logger.lo \
-	libibase_la-mmtrie.lo libibase_la-db.lo libibase_la-mdb.lo \
-	libibase_la-imap.lo libibase_la-lmap.lo libibase_la-dmap.lo \
-	libibase_la-immx.lo libibase_la-xmm.lo libibase_la-bmap.lo \
-	libibase_la-mtree64.lo libibase_la-zvbcode.lo
+	libibase_la-bquery.lo libibase_la-hquery.lo \
+	libibase_la-query.lo libibase_la-summary.lo \
+	libibase_la-logger.lo libibase_la-mmtrie.lo libibase_la-db.lo \
+	libibase_la-mdb.lo libibase_la-imap.lo libibase_la-lmap.lo \
+	libibase_la-dmap.lo libibase_la-immx.lo libibase_la-xmm.lo \
+	libibase_la-bmap.lo libibase_la-mtree64.lo \
+	libibase_la-zvbcode.lo
 libibase_la_OBJECTS = $(am_libibase_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -318,6 +319,7 @@ libibase_la_SOURCES = ibase.c \
 ibase.h \
 index.c \
 bquery.c \
+hquery.c \
 query.c \
 summary.c \
 utils/logger.h \
@@ -434,6 +436,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libibase_la-bquery.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libibase_la-db.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libibase_la-dmap.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libibase_la-hquery.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libibase_la-ibase.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libibase_la-imap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libibase_la-immx.Plo@am__quote@
@@ -489,6 +492,13 @@ libibase_la-bquery.lo: bquery.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='bquery.c' object='libibase_la-bquery.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libibase_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libibase_la-bquery.lo `test -f 'bquery.c' || echo '$(srcdir)/'`bquery.c
+
+libibase_la-hquery.lo: hquery.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libibase_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libibase_la-hquery.lo -MD -MP -MF $(DEPDIR)/libibase_la-hquery.Tpo -c -o libibase_la-hquery.lo `test -f 'hquery.c' || echo '$(srcdir)/'`hquery.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libibase_la-hquery.Tpo $(DEPDIR)/libibase_la-hquery.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='hquery.c' object='libibase_la-hquery.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libibase_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libibase_la-hquery.lo `test -f 'hquery.c' || echo '$(srcdir)/'`hquery.c
 
 libibase_la-query.lo: query.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libibase_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libibase_la-query.lo -MD -MP -MF $(DEPDIR)/libibase_la-query.Tpo -c -o libibase_la-query.lo `test -f 'query.c' || echo '$(srcdir)/'`query.c

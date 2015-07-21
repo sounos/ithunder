@@ -43,6 +43,7 @@ extern "C" {
 #define  IB_QUERY_FIELDS        0x200
 #define  IB_QUERY_BMAP          0x400
 #define  IB_QUERY_IGNSTATUS     0x800
+#define  IB_QUERY_HASH          0x1000
 #define  IB_IS_DISPLAY          0x01
 #define  IB_IS_HIGHLIGHT        0x02
 #define  IB_SUMMARY_MAX         8192
@@ -74,7 +75,8 @@ extern "C" {
 #define  IB_BITMAP_COUNT        48
 #define  IB_BITMAPS_MAX         2048
 #define  IB_XNODE_MAX           10000
-#define  IB_XNODE_BASE          1000000
+#define  IB_HASH_MAX            2000
+#define  IB_HASH_BASE           1000000
 #define  IB_XMAPS_MAX           2048
 #define  IB_HMAPS_MAX           256
 #define  IB_STREES_MAX          2048
@@ -150,14 +152,6 @@ typedef struct _XMAP
     int bits;
     XNODE *xnodes[IB_XNODE_MAX];
 }XMAP;
-typedef struct _HMAP
-{
-    int base;
-    int min;
-    int max;
-    int bits;
-    XNODE *xnodes[IB_XNODE_BASE];
-}HMAP;
 /*
 typedef struct _IWHO
 {
@@ -217,6 +211,26 @@ typedef struct _SYNTERM
     int count;
     int syns[IB_SYNTERM_MAX];
 }SYNTERM;
+
+typedef struct _QWAIT
+{
+    int  num;
+    uint8_t list[IB_QUERY_MAX];
+}QWAIT;
+typedef struct _HMAP
+{
+    int count;
+    int bits;
+    int base;
+    int base_max;
+    int min;
+    int max;
+    int is_query_phrase;
+    int qfhits;
+    ITERM *itermlist;    
+    XNODE *xnodes[IB_HASH_BASE];
+    QWAIT hash[IB_HASH_MAX];
+}HMAP;
 /* term state */
 typedef struct _TERMSTATE
 {

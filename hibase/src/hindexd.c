@@ -177,10 +177,12 @@ static char *e_argvs[] =
     "bmap",
 #define E_ARGV_BMAP         42
     "ignstatus",
-#define E_ARGV_IGNSTATUS     43
+#define E_ARGV_IGNSTATUS    43
+    "qhash",
+#define E_ARGV_QHASH        44
     ""
 };
-#define  E_ARGV_NUM         44
+#define  E_ARGV_NUM         45
 IBASE *ibase_init_db(int dbid);
 void indexd_query_handler(void *args);
 int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query);
@@ -340,7 +342,14 @@ void indexd_query_handler(void *args)
         xchunk = qtask->chunk;
         if(pquery->nquery > 0) 
         {
-            ichunk = ibase_bquery(db, pquery, secid);
+            if(pquery->flag & IB_QUERY_HASH)
+            {
+                ichunk = ibase_hquery(db, pquery, secid);
+            }
+            else
+            {
+                ichunk = ibase_bquery(db, pquery, secid);
+            }
         }
         else 
             ichunk = ibase_query(db, pquery, secid);
@@ -679,7 +688,16 @@ int indexd_data_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *ch
                             else
                             {
                                 if(pquery->nquery > 0) 
-                                    ichunk = ibase_bquery(db, pquery, pquery->secid);
+                                {
+                                    if(pquery->flag & IB_QUERY_HASH)
+                                    {
+                                        ichunk = ibase_hquery(db, pquery, pquery->secid);
+                                    }
+                                    else
+                                    {
+                                        ichunk = ibase_bquery(db, pquery, pquery->secid);
+                                    }
+                                }
                                 else 
                                     ichunk = ibase_query(db, pquery, pquery->secid);
                                 if(ichunk)
@@ -1009,6 +1027,9 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                             break;
                         case E_ARGV_IGNSTATUS:
                             if(atoi(p)) query->flag |= IB_QUERY_IGNSTATUS;
+                            break;
+                        case E_ARGV_QHASH:
+                            if(atoi(p)) query->flag |= IB_QUERY_HASH;
                             break;
                         case E_ARGV_HITSCALE:
                             hitscale = p;
