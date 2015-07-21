@@ -75,8 +75,8 @@ extern "C" {
 #define  IB_BITMAP_COUNT        48
 #define  IB_BITMAPS_MAX         2048
 #define  IB_XNODE_MAX           10000
-#define  IB_HASH_MAX            2000
-#define  IB_HASH_BASE           1000000
+#define  IB_HASH_MAX            400
+#define  IB_HASH_BASE           5000000
 #define  IB_XMAPS_MAX           2048
 #define  IB_HMAPS_MAX           256
 #define  IB_STREES_MAX          2048

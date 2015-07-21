@@ -108,12 +108,13 @@ void hmap_push(IBASE *ibase, HMAP *hmap, int no)
             if(hmap->count == 0)
             {
                 hmap->min = hmap->max = hid;
-                xnodes[hid] = pxnode;
             }
             if(hid < hmap->min) hmap->min = hid;
-            if(hid < hmap->max) hmap->max = hid;
+            if(hid > hmap->max) hmap->max = hid;
+            xnodes[hid] = pxnode;
             hmap->count++;
         }
+        //WARN_LOGGER(ibase->logger, "min:%d max:%d count:%d hid:%d base:%d old:%d", hmap->min, hmap->max, hmap->count, hid, base, old);
     }
     else
     {
@@ -133,13 +134,11 @@ XNODE *hmap_pop(IBASE *ibase, HMAP *hmap)
        if(hmap->count > 0)
        {
            i = hmap->min;
-           while(i <= hmap->max && (pxnode = xnodes[i]) == NULL)
-           {
-                ++i;
-           }
-           if(pxnode) xnodes[i] = NULL;
-           hmap->min = ++i;
+           while((pxnode = xnodes[i]) == NULL && i < hmap->max)++i;
+           xnodes[i] = NULL;
+           if(i < hmap->max) hmap->min = ++i;
            --(hmap->count);
+           //WARN_LOGGER(ibase->logger, "found:%d min:%d max:%d count:%d", i, hmap->min, hmap->max, hmap->count);
            break;
        }
        else
@@ -918,7 +917,7 @@ next:
                 res->ngroups = IB_GROUP_MAX;
             }
         }
-        REALLOG(ibase->logger, "bquery(%d) merge(%d) res(%d) documents topK(%d) time used:%lld ioTime:%lld sortTime:%lld ncatgroups:%d ngroups:%d", query->qid, merge_total, res->total, res->count, PT_USEC_U(timer), IBLL(res->io_time), IBLL(res->sort_time),res->ncatgroups, res->ngroups);
+        REALLOG(ibase->logger, "hquery(%d) merge(%d) res(%d) documents topK(%d) time used:%lld ioTime:%lld sortTime:%lld ncatgroups:%d ngroups:%d base:%d-%d min:%d max:%d count:%d", query->qid, merge_total, res->total, res->count, PT_USEC_U(timer), IBLL(res->io_time), IBLL(res->sort_time),res->ncatgroups, res->ngroups, hmap->base, hmap->base_max, hmap->min, hmap->max, hmap->count);
 end:
         //free db blocks
         if(itermlist)
