@@ -44,6 +44,7 @@ extern "C" {
 #define  IB_QUERY_BMAP          0x400
 #define  IB_QUERY_IGNSTATUS     0x800
 #define  IB_QUERY_HASH          0x1000
+#define  IB_QUERY_IGNRANK       0x2000
 #define  IB_IS_DISPLAY          0x01
 #define  IB_IS_HIGHLIGHT        0x02
 #define  IB_SUMMARY_MAX         8192
@@ -75,8 +76,8 @@ extern "C" {
 #define  IB_BITMAP_COUNT        48
 #define  IB_BITMAPS_MAX         2048
 #define  IB_XNODE_MAX           10000
-#define  IB_HASH_MAX            400
-#define  IB_HASH_BASE           5000000
+#define  IB_HASH_MAX            200
+#define  IB_HASH_BASE           10000000
 #define  IB_XMAPS_MAX           2048
 #define  IB_HMAPS_MAX           256
 #define  IB_STREES_MAX          2048
@@ -133,8 +134,8 @@ typedef struct _XNODE
     int   nvhits;
     int   nhits;
     int   nhitfields;
-    int   bithit;
-    int   bitnot;
+    int   bitfhit;
+    int   bitfnot;
     short which;
     short no;
     short xmin;
@@ -143,15 +144,7 @@ typedef struct _XNODE
     short bitquery[IB_QUERY_MAX];
     short bitphrase[IB_QUERY_MAX];
 }XNODE;
-/* XMAP */
-typedef struct _XMAP
-{
-    int count;
-    int min;
-    int max;
-    int bits;
-    XNODE *xnodes[IB_XNODE_MAX];
-}XMAP;
+
 /*
 typedef struct _IWHO
 {
@@ -176,8 +169,8 @@ typedef struct _ITERM
     int prevnext_size;
     int last;
     int weight;
-    int bithit;
-    int bitnot;
+    int bitfhit;
+    int bitfnot;
     int16_t bits;
     int16_t no;
     int16_t synno;
@@ -217,16 +210,34 @@ typedef struct _QWAIT
     int  num;
     uint8_t list[IB_QUERY_MAX];
 }QWAIT;
+/* XMAP */
+typedef struct _XMAP
+{
+    int flag;
+    int8_t is_query_phrase;
+    int8_t is_query_bitfhit;
+    int8_t is_query_ffilter;
+    int8_t is_query_qhits;
+    int qfhits;
+    int count;
+    int min;
+    int max;
+    ITERM *itermlist;
+    XNODE *xnodes[IB_XNODE_MAX];
+}XMAP;
 typedef struct _HMAP
 {
     int count;
-    int bits;
     int base;
     int base_max;
     int min;
     int max;
-    int is_query_phrase;
+    int flag;
     int qfhits;
+    int8_t is_query_phrase;
+    int8_t is_query_bitfhit;
+    int8_t is_query_ffilter;
+    int8_t is_query_qhits;
     ITERM *itermlist;    
     XNODE *xnodes[IB_HASH_BASE];
     QWAIT hash[IB_HASH_MAX];
@@ -526,8 +537,8 @@ typedef struct _QTERM
     int   synno;
     int   prev;
     int   next;
-    int   bithit;
-    int   bitnot;
+    int   bitfhit;
+    int   bitfnot;
     double idf;
 }QTERM;
 

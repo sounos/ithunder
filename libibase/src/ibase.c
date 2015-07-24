@@ -934,7 +934,7 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                                         if(fid >=0)
                                         {
                                             query->flag |= IB_QUERY_FIELDS;
-                                            qterms[x].bithit |= 1 << fid;
+                                            qterms[x].bitfhit |= 1 << fid;
                                         }
                                         qterms[x].flag |= QTERM_BIT_AND;
                                         if(prevnext && last_no >= 0)
@@ -1056,7 +1056,7 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                                         if(fid >=0)
                                         {
                                             query->flag |= IB_QUERY_FIELDS;
-                                            qterms[x].bitnot |= 1 << fid;
+                                            qterms[x].bitfnot |= 1 << fid;
                                         }
                                         else
                                         {
@@ -1107,8 +1107,8 @@ int ibase_qparser(IBASE *ibase, int fid, char *query_str, char *not_str, IQUERY 
                 termid = query->qterms[i].id  = qterms[z].id;
                 query->qterms[i].size = qterms[z].size;
                 query->qterms[i].synno = i;
-                query->qterms[i].bitnot = qterms[z].bitnot;
-                query->qterms[i].bithit = qterms[z].bithit;
+                query->qterms[i].bitfnot = qterms[z].bitfnot;
+                query->qterms[i].bitfhit = qterms[z].bitfhit;
                 if(termid <= ibase->state->termid && (n = (termstates[termid].total)) > 0)
                 {
                     query->qterms[i].idf = log(((double)N-(double )n+0.5f)/((double)n + 0.5f));

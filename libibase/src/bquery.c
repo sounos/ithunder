@@ -61,18 +61,25 @@ XMAP *ibase_pop_xmap(IBASE *ibase)
     }
     return xmap;
 }
-#define BITXHIT(ibase, is_query_phrase, qfhits, old, pxnode, _m_)               \
+#define BITXHIT(ibase, xmap, old, pxnode, _m_)                                  \
 do                                                                              \
 {                                                                               \
     _m_ = old->nhits++;                                                         \
-    if(!(pxnode->bithits & old->bithits)) old->nvhits += pxnode->nvhits;        \
     old->hits[_m_] = pxnode->which;                                             \
-    old->bithits |= pxnode->bithits;                                            \
-    old->bitfields |= pxnode->bitfields;                                        \
-    old->bithit |= pxnode->bithit;                                              \
-    old->bitnot |= pxnode->bitnot;                                              \
-    if(pxnode->bitfields & qfhits) old->nhitfields++;                           \
-    if(ibase->state->phrase_status != IB_PHRASE_DISABLED && is_query_phrase)    \
+    if(xmap->flag & IB_QUERY_IGNRANK) break;                                    \
+    if(xmap->is_query_qhits)                                                    \
+    {                                                                           \
+        if(!(pxnode->bithits & old->bithits)) old->nvhits += pxnode->nvhits;    \
+        old->bithits |= pxnode->bithits;                                        \
+    }                                                                           \
+    if(xmap->is_query_ffilter)    old->bitfields |= pxnode->bitfields;          \
+    if(xmap->is_query_bitfhit)                                                  \
+    {                                                                           \
+        old->bitfhit |= pxnode->bitfhit;                                        \
+        old->bitfnot |= pxnode->bitfnot;                                        \
+    }                                                                           \
+    if(xmap->qfhits && (pxnode->bitfields & xmap->qfhits)) old->nhitfields++;   \
+    if(xmap->is_query_phrase)                                                   \
     {                                                                           \
         if(pxnode->no < old->xmax)                                              \
         {                                                                       \
@@ -89,8 +96,8 @@ do                                                                              
         else if(pxnode->no > old->xmax) old->xmax = pxnode->no;                 \
     }                                                                           \
 }while(0)
-
-void xmap_push(IBASE *ibase, int is_query_phrase, int qfhits, XMAP *xmap, XNODE *pxnode)
+#define XMAP_RESET(ibase, hmap, secid)
+void xmap_push(IBASE *ibase, XMAP *xmap, XNODE *pxnode)
 {
     int _x_ = 0, _i_ = 0, _n_ = 0, _z_ = 0, _to_ = 0;
     XNODE **xnodes = NULL, *old = NULL;
@@ -112,13 +119,13 @@ void xmap_push(IBASE *ibase, int is_query_phrase, int qfhits, XMAP *xmap, XNODE 
         {
             //ACCESS_LOGGER(ibase->logger, "docid:%d min:%d[%d] max:%d[%d] count:%d", pxnode->docid, xmap->min, xnodes[xmap->min]->docid, xmap->max,  xnodes[xmap->max]->docid, xmap->count);
             _i_ = _x_;
-            old = xnodes[_i_];BITXHIT(ibase, is_query_phrase, qfhits, old, pxnode, _n_);
+            old = xnodes[_i_];BITXHIT(ibase, xmap, old, pxnode, _n_);
         }
         else if(pxnode->docid == xnodes[_to_]->docid)
         {
             //ACCESS_LOGGER(ibase->logger, "docid:%d min:%d[%d] max:%d[%d] count:%d", pxnode->docid, xmap->min, xnodes[xmap->min]->docid, xmap->max,  xnodes[xmap->max]->docid, xmap->count);
             _i_ = _to_;
-            old = xnodes[_i_];BITXHIT(ibase, is_query_phrase, qfhits, old, pxnode, _n_);
+            old = xnodes[_i_];BITXHIT(ibase, xmap, old, pxnode, _n_);
         }
         else if(pxnode->docid > xnodes[_to_]->docid)
         {
@@ -177,7 +184,7 @@ void xmap_push(IBASE *ibase, int is_query_phrase, int qfhits, XMAP *xmap, XNODE 
                 if(xnodes[_i_]->docid == pxnode->docid)
                 {
                     //ACCESS_LOGGER(ibase->logger, "docid:%d xnode[%d] => [%p] min:%d[%d] max:%d[%d] count:%d", pxnode->docid, _i_, xnodes[_i_], xmap->min, xnodes[xmap->min]->docid, xmap->max,  xnodes[xmap->max]->docid, xmap->count);
-                    old = xnodes[_i_];BITXHIT(ibase, is_query_phrase, qfhits, old, pxnode, _n_);
+                    old = xnodes[_i_];BITXHIT(ibase, xmap, old, pxnode, _n_);
                 }
                 else
                 {
@@ -249,7 +256,7 @@ XNODE *xmap_pop(IBASE *ibase, XMAP *xmap)
 }
 
 void ibase_unindex(IBASE *ibase, ITERM *itermlist, XMAP *_xmap_, 
-        int is_query_phrase, int qfhits, int _x_, int *merge_total)
+        int _x_, int *merge_total)
 {
     int _n_ = 0 , *_np_ = NULL;
 
@@ -261,8 +268,6 @@ void ibase_unindex(IBASE *ibase, ITERM *itermlist, XMAP *_xmap_,
             itermlist[_x_].term_count = 0;
             itermlist[_x_].no = 0;
             itermlist[_x_].fields = 0;
-            itermlist[_x_].sprevnext = NULL;
-            itermlist[_x_].eprevnext = NULL;
             itermlist[_x_].prevnext_size = 0;
             _np_ = &(itermlist[_x_].ndocid);
             UZVBCODE(itermlist[_x_].p, _n_, _np_);
@@ -289,52 +294,67 @@ void ibase_unindex(IBASE *ibase, ITERM *itermlist, XMAP *_xmap_,
             itermlist[_x_].prevnext_size = *((int*)itermlist[_x_].p);
             itermlist[_x_].p += sizeof(int);
         }
-        if(is_query_phrase && itermlist[_x_].prevnext_size > 0
-            && (itermlist[_x_].eposting - itermlist[_x_].sposting) 
-                >= itermlist[_x_].prevnext_size)
-        {
-            itermlist[_x_].sprevnext = itermlist[_x_].sposting;
-            itermlist[_x_].eprevnext = itermlist[_x_].sposting 
-                + itermlist[_x_].prevnext_size;
-            itermlist[_x_].sposting += itermlist[_x_].prevnext_size;
-        }
-        else
-        {
-            itermlist[_x_].sprevnext = NULL;
-            itermlist[_x_].eprevnext = NULL;
-        }
         itermlist[_x_].xnode.which = _x_;
         itermlist[_x_].xnode.docid = itermlist[_x_].docid;
-        itermlist[_x_].xnode.bithits = 1 << itermlist[_x_].synno;
-        itermlist[_x_].xnode.bitfields = itermlist[_x_].fields;
-        itermlist[_x_].xnode.bithit = 0;
-        itermlist[_x_].xnode.bitnot = 0;
-        if((itermlist[_x_].fields & itermlist[_x_].bithit) == itermlist[_x_].bithit) 
-            itermlist[_x_].xnode.bithit |= 1 << itermlist[_x_].synno;
-        if(itermlist[_x_].fields & itermlist[_x_].bitnot) 
-            itermlist[_x_].xnode.bitnot |= 1 << itermlist[_x_].synno;
-        if(itermlist[_x_].fields & qfhits)
-            itermlist[_x_].xnode.nhitfields = 1;
-        else
-            itermlist[_x_].xnode.nhitfields = 0;
         itermlist[_x_].xnode.hits[0] = _x_;
-        _n_ = itermlist[_x_].no;
-        itermlist[_x_].xnode.bitphrase[0] = _n_;
-        itermlist[_x_].xnode.bitquery[0] = _x_;
-        if(itermlist[_x_].weight)
-        {
-            itermlist[_x_].xnode.nvhits = 1;
-        }
-        else
-        {
-            itermlist[_x_].xnode.nvhits = 0;
-        }
         itermlist[_x_].xnode.nhits = 1;
-        itermlist[_x_].xnode.no = _n_;
-        itermlist[_x_].xnode.xmin = _n_;
-        itermlist[_x_].xnode.xmax = _n_;
+        if(_xmap_->flag & IB_QUERY_IGNRANK) goto end;                                    
+        if(_xmap_->is_query_ffilter)
+            itermlist[_x_].xnode.bitfields = itermlist[_x_].fields;
+        if(_xmap_->qfhits)
+        {
+            if(itermlist[_x_].fields & _xmap_->qfhits)
+                itermlist[_x_].xnode.nhitfields = 1;
+            else
+                itermlist[_x_].xnode.nhitfields = 0;
+        }
+        if(_xmap_->is_query_bitfhit)
+        {
+            itermlist[_x_].xnode.bitfhit = 0;
+            itermlist[_x_].xnode.bitfnot = 0;
+            if((itermlist[_x_].fields & itermlist[_x_].bitfhit) == itermlist[_x_].bitfhit) 
+                itermlist[_x_].xnode.bitfhit |= 1 << itermlist[_x_].synno;
+            if(itermlist[_x_].fields & itermlist[_x_].bitfnot) 
+                itermlist[_x_].xnode.bitfnot |= 1 << itermlist[_x_].synno;
+        }
+        if(_xmap_->is_query_qhits)
+        {
+            itermlist[_x_].xnode.bithits = 1 << itermlist[_x_].synno;
+            if(itermlist[_x_].weight)
+            {
+                itermlist[_x_].xnode.nvhits = 1;
+            }
+            else
+            {
+                itermlist[_x_].xnode.nvhits = 0;
+            }
+        }
+        if(_xmap_->is_query_phrase)
+        {
+            if(itermlist[_x_].prevnext_size > 0
+                    && (itermlist[_x_].eposting - itermlist[_x_].sposting) 
+                    >= itermlist[_x_].prevnext_size)
+            {
+                itermlist[_x_].sprevnext = itermlist[_x_].sposting;
+                itermlist[_x_].eprevnext = itermlist[_x_].sposting 
+                    + itermlist[_x_].prevnext_size;
+                itermlist[_x_].sposting += itermlist[_x_].prevnext_size;
+            }
+            else
+            {
+                itermlist[_x_].sprevnext = NULL;
+                itermlist[_x_].eprevnext = NULL;
+            }
+            _n_ = itermlist[_x_].no;
+            itermlist[_x_].xnode.bitphrase[0] = _n_;
+            itermlist[_x_].xnode.bitquery[0] = _x_;
+            itermlist[_x_].xnode.no = _n_;
+            itermlist[_x_].xnode.xmin = _n_;
+            itermlist[_x_].xnode.xmax = _n_;
+        }
+end:
         if(merge_total) (*merge_total)++;
-        return xmap_push(ibase, is_query_phrase, qfhits, _xmap_, &(itermlist[_x_].xnode));
+        return xmap_push(ibase, _xmap_, &(itermlist[_x_].xnode));
     }
     return ;
 }
@@ -348,7 +368,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
         double_index_to = 0, range_flag = 0, prev = 0, last = -1, no = 0, next = 0, fid = 0, 
         nxrecords = 0, is_field_sort = 0, scale = 0, is_groupby = 0, total = 0, ignore_rank = 0, 
         long_index_from = 0, long_index_to = 0, kk = 0, nx = 0, prevnext = 0, ii = 0, jj = 0, 
-        imax = 0, imin = 0, xint = 0, bithit = 0, j = 0, *vint = NULL, merge_total = 0;
+        imax = 0, imin = 0,xint = 0,bitfhit = 0,booland=0,j = 0, *vint = NULL, merge_total = 0;
         //syns[IB_SYNTERM_MAX], 
     double score = 0.0, p1 = 0.0, p2 = 0.0, dfrom = 0.0, *vdouble = NULL,
            tf = 1.0, Py = 0.0, Px = 0.0, dto = 0.0, xdouble = 0.0;
@@ -383,6 +403,8 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
         topmap = ibase_pop_stree(ibase);
         fmap = ibase_pop_stree(ibase);
         headers = (IHEADER *)(ibase->state->headers[secid].map);
+        if(topmap == NULL || fmap == NULL || xmap == NULL 
+                || itermlist == NULL || headers == NULL) goto end;
         if((p1 = query->ravgdl) <= 0.0) p1 = 1.0;
         if((query->flag & IB_QUERY_RSORT)) is_sort_reverse = 1;        
         else if((query->flag & IB_QUERY_SORT)) is_sort_reverse = 0;
@@ -393,14 +415,25 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
         long_index_to = long_index_from + ibase->state->long_index_fields_num;
         double_index_from = ibase->state->double_index_from;
         double_index_to = double_index_from + ibase->state->double_index_fields_num;
-        if((query->flag & IB_QUERY_PHRASE)) is_query_phrase = 1;
         nqterms = query->nqterms;
         if(query->nqterms > IB_QUERY2_MAX) nqterms = IB_QUERY2_MAX;
         nquerys = query->nvqterms;
         if(query->nvqterms > IB_QUERY2_MAX) nquerys = IB_QUERY2_MAX;
-        if(topmap == NULL || fmap == NULL || xmap == NULL 
-                || itermlist == NULL || headers == NULL) goto end;
         if(nquerys > 0) scale = query->hitscale[nquerys-1];
+        XMAP_RESET(ibase, xmap, secid);
+        if(ibase->state->phrase_status != IB_PHRASE_DISABLED && (query->flag & IB_QUERY_PHRASE)) 
+            xmap->is_query_phrase = 1;
+        else xmap->is_query_phrase = 0;
+        if(query->flag & IB_QUERY_FIELDS)  xmap->is_query_bitfhit = 1;
+        else xmap->is_query_bitfhit = 0;
+        if(query->fields_filter != 0 && query->fields_filter != -1) xmap->is_query_ffilter = 1;
+        else xmap->is_query_ffilter = 0;
+        if((query->flag & IB_QUERY_BOOLAND)) booland = 1;
+        if(scale>0||booland||query->qweight)xmap->is_query_qhits = 1;
+        else xmap->is_query_qhits = 0;
+        xmap->flag = query->flag;
+        xmap->qfhits = query->qfhits;
+        xmap->itermlist = itermlist;
         fid = query->orderby;
         if(fid >= int_index_from && fid < int_index_to)
         {
@@ -448,9 +481,9 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
             itermlist[i].idf = query->qterms[i].idf;
             itermlist[i].termid = query->qterms[i].id;
             itermlist[i].synno = query->qterms[i].synno;
-            itermlist[i].bithit = query->qterms[i].bithit;
-            itermlist[i].bitnot = query->qterms[i].bitnot;
-            bithit |= 1 << query->qterms[i].synno;
+            itermlist[i].bitfhit = query->qterms[i].bitfhit;
+            itermlist[i].bitfnot = query->qterms[i].bitfnot;
+            bitfhit |= 1 << query->qterms[i].synno;
             if((query->qterms[i].flag & QTERM_BIT_DOWN) && query->qweight) 
             {
                 itermlist[i].weight = 0;
@@ -488,36 +521,8 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
                     itermlist[i].sposting = NULL;
                     itermlist[i].eposting = NULL;
                 }
-                ibase_unindex(ibase, itermlist, xmap, is_query_phrase, query->qfhits, x, &merge_total);
+                ibase_unindex(ibase, itermlist, xmap, x, &merge_total);
             }
-            /* synonym term */
-            /*
-            if((query->qterms[i].flag & QTERM_BIT_SYN) && nn < IB_QUERY2_MAX)
-            {
-                if((n = db_read_data(PDB(ibase->syndb), query->qterms[i].synid, syns)) > 0)
-                {
-                    n /= sizeof(int32_t);
-                    for(j = 0; j < n; j++)
-                    {
-                        k = syns[j];
-                        memcpy(&(itermlist[nn]), &(itermlist[i]), sizeof(ITERM)); 
-                        if(k != itermlist[i].termid && (itermlist[nn].mm.ndata = mdb_get_data(PMDB(index), k, &(itermlist[nn].mm.data))) > 0)
-                        {
-                            total += itermlist[nn].mm.ndata;
-                            itermlist[nn].p = itermlist[nn].mm.data;
-                            itermlist[nn].end = itermlist[nn].mm.data + itermlist[nn].mm.ndata;
-                            itermlist[nn].synno = i;
-                            MUTEX_LOCK(ibase->mutex_termstate);
-                            termstates = (TERMSTATE *)(ibase->termstateio.map);
-                            itermlist[nn].term_len = termstates[k].len;
-                            MUTEX_UNLOCK(ibase->mutex_termstate);
-                            ibase_unindex(ibase, itermlist, xmap, is_query_phrase, query->qfhits, nn);
-                            ++nn;
-                        }
-                    }
-                }
-            }
-            */
         }
         TIMER_SAMPLE(timer);
         res->io_time = (int)PT_LU_USEC(timer);
@@ -536,25 +541,33 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
             doc_score = 0.0;
             base_score = 0.0;
             score = 0.0;
+            if(xmap->flag & IB_QUERY_IGNRANK) goto next;
 #ifdef IB_USE_BMAP
-            if(!(query->flag & IB_QUERY_IGNSTATUS))
+            if(query->flag & IB_QUERY_BMAP)
             {
-                if(query->flag & IB_QUERY_BMAP)
-                {
-                    if(bmap_check(ibase->bmaps[secid], docid) == 0) goto next;
-                }
-                else
-                {
-                    if(headers[docid].status < 0 || headers[docid].globalid == 0) goto next;
-                }
+                if(bmap_check(ibase->bmaps[secid], docid) == 0) goto next;
+            }
+            else
+            {
+                if(headers[docid].status < 0 || headers[docid].globalid == 0) goto next;
             }
 #else
-            if(headers[docid].status < 0 || headers[docid].globalid == 0) goto next;
+            if(!(query->flag & IB_QUERY_IGNSTATUS))
+            {
+                if(headers[docid].status < 0 || headers[docid].globalid == 0) goto next;
+            }
 #endif
             /* check fobidden terms in query string */
             if((query->flag & IB_QUERY_FORBIDDEN) && headers[docid].status<IB_SECURITY_OK)goto next;
             /* secure level */
             if((k = headers[docid].slevel) < 0 || headers[docid].slevel > IB_SLEVEL_MAX || query->slevel_filter[k]  == 1) goto next;
+            /* boolen check */
+            if(query->operators.bitsnot && (query->operators.bitsnot & xnode->bithits))
+                    goto next;
+            if((query->flag & IB_QUERY_BOOLAND) && query->operators.bitsand 
+                && (query->nvqterms != query->nquerys 
+                    || (query->operators.bitsand & xnode->bithits) != query->operators.bitsand))
+                    goto next;
             /* catetory block filter */
             if(query->catblock_filter && (query->catblock_filter & headers[docid].category)) 
             {
@@ -564,23 +577,22 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
             if(query->multicat_filter != 0 && (query->multicat_filter & headers[docid].category) != query->multicat_filter)
                 goto next;
             /* fields filter */
-            if(query->fields_filter != 0 && query->fields_filter != -1
-                    && !(query->fields_filter & xnode->bitfields))
+            if(xmap->is_query_ffilter && !(query->fields_filter & xnode->bitfields))
                 goto next;
-            /* boolen check */
-            if(query->operators.bitsnot && (query->operators.bitsnot & xnode->bithits))
-                goto next;
-            if((query->flag & IB_QUERY_BOOLAND) && query->operators.bitsand 
-            && (query->nvqterms != query->nquerys || (query->operators.bitsand & xnode->bithits) != query->operators.bitsand))
-                goto next;
-            if(query->flag & IB_QUERY_FIELDS)
+            if(xmap->is_query_bitfhit)
             {
                 //WARN_LOGGER(ibase->logger, "docid:%d bitnot:%d", docid, xnode->bitnot);
-                if(xnode->bitnot) goto next;
-                if(xnode->bithit != bithit) goto next;
+                if(xnode->bitfnot) goto next;
+                if(xnode->bitfhit != bitfhit) goto next;
             }
-            if(nquerys > 0 && xnode->nvhits == 0) goto next;
-            if(!(query->flag & IB_QUERY_BOOLAND) && nquerys > 0 && ((xnode->nvhits * 100) / nquerys) < scale) goto next;
+            if(booland && query->operators.bitsand && (query->nvqterms != query->nquerys 
+                    || (query->operators.bitsand & xnode->bithits) != query->operators.bitsand))
+                    goto next;
+            if(!booland && nquerys > 0)
+            {
+                if(xmap->is_query_qhits && xnode->nvhits == 0) goto next;
+                if(((xnode->nvhits * 100) / nquerys) < scale) goto next;
+            }
             DEBUG_LOGGER(ibase->logger, "docid:%d/%lld nvhits:%d nquerys:%d/%d scale:%d int[%d/%d] catgroup:%d", docid, LL(headers[docid].globalid), xnode->nvhits, query->nqterms, nquerys, scale, query->int_range_count, query->int_bits_count, query->catgroup_filter);
             /* in  filter */
             for(j = 0; j < query->int_in_num; j++)
@@ -762,8 +774,9 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
 
             DEBUG_LOGGER(ibase->logger, "catgroup docid:%d/%lld category:%lld nbits:%d nhitsfields:%d", docid, IBLL(headers[docid].globalid), IBLL(headers[docid].category), xnode->nhits, xnode->nhitfields);
             /* hits/fields hits */
-            base_score += IBLONG((xnode->nhits + xnode->nvhits) * query->base_hits);
-            base_score += IBLONG(xnode->nhitfields * query->base_fhits);
+            if(xmap->is_query_qhits) 
+                base_score += IBLONG((xnode->nhits + xnode->nvhits) * query->base_hits);
+            if(xmap->qfhits) base_score += IBLONG(xnode->nhitfields * query->base_fhits);
             mm = xnode->nhits - 1;
             nn = 0;
             DEBUG_LOGGER(ibase->logger, "docid:%d/%lld base_score:%lld score:%f doc_score:%lld min:%d max:%d", docid, IBLL(headers[docid].globalid), IBLL(base_score), score, IBLL(doc_score), nn, mm);
@@ -773,8 +786,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
             {
                 x = xnode->hits[i];
                 /* phrase */
-                if(ibase->state->phrase_status != IB_PHRASE_DISABLED
-                        && is_query_phrase && itermlist[x].sprevnext)
+                if(xmap->is_query_phrase && itermlist[x].sprevnext)
                 {
                     no = 0;
                     nx = 0;
@@ -852,8 +864,7 @@ ICHUNK *ibase_bquery(IBASE *ibase, IQUERY *query, int secid)
                 }
                 //xnode->bitphrase[i] = 0;
                 //xnode->bitquery[i] = 0;
-                ibase_unindex(ibase, itermlist, xmap, is_query_phrase, query->qfhits, x, &merge_total);
-                //UNINDEX(ibase, is_query_phrase, itermlist, xmap, x, n, np);
+                ibase_unindex(ibase, itermlist, xmap, x, &merge_total);
             }while(--i >= 0);
             DEBUG_LOGGER(ibase->logger, "docid:%d/%lld base_score:%lld score:%f doc_score:%lld", docid, IBLL(headers[docid].globalid), IBLL(base_score), score, IBLL(doc_score));
             /* bitxcat */
@@ -959,7 +970,7 @@ next:
                 x = xnode->hits[i];
                 xnode->bitphrase[i] = 0;
                 xnode->bitquery[i] = 0;
-                ibase_unindex(ibase, itermlist, xmap, is_query_phrase, query->qfhits, x, &merge_total);
+                ibase_unindex(ibase, itermlist, xmap, x, &merge_total);
             }while(--i >= 0);
         }
         TIMER_SAMPLE(timer);

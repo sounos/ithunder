@@ -180,9 +180,11 @@ static char *e_argvs[] =
 #define E_ARGV_IGNSTATUS    43
     "qhash",
 #define E_ARGV_QHASH        44
+    "ignrank",
+#define E_ARGV_IGNRANK      45
     ""
 };
-#define  E_ARGV_NUM         45
+#define  E_ARGV_NUM         46
 IBASE *ibase_init_db(int dbid);
 void indexd_query_handler(void *args);
 int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query);
@@ -350,6 +352,7 @@ void indexd_query_handler(void *args)
             {
                 ichunk = ibase_bquery(db, pquery, secid);
             }
+            //ichunk = ibase_bquery(db, pquery, secid);
         }
         else 
             ichunk = ibase_query(db, pquery, secid);
@@ -697,6 +700,7 @@ int indexd_data_handler(CONN *conn, CB_DATA *packet, CB_DATA *cache, CB_DATA *ch
                                     {
                                         ichunk = ibase_bquery(db, pquery, pquery->secid);
                                     }
+                                    //ichunk = ibase_bquery(db, pquery, pquery->secid);
                                 }
                                 else 
                                     ichunk = ibase_query(db, pquery, pquery->secid);
@@ -1027,6 +1031,9 @@ int httpd_request_handler(CONN *conn, HTTP_REQ *httpRQ, IQUERY *query)
                             break;
                         case E_ARGV_IGNSTATUS:
                             if(atoi(p)) query->flag |= IB_QUERY_IGNSTATUS;
+                            break;
+                        case E_ARGV_IGNRANK:
+                            if(atoi(p)) query->flag |= IB_QUERY_IGNRANK;
                             break;
                         case E_ARGV_QHASH:
                             if(atoi(p)) query->flag |= IB_QUERY_HASH;
