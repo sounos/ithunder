@@ -6,7 +6,7 @@
 #define MDB_LNK_INCREMENT    65536
 #define MDB_MDBX_MAX          2000000000
 #define MDB_MDBX_BASE         1000000
-#define MDB_BASE_SIZE        64
+#define MDB_BASE_SIZE        8
 #define MDB_PATH_MAX         1024
 #define MDB_DIR_FILES        64
 #define MDB_BUF_SIZE         4096

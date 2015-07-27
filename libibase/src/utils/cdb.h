@@ -6,7 +6,7 @@
 #define CDB_LNK_INCREMENT    65536
 #define CDB_CDBX_MAX          2000000000
 #define CDB_CDBX_BASE         1000000
-#define CDB_BASE_SIZE        4096
+#define CDB_BASE_SIZE        8
 #define CDB_PATH_MAX         1024
 #define CDB_DIR_FILES        64
 #define CDB_BUF_SIZE         4096
