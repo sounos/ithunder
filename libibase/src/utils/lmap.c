@@ -70,7 +70,7 @@ int lmap_vset(LMAP *lmap, u32_t no, int64_t val)
             * (off_t)LMM_LMMV_INC * (off_t) sizeof(LMMV);
     int ret = -1, n = 0, i = 0;
 
-    if(lmap && lmap->state && no >= 0 && no < LMM_NODES_MAX)
+    if(lmap && no >= 0 && no < LMM_NODES_MAX)
     {
         if(size > lmap->vsize)
         {
@@ -83,7 +83,6 @@ int lmap_vset(LMAP *lmap, u32_t no, int64_t val)
 #endif
             lmap->vsize = size;
         }
-        //lmap->vmap[no].val = val; 
         ret = 0;
     }
     return ret;
@@ -776,8 +775,8 @@ int lmap_set(LMAP *lmap, u32_t no, int64_t key)
                 lmap_insert(lmap, no, key);
            }
        }
-       lmap->vmap[no].val = key;
 #endif
+       lmap->vmap[no].val = key;
        ret = 0;
        RWLOCK_UNLOCK(lmap->rwlock);
     }

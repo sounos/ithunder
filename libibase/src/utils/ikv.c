@@ -70,7 +70,7 @@ int ikv_vset(IKV *ikv, u32_t no, int32_t val)
             * (off_t)IVV_IVVV_INC * (off_t) sizeof(IVVV);
     int ret = -1, n = 0, i = 0;
 
-    if(ikv && ikv->state && no >= 0 && no < IVV_NODES_MAX)
+    if(ikv && no >= 0 && no < IVV_NODES_MAX)
     {
         if(size > ikv->vsize)
         {
@@ -83,7 +83,6 @@ int ikv_vset(IKV *ikv, u32_t no, int32_t val)
 #endif
             ikv->vsize = size;
         }
-        //ikv->vmap[no].val = val; 
         ret = 0;
     }
     return ret;
@@ -776,8 +775,8 @@ int ikv_set(IKV *ikv, u32_t no, int32_t key)
                 ikv_insert(ikv, no, key);
            }
        }
-       ikv->vmap[no].val = key;
 #endif
+       ikv->vmap[no].val = key;
        ret = 0;
        RWLOCK_UNLOCK(ikv->rwlock);
     }

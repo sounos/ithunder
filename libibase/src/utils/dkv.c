@@ -70,7 +70,7 @@ int dkv_vset(DKV *dkv, u32_t no, double val)
             * (off_t)DVV_DVVV_INC * (off_t) sizeof(DVVV);
     int ret = -1, n = 0, i = 0;
 
-    if(dkv && dkv->state && no >= 0 && no < DVV_NODES_MAX)
+    if(dkv && no >= 0 && no < DVV_NODES_MAX)
     {
         if(size > dkv->vsize)
         {
@@ -83,7 +83,6 @@ int dkv_vset(DKV *dkv, u32_t no, double val)
 #endif
             dkv->vsize = size;
         }
-        //dkv->vmap[no].val = val; 
         ret = 0;
     }
     return ret;
@@ -776,8 +775,8 @@ int dkv_set(DKV *dkv, u32_t no, double key)
                 dkv_insert(dkv, no, key);
            }
        }
-       dkv->vmap[no].val = key;
 #endif
+       dkv->vmap[no].val = key;
        ret = 0;
        RWLOCK_UNLOCK(dkv->rwlock);
     }

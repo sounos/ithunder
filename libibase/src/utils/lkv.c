@@ -70,7 +70,7 @@ int lkv_vset(LKV *lkv, u32_t no, int64_t val)
             * (off_t)LVV_LVVV_INC * (off_t) sizeof(LVVV);
     int ret = -1, n = 0, i = 0;
 
-    if(lkv && lkv->state && no >= 0 && no < LVV_NODES_MAX)
+    if(lkv && no >= 0 && no < LVV_NODES_MAX)
     {
         if(size > lkv->vsize)
         {
@@ -83,7 +83,6 @@ int lkv_vset(LKV *lkv, u32_t no, int64_t val)
 #endif
             lkv->vsize = size;
         }
-        //lkv->vmap[no].val = val; 
         ret = 0;
     }
     return ret;
@@ -776,8 +775,8 @@ int lkv_set(LKV *lkv, u32_t no, int64_t key)
                 lkv_insert(lkv, no, key);
            }
        }
-       lkv->vmap[no].val = key;
 #endif
+       lkv->vmap[no].val = key;
        ret = 0;
        RWLOCK_UNLOCK(lkv->rwlock);
     }

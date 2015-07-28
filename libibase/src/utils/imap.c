@@ -70,7 +70,7 @@ int imap_vset(IMAP *imap, u32_t no, int32_t val)
             * (off_t)IMM_IMMV_INC * (off_t) sizeof(IMMV);
     int ret = -1, n = 0, i = 0;
 
-    if(imap && imap->state && no >= 0 && no < IMM_NODES_MAX)
+    if(imap && no >= 0 && no < IMM_NODES_MAX)
     {
         if(size > imap->vsize)
         {
@@ -83,7 +83,6 @@ int imap_vset(IMAP *imap, u32_t no, int32_t val)
 #endif
             imap->vsize = size;
         }
-        //imap->vmap[no].val = val; 
         ret = 0;
     }
     return ret;
@@ -776,8 +775,8 @@ int imap_set(IMAP *imap, u32_t no, int32_t key)
                 imap_insert(imap, no, key);
            }
        }
-       imap->vmap[no].val = key;
 #endif
+       imap->vmap[no].val = key;
        ret = 0;
        RWLOCK_UNLOCK(imap->rwlock);
     }

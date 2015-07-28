@@ -70,7 +70,7 @@ int dmap_vset(DMAP *dmap, u32_t no, double val)
             * (off_t)DMM_DMMV_INC * (off_t) sizeof(DMMV);
     int ret = -1, n = 0, i = 0;
 
-    if(dmap && dmap->state && no >= 0 && no < DMM_NODES_MAX)
+    if(dmap && no >= 0 && no < DMM_NODES_MAX)
     {
         if(size > dmap->vsize)
         {
@@ -83,7 +83,6 @@ int dmap_vset(DMAP *dmap, u32_t no, double val)
 #endif
             dmap->vsize = size;
         }
-        //dmap->vmap[no].val = val; 
         ret = 0;
     }
     return ret;
@@ -776,8 +775,8 @@ int dmap_set(DMAP *dmap, u32_t no, double key)
                 dmap_insert(dmap, no, key);
            }
        }
-       dmap->vmap[no].val = key;
 #endif
+       dmap->vmap[no].val = key;
        ret = 0;
        RWLOCK_UNLOCK(dmap->rwlock);
     }
