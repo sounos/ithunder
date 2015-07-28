@@ -8,8 +8,6 @@
 #include <errno.h>
 #include "lkv.h"
 #include "rwlock.h"
-
-#endif
 LKV *lkv_init(char *file)
 {
     LKV *lkv = NULL;
@@ -20,9 +18,11 @@ LKV *lkv_init(char *file)
 
     if(file && (lkv = (LKV *)calloc(1, sizeof(LKV))))
     {
+#ifdef __LKV_USE_IDX__
        if((lkv->fd = open(file, O_CREAT|O_RDWR, 0644)) > 0) 
        {
            size = lkv->msize = (off_t)sizeof(LVVSTATE) + (off_t)sizeof(LVVKV) * (off_t)LVV_NODES_MAX;
+
            lkv->state = (LVVSTATE*)mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_SHARED, lkv->fd, 0);
            lkv->map = (LVVKV *)((char *)lkv->state + sizeof(LVVSTATE));
            fstat(lkv->fd, &st);
@@ -45,6 +45,7 @@ LKV *lkv_init(char *file)
        {
            fprintf(stderr, "open %s failed, %s\n", file, strerror(errno));
        }
+#endif
        sprintf(path, "%s.v", file);
        if((lkv->vfd = open(path, O_CREAT|O_RDWR, 0644)) > 0) 
        {
@@ -77,7 +78,9 @@ int lkv_vset(LKV *lkv, u32_t no, int64_t val)
             //memset(((char *)lkv->vmap+lkv->vsize), 0, size - lkv->vsize);
             i = lkv->vsize / sizeof(LVVV);
             n = size / sizeof(LVVV);
+#ifdef __LKV_USE_IDX__
             while(i < n) {lkv->vmap[i].off = -1;lkv->vmap[i].val=0;++i;}
+#endif
             lkv->vsize = size;
         }
         //lkv->vmap[no].val = val; 
@@ -99,6 +102,7 @@ int lkv_vget(LKV *lkv, u32_t no, int64_t *val)
     return ret;
 }
 
+#ifdef __LKV_USE_IDX__
 /* new bolt  */
 int lkv_slot_new(LKV *lkv)
 {
@@ -716,7 +720,24 @@ int lkv_ins(LKV *lkv, int64_t *keys, int nkeys, u32_t *list)
     }
     return ret;
 }
+int lkv_del(LKV *lkv, u32_t no)
+{
+    int ret = -1, n = 0;
 
+    if(lkv)
+    {
+        RWLOCK_WRLOCK(lkv->rwlock);
+        if((n = (lkv->vsize/sizeof(LVVV))) > 0 && no < n)
+        {
+            lkv_remove(lkv, no);
+            lkv->vmap[no].off = -1;
+            ret = 0;
+        }
+        RWLOCK_UNLOCK(lkv->rwlock);
+    }
+    return ret;
+}
+#endif
 int lkv_get(LKV *lkv, u32_t no, u32_t *val)
 {
     int ret = -1, n = 0;
@@ -763,23 +784,6 @@ int lkv_set(LKV *lkv, u32_t no, int64_t key)
     return ret;
 }
 
-int lkv_del(LKV *lkv, u32_t no)
-{
-    int ret = -1, n = 0;
-
-    if(lkv)
-    {
-        RWLOCK_WRLOCK(lkv->rwlock);
-        if((n = (lkv->vsize/sizeof(LVVV))) > 0 && no < n)
-        {
-            lkv_remove(lkv, no);
-            lkv->vmap[no].off = -1;
-            ret = 0;
-        }
-        RWLOCK_UNLOCK(lkv->rwlock);
-    }
-    return ret;
-}
 
 void lkv_close(LKV *lkv)
 {
@@ -798,11 +802,12 @@ void lkv_close(LKV *lkv)
 #ifdef LKV_TEST
 #include "timer.h"
 #define MASK  120000
-//rm -rf /tmp/1.idx* && gcc -O2 -o lkv lkv.c -DLKV_TEST -DTEST_IN -DHAVE_PTHREAD -lpthread && ./lkv
+//rm -rf /tmp/1.idx* && gcc -O2 -o lkv lkv.c -DLKV_TEST -DTEST_KV -DHAVE_PTHREAD -lpthread && ./lkv
 int main()
 {
     LKV *lkv = NULL;
-    int i = 0, j = 0, n = 0, total = 0, no = 0, stat[MASK], stat2[MASK];
+    int i = 0, j = 0, n = 0, total = 0, no = 0, stat[MASK], stat2[MASK],
+        v = 0, num = 1000000, base = 60000000;
     int64_t val = 0, from = 0, to = 0, *res = NULL, all_mask = 200000;
     int64_t inputs[256], nos[256], last[256], tall[200000];
     int64_t all = 0;
@@ -811,8 +816,26 @@ int main()
 
     if((lkv = lkv_init("/tmp/1.idx")))
     {
-        res = (int64_t *)calloc(60000000, sizeof(int64_t));
+        res = (int64_t *)calloc(base, sizeof(int64_t));
         TIMER_INIT(timer);
+#ifdef TEST_KV
+        TIMER_RESET(timer);
+        for(i = 0; i < num; i++)
+        {
+            no = random()%base;
+            LKV_SET(lkv, no, i);
+        }
+        TIMER_SAMPLE(timer);
+        fprintf(stdout, "set(%d) time used:%lld\n", num, PT_LU_USEC(timer));
+        TIMER_RESET(timer);
+        for(i = 0; i < num; i++)
+        {
+            no = random()%base;
+            v = LKV_GET(lkv, no);
+        }
+        fprintf(stdout, "get(%d) time used:%lld\n", num, PT_LU_USEC(timer));
+#endif
+
 #ifdef TEST_RFROM
             lkv_set(lkv, 1, 22);
             lkv_set(lkv, 2, 25);

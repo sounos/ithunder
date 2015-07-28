@@ -8,8 +8,6 @@
 #include <errno.h>
 #include "ikv.h"
 #include "rwlock.h"
-
-#endif
 IKV *ikv_init(char *file)
 {
     IKV *ikv = NULL;
@@ -20,9 +18,11 @@ IKV *ikv_init(char *file)
 
     if(file && (ikv = (IKV *)calloc(1, sizeof(IKV))))
     {
+#ifdef __IKV_USE_IDX__
        if((ikv->fd = open(file, O_CREAT|O_RDWR, 0644)) > 0) 
        {
            size = ikv->msize = (off_t)sizeof(IVVSTATE) + (off_t)sizeof(IVVKV) * (off_t)IVV_NODES_MAX;
+
            ikv->state = (IVVSTATE*)mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_SHARED, ikv->fd, 0);
            ikv->map = (IVVKV *)((char *)ikv->state + sizeof(IVVSTATE));
            fstat(ikv->fd, &st);
@@ -45,6 +45,7 @@ IKV *ikv_init(char *file)
        {
            fprintf(stderr, "open %s failed, %s\n", file, strerror(errno));
        }
+#endif
        sprintf(path, "%s.v", file);
        if((ikv->vfd = open(path, O_CREAT|O_RDWR, 0644)) > 0) 
        {
@@ -77,7 +78,9 @@ int ikv_vset(IKV *ikv, u32_t no, int32_t val)
             //memset(((char *)ikv->vmap+ikv->vsize), 0, size - ikv->vsize);
             i = ikv->vsize / sizeof(IVVV);
             n = size / sizeof(IVVV);
+#ifdef __IKV_USE_IDX__
             while(i < n) {ikv->vmap[i].off = -1;ikv->vmap[i].val=0;++i;}
+#endif
             ikv->vsize = size;
         }
         //ikv->vmap[no].val = val; 
@@ -99,6 +102,7 @@ int ikv_vget(IKV *ikv, u32_t no, int32_t *val)
     return ret;
 }
 
+#ifdef __IKV_USE_IDX__
 /* new bolt  */
 int ikv_slot_new(IKV *ikv)
 {
@@ -716,7 +720,24 @@ int ikv_ins(IKV *ikv, int32_t *keys, int nkeys, u32_t *list)
     }
     return ret;
 }
+int ikv_del(IKV *ikv, u32_t no)
+{
+    int ret = -1, n = 0;
 
+    if(ikv)
+    {
+        RWLOCK_WRLOCK(ikv->rwlock);
+        if((n = (ikv->vsize/sizeof(IVVV))) > 0 && no < n)
+        {
+            ikv_remove(ikv, no);
+            ikv->vmap[no].off = -1;
+            ret = 0;
+        }
+        RWLOCK_UNLOCK(ikv->rwlock);
+    }
+    return ret;
+}
+#endif
 int ikv_get(IKV *ikv, u32_t no, u32_t *val)
 {
     int ret = -1, n = 0;
@@ -763,23 +784,6 @@ int ikv_set(IKV *ikv, u32_t no, int32_t key)
     return ret;
 }
 
-int ikv_del(IKV *ikv, u32_t no)
-{
-    int ret = -1, n = 0;
-
-    if(ikv)
-    {
-        RWLOCK_WRLOCK(ikv->rwlock);
-        if((n = (ikv->vsize/sizeof(IVVV))) > 0 && no < n)
-        {
-            ikv_remove(ikv, no);
-            ikv->vmap[no].off = -1;
-            ret = 0;
-        }
-        RWLOCK_UNLOCK(ikv->rwlock);
-    }
-    return ret;
-}
 
 void ikv_close(IKV *ikv)
 {
@@ -798,11 +802,12 @@ void ikv_close(IKV *ikv)
 #ifdef IKV_TEST
 #include "timer.h"
 #define MASK  120000
-//rm -rf /tmp/1.idx* && gcc -O2 -o ikv ikv.c -DIKV_TEST -DTEST_IN -DHAVE_PTHREAD -lpthread && ./ikv
+//rm -rf /tmp/1.idx* && gcc -O2 -o ikv ikv.c -DIKV_TEST -DTEST_KV -DHAVE_PTHREAD -lpthread && ./ikv
 int main()
 {
     IKV *ikv = NULL;
-    int i = 0, j = 0, n = 0, total = 0, no = 0, stat[MASK], stat2[MASK];
+    int i = 0, j = 0, n = 0, total = 0, no = 0, stat[MASK], stat2[MASK],
+        v = 0, num = 1000000, base = 60000000;
     int32_t val = 0, from = 0, to = 0, *res = NULL, all_mask = 200000;
     int32_t inputs[256], nos[256], last[256], tall[200000];
     int32_t all = 0;
@@ -811,8 +816,26 @@ int main()
 
     if((ikv = ikv_init("/tmp/1.idx")))
     {
-        res = (int32_t *)calloc(60000000, sizeof(int32_t));
+        res = (int32_t *)calloc(base, sizeof(int32_t));
         TIMER_INIT(timer);
+#ifdef TEST_KV
+        TIMER_RESET(timer);
+        for(i = 0; i < num; i++)
+        {
+            no = random()%base;
+            IKV_SET(ikv, no, i);
+        }
+        TIMER_SAMPLE(timer);
+        fprintf(stdout, "set(%d) time used:%lld\n", num, PT_LU_USEC(timer));
+        TIMER_RESET(timer);
+        for(i = 0; i < num; i++)
+        {
+            no = random()%base;
+            v = IKV_GET(ikv, no);
+        }
+        fprintf(stdout, "get(%d) time used:%lld\n", num, PT_LU_USEC(timer));
+#endif
+
 #ifdef TEST_RFROM
             ikv_set(ikv, 1, 22);
             ikv_set(ikv, 2, 25);

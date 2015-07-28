@@ -59,6 +59,7 @@ typedef struct _DMAP
 DMAP *dmap_init(char *file);
 int dmap_set(DMAP *dmap, u32_t no, double key);
 int dmap_get(DMAP *dmap, u32_t no, u32_t *val);
+void dmap_close(DMAP *dmap);
 #ifdef __DMAP_USE_IDX__
 /* return number of the hits */
 int dmap_del(DMAP *dmap, u32_t no);
@@ -70,9 +71,8 @@ int dmap_ins(DMAP *dmap, double *keys, int nkeys, u32_t *list);
 /* set list[] if (list != NULL) */
 #define DMAP_DEL(x, no) dmap_del(((DMAP *)x), no)
 #else
-#define DMAP_DEL(x, no) do{}while(0)
+#define DMAP_DEL(x, no)
 #endif
-void dmap_close(DMAP *dmap);
 #define DMAP_GET(x, no) ((DMAP *)x)->vmap[no].val
 #define DMAP_SET(x, no, key) dmap_set(((DMAP *)x), no, key)
 #pragma pack(pop)

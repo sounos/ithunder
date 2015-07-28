@@ -59,6 +59,7 @@ typedef struct _IMAP
 IMAP *imap_init(char *file);
 int imap_set(IMAP *imap, u32_t no, int32_t key);
 int imap_get(IMAP *imap, u32_t no, u32_t *val);
+void imap_close(IMAP *imap);
 #ifdef __IMAP_USE_IDX__
 /* return number of the hits */
 int imap_del(IMAP *imap, u32_t no);
@@ -70,9 +71,8 @@ int imap_ins(IMAP *imap, int32_t *keys, int nkeys, u32_t *list);
 /* set list[] if (list != NULL) */
 #define IMAP_DEL(x, no) imap_del(((IMAP *)x), no)
 #else
-#define IMAP_DEL(x, no) do{}while(0)
+#define IMAP_DEL(x, no)
 #endif
-void imap_close(IMAP *imap);
 #define IMAP_GET(x, no) ((IMAP *)x)->vmap[no].val
 #define IMAP_SET(x, no, key) imap_set(((IMAP *)x), no, key)
 #pragma pack(pop)

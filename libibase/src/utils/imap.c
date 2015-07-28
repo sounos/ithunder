@@ -8,8 +8,6 @@
 #include <errno.h>
 #include "imap.h"
 #include "rwlock.h"
-
-#endif
 IMAP *imap_init(char *file)
 {
     IMAP *imap = NULL;
@@ -20,9 +18,11 @@ IMAP *imap_init(char *file)
 
     if(file && (imap = (IMAP *)calloc(1, sizeof(IMAP))))
     {
+#ifdef __IMAP_USE_IDX__
        if((imap->fd = open(file, O_CREAT|O_RDWR, 0644)) > 0) 
        {
            size = imap->msize = (off_t)sizeof(IMMSTATE) + (off_t)sizeof(IMMKV) * (off_t)IMM_NODES_MAX;
+
            imap->state = (IMMSTATE*)mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_SHARED, imap->fd, 0);
            imap->map = (IMMKV *)((char *)imap->state + sizeof(IMMSTATE));
            fstat(imap->fd, &st);
@@ -45,6 +45,7 @@ IMAP *imap_init(char *file)
        {
            fprintf(stderr, "open %s failed, %s\n", file, strerror(errno));
        }
+#endif
        sprintf(path, "%s.v", file);
        if((imap->vfd = open(path, O_CREAT|O_RDWR, 0644)) > 0) 
        {
@@ -77,7 +78,9 @@ int imap_vset(IMAP *imap, u32_t no, int32_t val)
             //memset(((char *)imap->vmap+imap->vsize), 0, size - imap->vsize);
             i = imap->vsize / sizeof(IMMV);
             n = size / sizeof(IMMV);
+#ifdef __IMAP_USE_IDX__
             while(i < n) {imap->vmap[i].off = -1;imap->vmap[i].val=0;++i;}
+#endif
             imap->vsize = size;
         }
         //imap->vmap[no].val = val; 
@@ -99,6 +102,7 @@ int imap_vget(IMAP *imap, u32_t no, int32_t *val)
     return ret;
 }
 
+#ifdef __IMAP_USE_IDX__
 /* new bolt  */
 int imap_slot_new(IMAP *imap)
 {
@@ -716,7 +720,24 @@ int imap_ins(IMAP *imap, int32_t *keys, int nkeys, u32_t *list)
     }
     return ret;
 }
+int imap_del(IMAP *imap, u32_t no)
+{
+    int ret = -1, n = 0;
 
+    if(imap)
+    {
+        RWLOCK_WRLOCK(imap->rwlock);
+        if((n = (imap->vsize/sizeof(IMMV))) > 0 && no < n)
+        {
+            imap_remove(imap, no);
+            imap->vmap[no].off = -1;
+            ret = 0;
+        }
+        RWLOCK_UNLOCK(imap->rwlock);
+    }
+    return ret;
+}
+#endif
 int imap_get(IMAP *imap, u32_t no, u32_t *val)
 {
     int ret = -1, n = 0;
@@ -763,23 +784,6 @@ int imap_set(IMAP *imap, u32_t no, int32_t key)
     return ret;
 }
 
-int imap_del(IMAP *imap, u32_t no)
-{
-    int ret = -1, n = 0;
-
-    if(imap)
-    {
-        RWLOCK_WRLOCK(imap->rwlock);
-        if((n = (imap->vsize/sizeof(IMMV))) > 0 && no < n)
-        {
-            imap_remove(imap, no);
-            imap->vmap[no].off = -1;
-            ret = 0;
-        }
-        RWLOCK_UNLOCK(imap->rwlock);
-    }
-    return ret;
-}
 
 void imap_close(IMAP *imap)
 {
@@ -798,11 +802,12 @@ void imap_close(IMAP *imap)
 #ifdef IMAP_TEST
 #include "timer.h"
 #define MASK  120000
-//rm -rf /tmp/1.idx* && gcc -O2 -o imap imap.c -DIMAP_TEST -DTEST_IN -DHAVE_PTHREAD -lpthread && ./imap
+//rm -rf /tmp/1.idx* && gcc -O2 -o imap imap.c -DIMAP_TEST -DTEST_KV -DHAVE_PTHREAD -lpthread && ./imap
 int main()
 {
     IMAP *imap = NULL;
-    int i = 0, j = 0, n = 0, total = 0, no = 0, stat[MASK], stat2[MASK];
+    int i = 0, j = 0, n = 0, total = 0, no = 0, stat[MASK], stat2[MASK],
+        v = 0, num = 1000000, base = 60000000;
     int32_t val = 0, from = 0, to = 0, *res = NULL, all_mask = 200000;
     int32_t inputs[256], nos[256], last[256], tall[200000];
     int32_t all = 0;
@@ -811,8 +816,26 @@ int main()
 
     if((imap = imap_init("/tmp/1.idx")))
     {
-        res = (int32_t *)calloc(60000000, sizeof(int32_t));
+        res = (int32_t *)calloc(base, sizeof(int32_t));
         TIMER_INIT(timer);
+#ifdef TEST_KV
+        TIMER_RESET(timer);
+        for(i = 0; i < num; i++)
+        {
+            no = random()%base;
+            IMAP_SET(imap, no, i);
+        }
+        TIMER_SAMPLE(timer);
+        fprintf(stdout, "set(%d) time used:%lld\n", num, PT_LU_USEC(timer));
+        TIMER_RESET(timer);
+        for(i = 0; i < num; i++)
+        {
+            no = random()%base;
+            v = IMAP_GET(imap, no);
+        }
+        fprintf(stdout, "get(%d) time used:%lld\n", num, PT_LU_USEC(timer));
+#endif
+
 #ifdef TEST_RFROM
             imap_set(imap, 1, 22);
             imap_set(imap, 2, 25);

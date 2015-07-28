@@ -8,8 +8,6 @@
 #include <errno.h>
 #include "lmap.h"
 #include "rwlock.h"
-
-#endif
 LMAP *lmap_init(char *file)
 {
     LMAP *lmap = NULL;
@@ -20,9 +18,11 @@ LMAP *lmap_init(char *file)
 
     if(file && (lmap = (LMAP *)calloc(1, sizeof(LMAP))))
     {
+#ifdef __LMAP_USE_IDX__
        if((lmap->fd = open(file, O_CREAT|O_RDWR, 0644)) > 0) 
        {
            size = lmap->msize = (off_t)sizeof(LMMSTATE) + (off_t)sizeof(LMMKV) * (off_t)LMM_NODES_MAX;
+
            lmap->state = (LMMSTATE*)mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_SHARED, lmap->fd, 0);
            lmap->map = (LMMKV *)((char *)lmap->state + sizeof(LMMSTATE));
            fstat(lmap->fd, &st);
@@ -45,6 +45,7 @@ LMAP *lmap_init(char *file)
        {
            fprintf(stderr, "open %s failed, %s\n", file, strerror(errno));
        }
+#endif
        sprintf(path, "%s.v", file);
        if((lmap->vfd = open(path, O_CREAT|O_RDWR, 0644)) > 0) 
        {
@@ -77,7 +78,9 @@ int lmap_vset(LMAP *lmap, u32_t no, int64_t val)
             //memset(((char *)lmap->vmap+lmap->vsize), 0, size - lmap->vsize);
             i = lmap->vsize / sizeof(LMMV);
             n = size / sizeof(LMMV);
+#ifdef __LMAP_USE_IDX__
             while(i < n) {lmap->vmap[i].off = -1;lmap->vmap[i].val=0;++i;}
+#endif
             lmap->vsize = size;
         }
         //lmap->vmap[no].val = val; 
@@ -99,6 +102,7 @@ int lmap_vget(LMAP *lmap, u32_t no, int64_t *val)
     return ret;
 }
 
+#ifdef __LMAP_USE_IDX__
 /* new bolt  */
 int lmap_slot_new(LMAP *lmap)
 {
@@ -716,7 +720,24 @@ int lmap_ins(LMAP *lmap, int64_t *keys, int nkeys, u32_t *list)
     }
     return ret;
 }
+int lmap_del(LMAP *lmap, u32_t no)
+{
+    int ret = -1, n = 0;
 
+    if(lmap)
+    {
+        RWLOCK_WRLOCK(lmap->rwlock);
+        if((n = (lmap->vsize/sizeof(LMMV))) > 0 && no < n)
+        {
+            lmap_remove(lmap, no);
+            lmap->vmap[no].off = -1;
+            ret = 0;
+        }
+        RWLOCK_UNLOCK(lmap->rwlock);
+    }
+    return ret;
+}
+#endif
 int lmap_get(LMAP *lmap, u32_t no, u32_t *val)
 {
     int ret = -1, n = 0;
@@ -763,23 +784,6 @@ int lmap_set(LMAP *lmap, u32_t no, int64_t key)
     return ret;
 }
 
-int lmap_del(LMAP *lmap, u32_t no)
-{
-    int ret = -1, n = 0;
-
-    if(lmap)
-    {
-        RWLOCK_WRLOCK(lmap->rwlock);
-        if((n = (lmap->vsize/sizeof(LMMV))) > 0 && no < n)
-        {
-            lmap_remove(lmap, no);
-            lmap->vmap[no].off = -1;
-            ret = 0;
-        }
-        RWLOCK_UNLOCK(lmap->rwlock);
-    }
-    return ret;
-}
 
 void lmap_close(LMAP *lmap)
 {
@@ -798,11 +802,12 @@ void lmap_close(LMAP *lmap)
 #ifdef LMAP_TEST
 #include "timer.h"
 #define MASK  120000
-//rm -rf /tmp/1.idx* && gcc -O2 -o lmap lmap.c -DLMAP_TEST -DTEST_IN -DHAVE_PTHREAD -lpthread && ./lmap
+//rm -rf /tmp/1.idx* && gcc -O2 -o lmap lmap.c -DLMAP_TEST -DTEST_KV -DHAVE_PTHREAD -lpthread && ./lmap
 int main()
 {
     LMAP *lmap = NULL;
-    int i = 0, j = 0, n = 0, total = 0, no = 0, stat[MASK], stat2[MASK];
+    int i = 0, j = 0, n = 0, total = 0, no = 0, stat[MASK], stat2[MASK],
+        v = 0, num = 1000000, base = 60000000;
     int64_t val = 0, from = 0, to = 0, *res = NULL, all_mask = 200000;
     int64_t inputs[256], nos[256], last[256], tall[200000];
     int64_t all = 0;
@@ -811,8 +816,26 @@ int main()
 
     if((lmap = lmap_init("/tmp/1.idx")))
     {
-        res = (int64_t *)calloc(60000000, sizeof(int64_t));
+        res = (int64_t *)calloc(base, sizeof(int64_t));
         TIMER_INIT(timer);
+#ifdef TEST_KV
+        TIMER_RESET(timer);
+        for(i = 0; i < num; i++)
+        {
+            no = random()%base;
+            LMAP_SET(lmap, no, i);
+        }
+        TIMER_SAMPLE(timer);
+        fprintf(stdout, "set(%d) time used:%lld\n", num, PT_LU_USEC(timer));
+        TIMER_RESET(timer);
+        for(i = 0; i < num; i++)
+        {
+            no = random()%base;
+            v = LMAP_GET(lmap, no);
+        }
+        fprintf(stdout, "get(%d) time used:%lld\n", num, PT_LU_USEC(timer));
+#endif
+
 #ifdef TEST_RFROM
             lmap_set(lmap, 1, 22);
             lmap_set(lmap, 2, 25);

@@ -8,8 +8,6 @@
 #include <errno.h>
 #include "dkv.h"
 #include "rwlock.h"
-
-#endif
 DKV *dkv_init(char *file)
 {
     DKV *dkv = NULL;
@@ -20,9 +18,11 @@ DKV *dkv_init(char *file)
 
     if(file && (dkv = (DKV *)calloc(1, sizeof(DKV))))
     {
+#ifdef __DKV_USE_IDX__
        if((dkv->fd = open(file, O_CREAT|O_RDWR, 0644)) > 0) 
        {
            size = dkv->msize = (off_t)sizeof(DVVSTATE) + (off_t)sizeof(DVVKV) * (off_t)DVV_NODES_MAX;
+
            dkv->state = (DVVSTATE*)mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_SHARED, dkv->fd, 0);
            dkv->map = (DVVKV *)((char *)dkv->state + sizeof(DVVSTATE));
            fstat(dkv->fd, &st);
@@ -45,6 +45,7 @@ DKV *dkv_init(char *file)
        {
            fprintf(stderr, "open %s failed, %s\n", file, strerror(errno));
        }
+#endif
        sprintf(path, "%s.v", file);
        if((dkv->vfd = open(path, O_CREAT|O_RDWR, 0644)) > 0) 
        {
@@ -77,7 +78,9 @@ int dkv_vset(DKV *dkv, u32_t no, double val)
             //memset(((char *)dkv->vmap+dkv->vsize), 0, size - dkv->vsize);
             i = dkv->vsize / sizeof(DVVV);
             n = size / sizeof(DVVV);
+#ifdef __DKV_USE_IDX__
             while(i < n) {dkv->vmap[i].off = -1;dkv->vmap[i].val=0;++i;}
+#endif
             dkv->vsize = size;
         }
         //dkv->vmap[no].val = val; 
@@ -99,6 +102,7 @@ int dkv_vget(DKV *dkv, u32_t no, double *val)
     return ret;
 }
 
+#ifdef __DKV_USE_IDX__
 /* new bolt  */
 int dkv_slot_new(DKV *dkv)
 {
@@ -716,7 +720,24 @@ int dkv_ins(DKV *dkv, double *keys, int nkeys, u32_t *list)
     }
     return ret;
 }
+int dkv_del(DKV *dkv, u32_t no)
+{
+    int ret = -1, n = 0;
 
+    if(dkv)
+    {
+        RWLOCK_WRLOCK(dkv->rwlock);
+        if((n = (dkv->vsize/sizeof(DVVV))) > 0 && no < n)
+        {
+            dkv_remove(dkv, no);
+            dkv->vmap[no].off = -1;
+            ret = 0;
+        }
+        RWLOCK_UNLOCK(dkv->rwlock);
+    }
+    return ret;
+}
+#endif
 int dkv_get(DKV *dkv, u32_t no, u32_t *val)
 {
     int ret = -1, n = 0;
@@ -763,23 +784,6 @@ int dkv_set(DKV *dkv, u32_t no, double key)
     return ret;
 }
 
-int dkv_del(DKV *dkv, u32_t no)
-{
-    int ret = -1, n = 0;
-
-    if(dkv)
-    {
-        RWLOCK_WRLOCK(dkv->rwlock);
-        if((n = (dkv->vsize/sizeof(DVVV))) > 0 && no < n)
-        {
-            dkv_remove(dkv, no);
-            dkv->vmap[no].off = -1;
-            ret = 0;
-        }
-        RWLOCK_UNLOCK(dkv->rwlock);
-    }
-    return ret;
-}
 
 void dkv_close(DKV *dkv)
 {
@@ -798,11 +802,12 @@ void dkv_close(DKV *dkv)
 #ifdef DKV_TEST
 #include "timer.h"
 #define MASK  120000
-//rm -rf /tmp/1.idx* && gcc -O2 -o dkv dkv.c -DDKV_TEST -DTEST_IN -DHAVE_PTHREAD -lpthread && ./dkv
+//rm -rf /tmp/1.idx* && gcc -O2 -o dkv dkv.c -DDKV_TEST -DTEST_KV -DHAVE_PTHREAD -lpthread && ./dkv
 int main()
 {
     DKV *dkv = NULL;
-    int i = 0, j = 0, n = 0, total = 0, no = 0, stat[MASK], stat2[MASK];
+    int i = 0, j = 0, n = 0, total = 0, no = 0, stat[MASK], stat2[MASK],
+        v = 0, num = 1000000, base = 60000000;
     double val = 0, from = 0, to = 0, *res = NULL, all_mask = 200000;
     double inputs[256], nos[256], last[256], tall[200000];
     double all = 0;
@@ -811,8 +816,26 @@ int main()
 
     if((dkv = dkv_init("/tmp/1.idx")))
     {
-        res = (double *)calloc(60000000, sizeof(double));
+        res = (double *)calloc(base, sizeof(double));
         TIMER_INIT(timer);
+#ifdef TEST_KV
+        TIMER_RESET(timer);
+        for(i = 0; i < num; i++)
+        {
+            no = random()%base;
+            DKV_SET(dkv, no, i);
+        }
+        TIMER_SAMPLE(timer);
+        fprintf(stdout, "set(%d) time used:%lld\n", num, PT_LU_USEC(timer));
+        TIMER_RESET(timer);
+        for(i = 0; i < num; i++)
+        {
+            no = random()%base;
+            v = DKV_GET(dkv, no);
+        }
+        fprintf(stdout, "get(%d) time used:%lld\n", num, PT_LU_USEC(timer));
+#endif
+
 #ifdef TEST_RFROM
             dkv_set(dkv, 1, 22);
             dkv_set(dkv, 2, 25);

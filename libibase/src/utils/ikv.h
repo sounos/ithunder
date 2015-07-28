@@ -59,6 +59,7 @@ typedef struct _IKV
 IKV *ikv_init(char *file);
 int ikv_set(IKV *ikv, u32_t no, int32_t key);
 int ikv_get(IKV *ikv, u32_t no, u32_t *val);
+void ikv_close(IKV *ikv);
 #ifdef __IKV_USE_IDX__
 /* return number of the hits */
 int ikv_del(IKV *ikv, u32_t no);
@@ -70,9 +71,8 @@ int ikv_ins(IKV *ikv, int32_t *keys, int nkeys, u32_t *list);
 /* set list[] if (list != NULL) */
 #define IKV_DEL(x, no) ikv_del(((IKV *)x), no)
 #else
-#define IKV_DEL(x, no) do{}while(0)
+#define IKV_DEL(x, no)
 #endif
-void ikv_close(IKV *ikv);
 #define IKV_GET(x, no) ((IKV *)x)->vmap[no].val
 #define IKV_SET(x, no, key) ikv_set(((IKV *)x), no, key)
 #pragma pack(pop)

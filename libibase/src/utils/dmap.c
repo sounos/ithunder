@@ -8,8 +8,6 @@
 #include <errno.h>
 #include "dmap.h"
 #include "rwlock.h"
-
-#endif
 DMAP *dmap_init(char *file)
 {
     DMAP *dmap = NULL;
@@ -20,9 +18,11 @@ DMAP *dmap_init(char *file)
 
     if(file && (dmap = (DMAP *)calloc(1, sizeof(DMAP))))
     {
+#ifdef __DMAP_USE_IDX__
        if((dmap->fd = open(file, O_CREAT|O_RDWR, 0644)) > 0) 
        {
            size = dmap->msize = (off_t)sizeof(DMMSTATE) + (off_t)sizeof(DMMKV) * (off_t)DMM_NODES_MAX;
+
            dmap->state = (DMMSTATE*)mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_SHARED, dmap->fd, 0);
            dmap->map = (DMMKV *)((char *)dmap->state + sizeof(DMMSTATE));
            fstat(dmap->fd, &st);
@@ -45,6 +45,7 @@ DMAP *dmap_init(char *file)
        {
            fprintf(stderr, "open %s failed, %s\n", file, strerror(errno));
        }
+#endif
        sprintf(path, "%s.v", file);
        if((dmap->vfd = open(path, O_CREAT|O_RDWR, 0644)) > 0) 
        {
@@ -77,7 +78,9 @@ int dmap_vset(DMAP *dmap, u32_t no, double val)
             //memset(((char *)dmap->vmap+dmap->vsize), 0, size - dmap->vsize);
             i = dmap->vsize / sizeof(DMMV);
             n = size / sizeof(DMMV);
+#ifdef __DMAP_USE_IDX__
             while(i < n) {dmap->vmap[i].off = -1;dmap->vmap[i].val=0;++i;}
+#endif
             dmap->vsize = size;
         }
         //dmap->vmap[no].val = val; 
@@ -99,6 +102,7 @@ int dmap_vget(DMAP *dmap, u32_t no, double *val)
     return ret;
 }
 
+#ifdef __DMAP_USE_IDX__
 /* new bolt  */
 int dmap_slot_new(DMAP *dmap)
 {
@@ -716,7 +720,24 @@ int dmap_ins(DMAP *dmap, double *keys, int nkeys, u32_t *list)
     }
     return ret;
 }
+int dmap_del(DMAP *dmap, u32_t no)
+{
+    int ret = -1, n = 0;
 
+    if(dmap)
+    {
+        RWLOCK_WRLOCK(dmap->rwlock);
+        if((n = (dmap->vsize/sizeof(DMMV))) > 0 && no < n)
+        {
+            dmap_remove(dmap, no);
+            dmap->vmap[no].off = -1;
+            ret = 0;
+        }
+        RWLOCK_UNLOCK(dmap->rwlock);
+    }
+    return ret;
+}
+#endif
 int dmap_get(DMAP *dmap, u32_t no, u32_t *val)
 {
     int ret = -1, n = 0;
@@ -763,23 +784,6 @@ int dmap_set(DMAP *dmap, u32_t no, double key)
     return ret;
 }
 
-int dmap_del(DMAP *dmap, u32_t no)
-{
-    int ret = -1, n = 0;
-
-    if(dmap)
-    {
-        RWLOCK_WRLOCK(dmap->rwlock);
-        if((n = (dmap->vsize/sizeof(DMMV))) > 0 && no < n)
-        {
-            dmap_remove(dmap, no);
-            dmap->vmap[no].off = -1;
-            ret = 0;
-        }
-        RWLOCK_UNLOCK(dmap->rwlock);
-    }
-    return ret;
-}
 
 void dmap_close(DMAP *dmap)
 {
@@ -798,11 +802,12 @@ void dmap_close(DMAP *dmap)
 #ifdef DMAP_TEST
 #include "timer.h"
 #define MASK  120000
-//rm -rf /tmp/1.idx* && gcc -O2 -o dmap dmap.c -DDMAP_TEST -DTEST_IN -DHAVE_PTHREAD -lpthread && ./dmap
+//rm -rf /tmp/1.idx* && gcc -O2 -o dmap dmap.c -DDMAP_TEST -DTEST_KV -DHAVE_PTHREAD -lpthread && ./dmap
 int main()
 {
     DMAP *dmap = NULL;
-    int i = 0, j = 0, n = 0, total = 0, no = 0, stat[MASK], stat2[MASK];
+    int i = 0, j = 0, n = 0, total = 0, no = 0, stat[MASK], stat2[MASK],
+        v = 0, num = 1000000, base = 60000000;
     double val = 0, from = 0, to = 0, *res = NULL, all_mask = 200000;
     double inputs[256], nos[256], last[256], tall[200000];
     double all = 0;
@@ -811,8 +816,26 @@ int main()
 
     if((dmap = dmap_init("/tmp/1.idx")))
     {
-        res = (double *)calloc(60000000, sizeof(double));
+        res = (double *)calloc(base, sizeof(double));
         TIMER_INIT(timer);
+#ifdef TEST_KV
+        TIMER_RESET(timer);
+        for(i = 0; i < num; i++)
+        {
+            no = random()%base;
+            DMAP_SET(dmap, no, i);
+        }
+        TIMER_SAMPLE(timer);
+        fprintf(stdout, "set(%d) time used:%lld\n", num, PT_LU_USEC(timer));
+        TIMER_RESET(timer);
+        for(i = 0; i < num; i++)
+        {
+            no = random()%base;
+            v = DMAP_GET(dmap, no);
+        }
+        fprintf(stdout, "get(%d) time used:%lld\n", num, PT_LU_USEC(timer));
+#endif
+
 #ifdef TEST_RFROM
             dmap_set(dmap, 1, 22);
             dmap_set(dmap, 2, 25);

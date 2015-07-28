@@ -59,6 +59,7 @@ typedef struct _LMAP
 LMAP *lmap_init(char *file);
 int lmap_set(LMAP *lmap, u32_t no, int64_t key);
 int lmap_get(LMAP *lmap, u32_t no, u32_t *val);
+void lmap_close(LMAP *lmap);
 #ifdef __LMAP_USE_IDX__
 /* return number of the hits */
 int lmap_del(LMAP *lmap, u32_t no);
@@ -70,9 +71,8 @@ int lmap_ins(LMAP *lmap, int64_t *keys, int nkeys, u32_t *list);
 /* set list[] if (list != NULL) */
 #define LMAP_DEL(x, no) lmap_del(((LMAP *)x), no)
 #else
-#define LMAP_DEL(x, no) do{}while(0)
+#define LMAP_DEL(x, no)
 #endif
-void lmap_close(LMAP *lmap);
 #define LMAP_GET(x, no) ((LMAP *)x)->vmap[no].val
 #define LMAP_SET(x, no, key) lmap_set(((LMAP *)x), no, key)
 #pragma pack(pop)

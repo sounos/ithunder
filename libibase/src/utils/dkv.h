@@ -59,6 +59,7 @@ typedef struct _DKV
 DKV *dkv_init(char *file);
 int dkv_set(DKV *dkv, u32_t no, double key);
 int dkv_get(DKV *dkv, u32_t no, u32_t *val);
+void dkv_close(DKV *dkv);
 #ifdef __DKV_USE_IDX__
 /* return number of the hits */
 int dkv_del(DKV *dkv, u32_t no);
@@ -70,9 +71,8 @@ int dkv_ins(DKV *dkv, double *keys, int nkeys, u32_t *list);
 /* set list[] if (list != NULL) */
 #define DKV_DEL(x, no) dkv_del(((DKV *)x), no)
 #else
-#define DKV_DEL(x, no) do{}while(0)
+#define DKV_DEL(x, no)
 #endif
-void dkv_close(DKV *dkv);
 #define DKV_GET(x, no) ((DKV *)x)->vmap[no].val
 #define DKV_SET(x, no, key) dkv_set(((DKV *)x), no, key)
 #pragma pack(pop)

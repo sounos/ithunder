@@ -59,6 +59,7 @@ typedef struct _LKV
 LKV *lkv_init(char *file);
 int lkv_set(LKV *lkv, u32_t no, int64_t key);
 int lkv_get(LKV *lkv, u32_t no, u32_t *val);
+void lkv_close(LKV *lkv);
 #ifdef __LKV_USE_IDX__
 /* return number of the hits */
 int lkv_del(LKV *lkv, u32_t no);
@@ -70,9 +71,8 @@ int lkv_ins(LKV *lkv, int64_t *keys, int nkeys, u32_t *list);
 /* set list[] if (list != NULL) */
 #define LKV_DEL(x, no) lkv_del(((LKV *)x), no)
 #else
-#define LKV_DEL(x, no) do{}while(0)
+#define LKV_DEL(x, no)
 #endif
-void lkv_close(LKV *lkv);
 #define LKV_GET(x, no) ((LKV *)x)->vmap[no].val
 #define LKV_SET(x, no, key) lkv_set(((LKV *)x), no, key)
 #pragma pack(pop)
