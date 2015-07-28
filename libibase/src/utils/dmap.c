@@ -9,6 +9,7 @@
 #include "dmap.h"
 #include "rwlock.h"
 
+#endif
 DMAP *dmap_init(char *file)
 {
     DMAP *dmap = NULL;
@@ -741,6 +742,7 @@ int dmap_set(DMAP *dmap, u32_t no, double key)
     {
        RWLOCK_WRLOCK(dmap->rwlock);
        dmap_vset(dmap, no, key);
+#ifdef __DMAP_USE_IDX__
        if(dmap->vmap[no].off  < 0)
        {
            dmap_insert(dmap, no, key);
@@ -753,8 +755,9 @@ int dmap_set(DMAP *dmap, u32_t no, double key)
                 dmap_insert(dmap, no, key);
            }
        }
-       ret = 0;
        dmap->vmap[no].val = key;
+#endif
+       ret = 0;
        RWLOCK_UNLOCK(dmap->rwlock);
     }
     return ret;

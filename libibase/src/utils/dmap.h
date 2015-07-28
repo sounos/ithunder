@@ -8,6 +8,7 @@
 #define DMM_SLOT2_NUM    512 /* half of DMM_SLOT_NUM */
 #define DMM_DMMV_INC     1000000
 #define DMM_NODES_MAX    4294967296
+#define __DMAP_USE_IDX__    1
 #pragma pack(push, 4)
 #ifndef U32_T
 #define U32_T
@@ -21,7 +22,9 @@ typedef struct DMMKV
 typedef struct _DMMV
 {
     double val; /* 数值 */
+#ifdef __DMAP_USE_IDX__
     int off; /* 节点偏移 */
+#endif
 }DMMV;
 typedef struct _DMMSLOT
 {
@@ -55,17 +58,22 @@ typedef struct _DMAP
 }DMAP;
 DMAP *dmap_init(char *file);
 int dmap_set(DMAP *dmap, u32_t no, double key);
-int dmap_del(DMAP *dmap, u32_t no);
+int dmap_get(DMAP *dmap, u32_t no, u32_t *val);
+#ifdef __DMAP_USE_IDX__
 /* return number of the hits */
+int dmap_del(DMAP *dmap, u32_t no);
 int dmap_range(DMAP *dmap, double from, double to, u32_t *list);
 int dmap_rangefrom(DMAP *dmap, double key, u32_t *list); /* key = from */
 int dmap_rangeto(DMAP *dmap, double key, u32_t *list); /* key = to */
 int dmap_in(DMAP *dmap, double key, u32_t *list);
 int dmap_ins(DMAP *dmap, double *keys, int nkeys, u32_t *list);
 /* set list[] if (list != NULL) */
+#define DMAP_DEL(x, no) dmap_del(((DMAP *)x), no)
+#else
+#define DMAP_DEL(x, no) do{}while(0)
+#endif
 void dmap_close(DMAP *dmap);
 #define DMAP_GET(x, no) ((DMAP *)x)->vmap[no].val
 #define DMAP_SET(x, no, key) dmap_set(((DMAP *)x), no, key)
-#define DMAP_DEL(x, no) dmap_del(((DMAP *)x), no)
 #pragma pack(pop)
 #endif

@@ -9,6 +9,7 @@
 #include "lmap.h"
 #include "rwlock.h"
 
+#endif
 LMAP *lmap_init(char *file)
 {
     LMAP *lmap = NULL;
@@ -741,6 +742,7 @@ int lmap_set(LMAP *lmap, u32_t no, int64_t key)
     {
        RWLOCK_WRLOCK(lmap->rwlock);
        lmap_vset(lmap, no, key);
+#ifdef __LMAP_USE_IDX__
        if(lmap->vmap[no].off  < 0)
        {
            lmap_insert(lmap, no, key);
@@ -753,8 +755,9 @@ int lmap_set(LMAP *lmap, u32_t no, int64_t key)
                 lmap_insert(lmap, no, key);
            }
        }
-       ret = 0;
        lmap->vmap[no].val = key;
+#endif
+       ret = 0;
        RWLOCK_UNLOCK(lmap->rwlock);
     }
     return ret;

@@ -8,6 +8,7 @@
 #define LMM_SLOT2_NUM    512 /* half of LMM_SLOT_NUM */
 #define LMM_LMMV_INC     1000000
 #define LMM_NODES_MAX    4294967296
+#define __LMAP_USE_IDX__    1
 #pragma pack(push, 4)
 #ifndef U32_T
 #define U32_T
@@ -21,7 +22,9 @@ typedef struct LMMKV
 typedef struct _LMMV
 {
     int64_t val; /* 数值 */
+#ifdef __LMAP_USE_IDX__
     int off; /* 节点偏移 */
+#endif
 }LMMV;
 typedef struct _LMMSLOT
 {
@@ -55,17 +58,22 @@ typedef struct _LMAP
 }LMAP;
 LMAP *lmap_init(char *file);
 int lmap_set(LMAP *lmap, u32_t no, int64_t key);
-int lmap_del(LMAP *lmap, u32_t no);
+int lmap_get(LMAP *lmap, u32_t no, u32_t *val);
+#ifdef __LMAP_USE_IDX__
 /* return number of the hits */
+int lmap_del(LMAP *lmap, u32_t no);
 int lmap_range(LMAP *lmap, int64_t from, int64_t to, u32_t *list);
 int lmap_rangefrom(LMAP *lmap, int64_t key, u32_t *list); /* key = from */
 int lmap_rangeto(LMAP *lmap, int64_t key, u32_t *list); /* key = to */
 int lmap_in(LMAP *lmap, int64_t key, u32_t *list);
 int lmap_ins(LMAP *lmap, int64_t *keys, int nkeys, u32_t *list);
 /* set list[] if (list != NULL) */
+#define LMAP_DEL(x, no) lmap_del(((LMAP *)x), no)
+#else
+#define LMAP_DEL(x, no) do{}while(0)
+#endif
 void lmap_close(LMAP *lmap);
 #define LMAP_GET(x, no) ((LMAP *)x)->vmap[no].val
 #define LMAP_SET(x, no, key) lmap_set(((LMAP *)x), no, key)
-#define LMAP_DEL(x, no) lmap_del(((LMAP *)x), no)
 #pragma pack(pop)
 #endif

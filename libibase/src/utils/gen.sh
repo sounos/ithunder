@@ -1,5 +1,12 @@
 #!/bin/bash
-#long
+#int 
+cp -f imap.h ikv.h
+cp -f imap.c ikv.c
+perl -i -p -e "s/IMM/IVV/g" ikv.h ikv.c
+perl -i -p -e "s/IMAP/IKV/g" ikv.h ikv.c
+perl -i -p -e "s/imap/ikv/g" ikv.h ikv.c
+perl -i -p -e "s@#define __IKV_USE_IDX__@//#define __IKV_USE_IDX__@g" ikv.h ikv.c
+#long map
 cp -f imap.h lmap.h
 cp -f imap.c lmap.c
 perl -i -p -e "s/int32_t/int64_t/g" lmap.h lmap.c
@@ -7,7 +14,15 @@ perl -i -p -e "s/IMM/LMM/g" lmap.h lmap.c
 perl -i -p -e "s/IMAP/LMAP/g" lmap.h lmap.c
 perl -i -p -e "s/imap/lmap/g" lmap.h lmap.c
 perl -i -p -e "s/typedef uint64_t u32_t/typedef uint32_t u32_t/g" lmap.h lmap.c
-#double
+#long kv
+cp -f ikv.h lkv.h
+cp -f ikv.c lkv.c
+perl -i -p -e "s/int32_t/int64_t/g" lkv.h lkv.c
+perl -i -p -e "s/IVV/LVV/g" lkv.h lkv.c
+perl -i -p -e "s/IKV/LKV/g" lkv.h lkv.c
+perl -i -p -e "s/ikv/lkv/g" lkv.h lkv.c
+perl -i -p -e "s/typedef uint64_t u32_t/typedef uint32_t u32_t/g" lkv.h lkv.c
+#double map
 cp -f imap.h dmap.h
 cp -f imap.c dmap.c
 perl -i -p -e "s/int32_t/double/g" dmap.h dmap.c
@@ -15,6 +30,14 @@ perl -i -p -e "s/IMM/DMM/g" dmap.h dmap.c
 perl -i -p -e "s/IMAP/DMAP/g" dmap.h dmap.c
 perl -i -p -e "s/imap/dmap/g" dmap.h dmap.c
 perl -i -p -e "s/typedef udouble u32_t/typedef uint32_t u32_t/g" dmap.h dmap.c
+#double kv
+cp -f ikv.h dkv.h
+cp -f ikv.c dkv.c
+perl -i -p -e "s/int32_t/double/g" dkv.h dkv.c
+perl -i -p -e "s/IVV/DVV/g" dkv.h dkv.c
+perl -i -p -e "s/IKV/DKV/g" dkv.h dkv.c
+perl -i -p -e "s/ikv/dkv/g" dkv.h dkv.c
+perl -i -p -e "s/typedef udouble u32_t/typedef uint32_t u32_t/g" dkv.h dkv.c
 #cdb.c
 cp -f db.h cdb.h
 cp -f db.c cdb.c
