@@ -122,7 +122,6 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
         }
         if(ibase->state->used_for == IB_USED_FOR_INDEXD)
         {
-            /* add to source */
             if(((off_t)docid * (off_t)sizeof(IHEADER)) >= ibase->state->headers[secid].end)
             {
                 ibase->state->headers[secid].old = ibase->state->headers[secid].end;
@@ -130,8 +129,65 @@ int ibase_index(IBASE *ibase, int docid, IBDATA *block)
                     * (off_t)IB_HEADERS_BASE * (off_t)sizeof(IHEADER);
                 ret = ftruncate(ibase->state->headers[secid].fd, size);
                 ibase->state->headers[secid].end = size;
-                memset(ibase->state->headers[secid].map + ibase->state->headers[secid].old, 0, 
-                        ibase->state->headers[secid].end -  ibase->state->headers[secid].old);
+                memset(ibase->state->headers[secid].map 
+                        + ibase->state->headers[secid].old, 0, 
+                    ibase->state->headers[secid].end 
+                        -  ibase->state->headers[secid].old);
+            }
+        }
+        if(ibase->state->used_for == IB_USED_FOR_INDEXD)
+        {
+#ifdef IB_USE_BMAP
+            /* bmap */ 
+            if(docheader->status < 0) bmap_unset(ibase->bmaps[secid], docid);
+            else bmap_set(ibase->bmaps[secid], docid);
+#endif
+            /* index int */
+            if((n = ibase->state->int_index_fields_num) > 0 
+                    && (intlist = (int *)(block->data + docheader->intblock_off)))
+            {
+                n += IB_INT_OFF;
+                k = 0;
+                for(i = IB_INT_OFF; i < n; i++)
+                {
+                    IMAP_SET(ibase->state->mfields[secid][i], docid, intlist[k]);
+                    k++;
+                }
+            }
+            /* index long */
+            if((n = ibase->state->long_index_fields_num) > 0 
+                    && (longlist = (int64_t *)(block->data + docheader->longblock_off)))
+            {
+                n += IB_LONG_OFF;
+                k = 0;
+                for(i = IB_LONG_OFF; i < n; i++)
+                {
+                    LMAP_SET(ibase->state->mfields[secid][i], docid, longlist[k]);
+                    k++;
+                }
+            }
+            /* index double */
+            if((n = ibase->state->double_index_fields_num) > 0 
+                    && (doublelist = (double *)(block->data + docheader->doubleblock_off)))
+            {
+                n += IB_DOUBLE_OFF;
+                k = 0;
+                for(i = IB_DOUBLE_OFF; i < n; i++)
+                {
+                    DMAP_SET(ibase->state->mfields[secid][i], docid, doublelist[k]);
+                    k++;
+                }
+            }
+            if((iheader = PIHEADER(ibase, docheader->secid, docid)))
+            {
+                iheader->status      = docheader->status;
+                iheader->terms_total = docheader->terms_total;
+                //iheader->crc         = docheader->crc;
+                iheader->category    = docheader->category;
+                iheader->slevel      = docheader->slevel;
+                iheader->rank        = docheader->rank;
+                iheader->globalid    = docheader->globalid;
+                //WARN_LOGGER(ibase->logger, "iheader->category:%p docheader->category:%p", (void *)iheader->category, (void *)docheader->category);
             }
         }
         /* index */
@@ -220,61 +276,6 @@ term_state_update:
             }
             term += termlist[i].term_len;
             prevnext += termlist[i].prevnext_size;
-        }
-        if(ibase->state->used_for == IB_USED_FOR_INDEXD)
-        {
-#ifdef IB_USE_BMAP
-            /* bmap */ 
-            if(docheader->status < 0) bmap_unset(ibase->bmaps[secid], docid);
-            else bmap_set(ibase->bmaps[secid], docid);
-#endif
-            /* index int */
-            if((n = ibase->state->int_index_fields_num) > 0 
-                    && (intlist = (int *)(block->data + docheader->intblock_off)))
-            {
-                n += IB_INT_OFF;
-                k = 0;
-                for(i = IB_INT_OFF; i < n; i++)
-                {
-                    IMAP_SET(ibase->state->mfields[secid][i], docid, intlist[k]);
-                    k++;
-                }
-            }
-            /* index long */
-            if((n = ibase->state->long_index_fields_num) > 0 
-                    && (longlist = (int64_t *)(block->data + docheader->longblock_off)))
-            {
-                n += IB_LONG_OFF;
-                k = 0;
-                for(i = IB_LONG_OFF; i < n; i++)
-                {
-                    LMAP_SET(ibase->state->mfields[secid][i], docid, longlist[k]);
-                    k++;
-                }
-            }
-            /* index double */
-            if((n = ibase->state->double_index_fields_num) > 0 
-                    && (doublelist = (double *)(block->data + docheader->doubleblock_off)))
-            {
-                n += IB_DOUBLE_OFF;
-                k = 0;
-                for(i = IB_DOUBLE_OFF; i < n; i++)
-                {
-                    DMAP_SET(ibase->state->mfields[secid][i], docid, doublelist[k]);
-                    k++;
-                }
-            }
-            if((iheader = PIHEADER(ibase, docheader->secid, docid)))
-            {
-                iheader->status      = docheader->status;
-                iheader->terms_total = docheader->terms_total;
-                //iheader->crc         = docheader->crc;
-                iheader->category    = docheader->category;
-                iheader->slevel      = docheader->slevel;
-                iheader->rank        = docheader->rank;
-                iheader->globalid    = docheader->globalid;
-                //WARN_LOGGER(ibase->logger, "iheader->category:%p docheader->category:%p", (void *)iheader->category, (void *)docheader->category);
-            }
         }
         ret = 0;
     }
@@ -428,6 +429,7 @@ int ibase_del_index(IBASE *ibase, int secid, int localid)
         if(ibase->state->used_for == IB_USED_FOR_INDEXD 
                 && ibase->state->mmsource_status != IB_MMSOURCE_NULL)
         {
+            /* add to source */
             WARN_LOGGER(ibase->logger, "delete source[%d] %d bytes", localid, db_get_data_len(PDB(ibase->source), localid));
             ret = db_del_data(PDB(ibase->source), localid);
         }
